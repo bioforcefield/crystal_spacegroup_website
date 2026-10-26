@@ -21,14 +21,17 @@ const SECTION_NAV = [
   { id: 'stats', label: 'Statistics' },
 ] as const
 
+const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, '')
+
 function scrollToSection(id: string) {
   const el = document.getElementById(id)
+  const hashUrl = `${ROUTER_BASENAME}/#${id}`
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    history.replaceState(null, '', `/#${id}`)
+    history.replaceState(null, '', hashUrl)
     return
   }
-  window.location.assign(`/#${id}`)
+  window.location.assign(hashUrl)
 }
 
 function SiteChrome({
@@ -67,7 +70,7 @@ function SiteChrome({
                 {s.label}
               </button>
             ) : (
-              <Link key={s.id} to={`/#${s.id}`}>
+              <Link key={s.id} to={{ pathname: '/', hash: s.id }}>
                 {s.label}
               </Link>
             ),
@@ -108,7 +111,7 @@ function DemoRoute() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={ROUTER_BASENAME || undefined}>
       <Routes>
         <Route path="/" element={<IndexRoute />} />
         <Route path="/sg/:id" element={<DemoRoute />} />
