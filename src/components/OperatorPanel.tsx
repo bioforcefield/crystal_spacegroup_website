@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
 import {
   OPERATORS,
   META,
@@ -69,6 +70,9 @@ export default function OperatorPanel({
   return (
     <aside className="panel">
       <header className="panel-header">
+        <Link to="/" className="back-link">
+          ← All space groups
+        </Link>
         <p className="eyebrow">Space group</p>
         <h1>
           {META.number} · {META.hm}
