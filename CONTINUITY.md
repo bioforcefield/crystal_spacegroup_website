@@ -3,7 +3,7 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`  
 Plan canvas: https://cursor.com/canvas/store-47b63095-92bb-4ade-8ecd-d65e434f207d/99fd7be7-25b5-4ea5-9402-ecaaffb9adf8  
-Latest: feature `fc9d324` · tip `fc9d324bba2c396972326605bc24c10d919d794b` · `gh-pages` `8e71cf8`
+Latest: feature `fc9d324` · tip `b13945a67ce3eb1e8a0bcfbf7c2be12b7459908a` · `gh-pages` `8e71cf8`
 
 ## Done
 - All 230 `/sg/N` interactive (gemmi ITA JSON → `generatedDemo.ts`; catalog all `ready`)
