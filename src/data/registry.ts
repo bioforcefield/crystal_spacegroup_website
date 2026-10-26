@@ -2,9 +2,10 @@
 
 import { pbcaDemo } from './pbca'
 import { c2cDemo } from './c2c'
+import { p21cDemo } from './p21c'
 import type { SpaceGroupDemo } from './types'
 
-const DEMOS: SpaceGroupDemo[] = [pbcaDemo, c2cDemo]
+const DEMOS: SpaceGroupDemo[] = [p21cDemo, c2cDemo, pbcaDemo]
 
 const byNumber = new Map(DEMOS.map((d) => [d.meta.number, d]))
 const bySlug = new Map(
@@ -28,4 +29,4 @@ export function allDemos(): SpaceGroupDemo[] {
   return DEMOS
 }
 
-export { pbcaDemo, c2cDemo }
+export { p21cDemo, c2cDemo, pbcaDemo }

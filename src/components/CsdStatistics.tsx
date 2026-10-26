@@ -105,7 +105,8 @@ export default function CsdStatistics() {
             <p>
               A handful of groups dominate organic and organometallic crystal
               structures. Live demos on this site:{' '}
-              <strong>C2/c</strong> (rank 3) and <strong>Pbca</strong> (rank 6).
+              <strong>P21/c</strong> (rank 1), <strong>C2/c</strong> (rank 3),
+              and <strong>Pbca</strong> (rank 6).
             </p>
             <p className="csd-scale-note">
               Bar lengths use a <strong>square-root scale</strong> so rarer groups

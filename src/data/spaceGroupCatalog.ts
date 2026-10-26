@@ -49,7 +49,7 @@ export const CRYSTAL_SYSTEMS: CrystalSystemInfo[] = [
       3,
       15
     ],
-    blurb: 'One unique axis (usually b). Home of C2/c (15) — among the most common molecular groups.',
+    blurb: 'One unique axis (usually b). Home of P21/c (14) — the most common molecular group — and C2/c (15).',
     accent: '#38bdf8'
   },
   {
@@ -104,7 +104,7 @@ export const CRYSTAL_SYSTEMS: CrystalSystemInfo[] = [
   }
 ]
 
-/** All 230 space groups — interactive demos: C2/c (15), Pbca (61). */
+/** All 230 space groups — interactive demos: P21/c (14), C2/c (15), Pbca (61). */
 export const SPACE_GROUPS: SpaceGroupEntry[] = [
   {
     number: 1,
@@ -201,7 +201,7 @@ export const SPACE_GROUPS: SpaceGroupEntry[] = [
     number: 14,
     hm: 'P21/c',
     system: 'monoclinic',
-    status: 'planned',
+    status: 'ready',
     slug: 'p21c'
   },
   {

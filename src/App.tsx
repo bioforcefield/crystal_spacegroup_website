@@ -75,6 +75,9 @@ function SiteChrome({
               </Link>
             ),
           )}
+          <NavLink to="/sg/14" className="nav-demo">
+            P21/c
+          </NavLink>
           <NavLink to="/sg/15" className="nav-demo">
             C2/c
           </NavLink>
@@ -117,6 +120,7 @@ export default function App() {
         <Route path="/sg/:id" element={<DemoRoute />} />
         <Route path="/pbca" element={<Navigate to="/sg/61" replace />} />
         <Route path="/c2c" element={<Navigate to="/sg/15" replace />} />
+        <Route path="/p21c" element={<Navigate to="/sg/14" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -104,6 +104,9 @@ export default function IndexPage() {
               </div>
             </div>
             <div className="hero-cta">
+              <Link to="/sg/14" className="btn btn-primary">
+                Try P21/c (14)
+              </Link>
               <Link to="/sg/15" className="btn btn-primary">
                 Try C2/c (15)
               </Link>
@@ -166,7 +169,7 @@ export default function IndexPage() {
                 I
               </text>
               <text x="118" y="52" fill="#38bdf8" fontSize="10" fontWeight="700">
-                C2/c · Pbca
+                P21/c · C2/c
               </text>
             </svg>
           </div>
@@ -179,7 +182,8 @@ export default function IndexPage() {
             <h2>Explore by crystal system</h2>
             <p>
               Start from the lattice family you care about, then jump into a live
-              demo — currently <Link to="/sg/15">C2/c (15)</Link> and{' '}
+              demo — currently <Link to="/sg/14">P21/c (14)</Link>,{' '}
+              <Link to="/sg/15">C2/c (15)</Link>, and{' '}
               <Link to="/sg/61">Pbca (61)</Link>. More groups are on the way.
             </p>
           </div>
@@ -239,7 +243,7 @@ export default function IndexPage() {
             <input
               type="search"
               className="sg-search"
-              placeholder="Filter by number or symbol… e.g. 15, 61, C2/c, Pbca"
+              placeholder="Filter by number or symbol… e.g. 14, 15, P21/c, C2/c"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Filter space groups"
@@ -379,7 +383,10 @@ export default function IndexPage() {
 
           <div className="guide-cta">
             <div className="hero-cta" style={{ justifyContent: 'flex-start' }}>
-              <Link to="/sg/15" className="btn btn-primary">
+              <Link to="/sg/14" className="btn btn-primary">
+                Open P21/c →
+              </Link>
+              <Link to="/sg/15" className="btn btn-ghost">
                 Open C2/c →
               </Link>
               <Link to="/sg/61" className="btn btn-ghost">
@@ -401,7 +408,8 @@ export default function IndexPage() {
               Why prioritize some groups first? In the Cambridge Structural
               Database, a small set of space groups covers most organic and
               organometallic structures — including our live demos{' '}
-              <Link to="/sg/15">C2/c</Link> (rank 3) and{' '}
+              <Link to="/sg/14">P21/c</Link> (rank 1),{' '}
+              <Link to="/sg/15">C2/c</Link> (rank 3), and{' '}
               <Link to="/sg/61">Pbca</Link> (rank 6).
             </p>
           </div>
@@ -415,6 +423,8 @@ export default function IndexPage() {
           <span className="muted"> · interactive teaching diagrams</span>
         </div>
         <span className="footer-demos">
+          <Link to="/sg/14">14 · P21/c</Link>
+          <span className="sep"> · </span>
           <Link to="/sg/15">15 · C2/c</Link>
           <span className="sep"> · </span>
           <Link to="/sg/61">61 · Pbca</Link>
