@@ -1,23 +1,15 @@
 import type { CSSProperties } from 'react'
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  OPERATORS,
-  META,
-  SEED,
-  isImproper,
-  operatorClass,
-  CLASS_LEGEND_ORDER,
-  SYMMETRY_CLASSES,
-  type Operator,
-} from '../data/pbca'
-import { elementLocusForOp } from '../data/symmetryElements'
+import { isImproper, operatorClass } from '../data/math'
+import type { Operator, SpaceGroupDemo } from '../data/types'
 import {
   placedPositions,
   type PlacementMode,
 } from '../data/nearestImages'
 
 interface Props {
+  demo: SpaceGroupDemo
   selectedIndex: number
   onSelect: (index: number) => void
   placementMode: PlacementMode
@@ -48,15 +40,17 @@ function MatrixBlock({ op }: { op: Operator }) {
 }
 
 export default function OperatorPanel({
+  demo,
   selectedIndex,
   onSelect,
   placementMode,
 }: Props) {
-  const selected = OPERATORS.find((o) => o.index === selectedIndex) ?? OPERATORS[0]
-  const selectedClass = operatorClass(selected)
+  const selected =
+    demo.operators.find((o) => o.index === selectedIndex) ?? demo.operators[0]
+  const selectedClass = operatorClass(demo, selected)
   const placement = useMemo(
-    () => placedPositions(selectedIndex, placementMode),
-    [selectedIndex, placementMode],
+    () => placedPositions(demo, selectedIndex, placementMode),
+    [demo, selectedIndex, placementMode],
   )
   const basePoint =
     placement.points.find((p) => p.index === 1) ?? placement.points[0]
@@ -66,6 +60,8 @@ export default function OperatorPanel({
     placementMode === 'nearest' ? 'IMAGE (nearest)' : 'IMAGE (in cell)'
   const baseLabel =
     placementMode === 'nearest' ? 'BASE (nearest)' : 'BASE (in cell)'
+  const { meta } = demo
+  const beta = demo.cell.betaDeg
 
   return (
     <aside className="panel">
@@ -75,34 +71,38 @@ export default function OperatorPanel({
         </Link>
         <p className="eyebrow">Space group</p>
         <h1>
-          {META.number} · {META.hm}
+          {meta.number} · {meta.hm}
         </h1>
-        <p className="blurb">{META.blurb}</p>
+        <p className="blurb">{meta.blurb}</p>
         <dl className="meta-grid">
           <div>
             <dt>System</dt>
-            <dd>{META.system}</dd>
+            <dd>{meta.system}</dd>
           </div>
           <div>
             <dt>Point group</dt>
-            <dd>{META.pointGroup}</dd>
+            <dd>{meta.pointGroup}</dd>
           </div>
           <div>
             <dt>Lattice</dt>
-            <dd>{META.lattice}</dd>
+            <dd>{meta.lattice}</dd>
           </div>
           <div>
             <dt>Multiplicity</dt>
-            <dd>{META.multiplicity}</dd>
+            <dd>{meta.multiplicity}</dd>
           </div>
+          {beta != null && beta !== 90 && (
+            <div>
+              <dt>β (teaching)</dt>
+              <dd>{beta}°</dd>
+            </div>
+          )}
         </dl>
       </header>
 
       <section className="seed-box">
         <h2>Asymmetric seed · BASE</h2>
-        <p>
-          Seed (x, y, z) = {formatVec(SEED)}
-        </p>
+        <p>Seed (x, y, z) = {formatVec(demo.seed)}</p>
         <p>
           {baseLabel}: {formatVec(basePoint.fractional)}
         </p>
@@ -118,8 +118,8 @@ export default function OperatorPanel({
       <section className="class-legend-panel">
         <h2>Symmetry classes</h2>
         <ul className="class-legend-list">
-          {CLASS_LEGEND_ORDER.map((id) => {
-            const c = SYMMETRY_CLASSES[id]
+          {demo.classLegendOrder.map((id) => {
+            const c = demo.symmetryClasses[id]
             return (
               <li key={id}>
                 <span className="swatch" style={{ background: c.color }} />
@@ -136,9 +136,9 @@ export default function OperatorPanel({
           Click a row — BASE stays marked; IMAGE and the dashed connector update.
         </p>
         <ul className="op-list">
-          {OPERATORS.map((op) => {
+          {demo.operators.map((op) => {
             const active = op.index === selectedIndex
-            const cls = operatorClass(op)
+            const cls = operatorClass(demo, op)
             return (
               <li key={op.index}>
                 <button
@@ -180,9 +180,9 @@ export default function OperatorPanel({
           x′ = R x + t &nbsp;·&nbsp; {selected.seitz}
         </p>
         <MatrixBlock op={selected} />
-        {elementLocusForOp(selected.index) && (
+        {demo.elementLocusForOp(selected.index) && (
           <p className="element-locus">
-            Element · {elementLocusForOp(selected.index)}
+            Element · {demo.elementLocusForOp(selected.index)}
           </p>
         )}
       </section>

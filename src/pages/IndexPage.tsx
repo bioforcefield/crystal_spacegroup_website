@@ -93,7 +93,10 @@ export default function IndexPage() {
               </div>
             </div>
             <div className="hero-cta">
-              <Link to="/sg/61" className="btn btn-primary">
+              <Link to="/sg/15" className="btn btn-primary">
+                Open C2/c (15)
+              </Link>
+              <Link to="/sg/61" className="btn btn-ghost">
                 Open Pbca (61)
               </Link>
               <button
@@ -177,9 +180,10 @@ export default function IndexPage() {
           <div className="section-head">
             <h2>Explore by crystal system</h2>
             <p>
-              Pick a system to filter the index. Only{' '}
-              <Link to="/sg/61">Pbca (61)</Link> is interactive so far — other
-              groups show as coming soon.
+              Pick a system to filter the index. Live demos:{' '}
+              <Link to="/sg/15">C2/c (15)</Link> and{' '}
+              <Link to="/sg/61">Pbca (61)</Link> — other groups show as coming
+              soon.
             </p>
           </div>
           <div className="system-grid">
@@ -376,9 +380,14 @@ export default function IndexPage() {
           </div>
 
           <div className="guide-cta">
-            <Link to="/sg/61" className="btn btn-primary">
-              Try it on Pbca (61) →
-            </Link>
+            <div className="hero-cta" style={{ justifyContent: 'flex-start' }}>
+              <Link to="/sg/15" className="btn btn-primary">
+                Try C2/c (15) →
+              </Link>
+              <Link to="/sg/61" className="btn btn-ghost">
+                Try Pbca (61) →
+              </Link>
+            </div>
             <p className="muted">
               Teaching software inspired by International Tables for
               Crystallography (ITA) diagrams — not an official IUCr product.
@@ -392,7 +401,11 @@ export default function IndexPage() {
           <strong>Crystal Space Groups</strong>
           <span className="muted"> · interactive teaching diagrams</span>
         </div>
-        <Link to="/sg/61">61 · Pbca</Link>
+        <span className="footer-demos">
+          <Link to="/sg/15">15 · C2/c</Link>
+          <span className="sep">·</span>
+          <Link to="/sg/61">61 · Pbca</Link>
+        </span>
       </footer>
     </div>
   )

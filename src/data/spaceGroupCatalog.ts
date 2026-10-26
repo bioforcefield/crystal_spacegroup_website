@@ -49,7 +49,7 @@ export const CRYSTAL_SYSTEMS: CrystalSystemInfo[] = [
       3,
       15
     ],
-    blurb: 'One unique axis (usually b). 2-fold axes, mirrors, or 2/m combinations.',
+    blurb: 'One unique axis (usually b). Home of C2/c (15) — among the most common molecular groups.',
     accent: '#38bdf8'
   },
   {
@@ -104,7 +104,7 @@ export const CRYSTAL_SYSTEMS: CrystalSystemInfo[] = [
   }
 ]
 
-/** All 230 space groups — only Pbca (61) is interactive so far. */
+/** All 230 space groups — interactive demos: C2/c (15), Pbca (61). */
 export const SPACE_GROUPS: SpaceGroupEntry[] = [
   {
     number: 1,
@@ -208,7 +208,7 @@ export const SPACE_GROUPS: SpaceGroupEntry[] = [
     number: 15,
     hm: 'C2/c',
     system: 'monoclinic',
-    status: 'planned',
+    status: 'ready',
     slug: 'c2c'
   },
   {

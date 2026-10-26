@@ -1,20 +1,13 @@
 import { useMemo } from 'react'
 import { Line, Text, Billboard } from '@react-three/drei'
 import * as THREE from 'three'
-import {
-  CELL,
-  OPERATORS,
-  fracToCart,
-  classColor,
-  type Vec3,
-} from '../data/pbca'
-import {
-  SCREW_AXES,
-  INVERSION_CENTERS,
-  GLIDE_PLANES,
-  type ScrewAxisSpec,
-  type GlidePlaneSpec,
-} from '../data/symmetryElements'
+import { classColor, fracToCart } from '../data/math'
+import type {
+  GlidePlaneSpec,
+  ScrewAxisSpec,
+  SpaceGroupDemo,
+  Vec3,
+} from '../data/types'
 
 const FAINT = 0.12
 const EMPH_LINE = 0.95
@@ -22,10 +15,12 @@ const EMPH_PLANE = 0.26
 const FAINT_PLANE = 0.08
 
 interface Props {
+  demo: SpaceGroupDemo
   selectedIndex: number
 }
 
 function cartAlong(
+  demo: SpaceGroupDemo,
   originFrac: Vec3,
   dirFrac: Vec3,
   t0: number,
@@ -41,10 +36,9 @@ function cartAlong(
     originFrac[1] + dirFrac[1] * t1,
     originFrac[2] + dirFrac[2] * t1,
   ]
-  return [fracToCart(a), fracToCart(b)]
+  return [fracToCart(a, demo.cell), fracToCart(b, demo.cell)]
 }
 
-/** Small cone arrowhead oriented along `direction`. */
 function ArrowHead({
   position,
   direction,
@@ -83,23 +77,29 @@ function ArrowHead({
 }
 
 function ScrewAxisVisual({
+  demo,
   axis,
   emphasized,
 }: {
+  demo: SpaceGroupDemo
   axis: ScrewAxisSpec
   emphasized: boolean
 }) {
-  const color = classColor('screw')
+  const kind = axis.kind ?? '21'
+  const color =
+    kind === '2'
+      ? classColor(demo, 'twofold')
+      : classColor(demo, 'screw')
   const opacity = emphasized ? EMPH_LINE : FAINT
   const lineWidth = emphasized ? 3.2 : 1.2
-  const [p0, p1] = cartAlong(axis.origin, axis.direction, 0, 1)
+  const [p0, p1] = cartAlong(demo, axis.origin, axis.direction, 0, 1)
 
   const midFrac: Vec3 = [
     axis.origin[0] + axis.direction[0] * 0.5,
     axis.origin[1] + axis.direction[1] * 0.5,
     axis.origin[2] + axis.direction[2] * 0.5,
   ]
-  const mid = fracToCart(midFrac)
+  const mid = fracToCart(midFrac, demo.cell)
 
   const tickCart: Vec3 =
     axis.direction[0] !== 0
@@ -137,7 +137,6 @@ function ScrewAxisVisual({
     p0[2] + axisUnit[2] * axisLen * 0.55,
   ]
 
-  // Radial basis ⊥ axis for the half-turn arc cue
   const radialGuess: Vec3 =
     Math.abs(axisUnit[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]
   const dot =
@@ -169,6 +168,8 @@ function ScrewAxisVisual({
     ]
   })
 
+  const symbol = kind === '2' ? '2' : '2₁'
+
   return (
     <group>
       <Line
@@ -186,13 +187,15 @@ function ScrewAxisVisual({
             color={color}
             opacity={opacity}
           />
-          <ArrowHead
-            position={headFar}
-            direction={axisUnit}
-            color={color}
-            opacity={opacity * 0.85}
-            scale={0.85}
-          />
+          {kind === '21' && (
+            <ArrowHead
+              position={headFar}
+              direction={axisUnit}
+              color={color}
+              opacity={opacity * 0.85}
+              scale={0.85}
+            />
+          )}
           <Line
             points={arcPts}
             color={color}
@@ -211,31 +214,35 @@ function ScrewAxisVisual({
             opacity={opacity}
             scale={0.7}
           />
-          <Line
-            points={[tickFrom, tickTo]}
-            color={color}
-            lineWidth={2}
-            transparent
-            opacity={opacity}
-          />
-          <Billboard
-            position={[
-              mid[0] + tickCart[0] * 1.8,
-              mid[1] + tickCart[1] * 1.8,
-              mid[2] + tickCart[2] * 1.8,
-            ]}
-          >
-            <Text
-              fontSize={0.07}
-              color={color}
-              anchorX="center"
-              anchorY="middle"
-              outlineWidth={0.005}
-              outlineColor="#0f172a"
-            >
-              ½
-            </Text>
-          </Billboard>
+          {kind === '21' && (
+            <>
+              <Line
+                points={[tickFrom, tickTo]}
+                color={color}
+                lineWidth={2}
+                transparent
+                opacity={opacity}
+              />
+              <Billboard
+                position={[
+                  mid[0] + tickCart[0] * 1.8,
+                  mid[1] + tickCart[1] * 1.8,
+                  mid[2] + tickCart[2] * 1.8,
+                ]}
+              >
+                <Text
+                  fontSize={0.07}
+                  color={color}
+                  anchorX="center"
+                  anchorY="middle"
+                  outlineWidth={0.005}
+                  outlineColor="#0f172a"
+                >
+                  ½
+                </Text>
+              </Billboard>
+            </>
+          )}
           <Billboard
             position={[
               p0[0] + axisUnit[0] * axisLen * 0.08 + r[0] * 1.4,
@@ -251,7 +258,7 @@ function ScrewAxisVisual({
               outlineWidth={0.004}
               outlineColor="#0f172a"
             >
-              {`2₁ ${axis.locus}`}
+              {`${symbol} ${axis.locus}`}
             </Text>
           </Billboard>
         </>
@@ -261,14 +268,16 @@ function ScrewAxisVisual({
 }
 
 function InversionCenterVisual({
+  demo,
   position,
   emphasized,
 }: {
+  demo: SpaceGroupDemo
   position: Vec3
   emphasized: boolean
 }) {
-  const color = classColor('inversion')
-  const cart = fracToCart(position)
+  const color = classColor(demo, 'inversion')
+  const cart = fracToCart(position, demo.cell)
   const opacity = emphasized ? 0.95 : FAINT
   const radius = emphasized ? 0.048 : 0.032
 
@@ -287,75 +296,75 @@ function InversionCenterVisual({
   )
 }
 
-function planeBorderPoints(
-  n: 0 | 1 | 2,
-  constCart: number,
-  a: number,
-  b: number,
-  c: number,
-): Vec3[] {
-  if (n === 0) {
-    return [
-      [constCart, 0, 0],
-      [constCart, b, 0],
-      [constCart, b, c],
-      [constCart, 0, c],
-      [constCart, 0, 0],
-    ]
-  }
-  if (n === 1) {
-    return [
-      [0, constCart, 0],
-      [a, constCart, 0],
-      [a, constCart, c],
-      [0, constCart, c],
-      [0, constCart, 0],
-    ]
-  }
-  return [
-    [0, 0, constCart],
-    [a, 0, constCart],
-    [a, b, constCart],
-    [0, b, constCart],
-    [0, 0, constCart],
-  ]
-}
-
+/** Parallelogram glide plane from four fractional corners. */
 function GlidePlaneVisual({
+  demo,
   plane,
   emphasized,
 }: {
+  demo: SpaceGroupDemo
   plane: GlidePlaneSpec
   emphasized: boolean
 }) {
-  const color = classColor(plane.classId)
+  const color = classColor(demo, plane.classId)
   const planeOpacity = emphasized ? EMPH_PLANE : FAINT_PLANE
   const lineOpacity = emphasized ? EMPH_LINE : FAINT
-
-  const { a, b, c } = CELL
   const n = plane.normalAxis
-  const constCart =
+  const v = plane.planeValue
+
+  const fracCorners: Vec3[] =
     n === 0
-      ? plane.planeValue * a
+      ? [
+          [v, 0, 0],
+          [v, 1, 0],
+          [v, 1, 1],
+          [v, 0, 1],
+        ]
       : n === 1
-        ? plane.planeValue * b
-        : plane.planeValue * c
+        ? [
+            [0, v, 0],
+            [1, v, 0],
+            [1, v, 1],
+            [0, v, 1],
+          ]
+        : [
+            [0, 0, v],
+            [1, 0, v],
+            [1, 1, v],
+            [0, 1, v],
+          ]
 
-  const rotation: Vec3 =
-    n === 0 ? [0, Math.PI / 2, 0] : n === 1 ? [-Math.PI / 2, 0, 0] : [0, 0, 0]
+  const cell = demo.cell
+  const corners = useMemo(
+    () => fracCorners.map((p) => fracToCart(p, cell)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [n, v, cell.a, cell.b, cell.c, cell.betaDeg],
+  )
+  const geom = useMemo(() => {
+    const g = new THREE.BufferGeometry()
+    const verts = new Float32Array([
+      ...corners[0],
+      ...corners[1],
+      ...corners[2],
+      ...corners[0],
+      ...corners[2],
+      ...corners[3],
+    ])
+    g.setAttribute('position', new THREE.BufferAttribute(verts, 3))
+    g.computeVertexNormals()
+    return g
+  }, [corners])
 
-  const size: [number, number] =
-    n === 0 ? [c, b] : n === 1 ? [a, c] : [a, b]
+  const center: Vec3 = [
+    (corners[0][0] + corners[2][0]) / 2,
+    (corners[0][1] + corners[2][1]) / 2,
+    (corners[0][2] + corners[2][2]) / 2,
+  ]
+  const border: Vec3[] = [...corners, corners[0]]
 
-  const center: Vec3 =
-    n === 0
-      ? [constCart, b / 2, c / 2]
-      : n === 1
-        ? [a / 2, constCart, c / 2]
-        : [a / 2, b / 2, constCart]
-
-  const glideCart = fracToCart(plane.glide)
-  const lift = 0.02
+  const glideCart = fracToCart(plane.glide, demo.cell)
+  // Lift slightly along plane normal (approx y for ⊥b)
+  const lift = 0.025
   const liftVec: Vec3 =
     n === 0 ? [lift, 0, 0] : n === 1 ? [0, lift, 0] : [0, 0, lift]
   const arrowFrom: Vec3 = [
@@ -381,8 +390,7 @@ function GlidePlaneVisual({
 
   return (
     <group>
-      <mesh position={center} rotation={rotation}>
-        <planeGeometry args={size} />
+      <mesh geometry={geom}>
         <meshStandardMaterial
           color={color}
           transparent
@@ -395,7 +403,7 @@ function GlidePlaneVisual({
       </mesh>
       {emphasized && (
         <Line
-          points={planeBorderPoints(n, constCart, a, b, c)}
+          points={border}
           color={color}
           lineWidth={1.5}
           transparent
@@ -439,44 +447,50 @@ function GlidePlaneVisual({
   )
 }
 
-/**
- * Draws Pbca symmetry elements: selected operator emphasized,
- * all other elements faint for teaching context.
- */
-export default function SymmetryElements({ selectedIndex }: Props) {
-  const selected = OPERATORS.find((o) => o.index === selectedIndex)
+export default function SymmetryElements({ demo, selectedIndex }: Props) {
+  const selected = demo.operators.find((o) => o.index === selectedIndex)
   const classId = selected?.classId ?? 'identity'
 
   return (
     <group>
-      {INVERSION_CENTERS.map((c) => (
+      {demo.inversionCenters.map((c) => (
         <InversionCenterVisual
           key={c.locus}
+          demo={demo}
           position={c.position}
-          emphasized={classId === 'inversion' && c.primary}
+          emphasized={
+            classId === 'inversion' &&
+            (selectedIndex === demo.primaryInversionOp
+              ? c.primary
+              : Math.abs(c.position[0] - (selected?.t[0] ?? 0) / 2) < 0.01 &&
+                Math.abs(c.position[1] - (selected?.t[1] ?? 0) / 2) < 0.01 &&
+                Math.abs(c.position[2] - (selected?.t[2] ?? 0) / 2) < 0.01)
+          }
         />
       ))}
 
-      {SCREW_AXES.map((axis) => {
+      {demo.screwAxes.map((axis) => {
         const emphasized =
-          classId === 'screw' &&
+          (classId === 'screw' || classId === 'twofold') &&
           axis.opIndex === selectedIndex &&
           axis.primary
         return (
           <ScrewAxisVisual
             key={`${axis.opIndex}-${axis.locus}`}
+            demo={demo}
             axis={axis}
             emphasized={emphasized}
           />
         )
       })}
 
-      {GLIDE_PLANES.map((plane) => {
+      {demo.glidePlanes.map((plane) => {
         const emphasized =
           plane.opIndex === selectedIndex && plane.primary
         return (
           <GlidePlaneVisual
             key={`${plane.opIndex}-${plane.locus}`}
+            demo={demo}
             plane={plane}
             emphasized={emphasized}
           />

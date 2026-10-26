@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  SYMMETRY_CLASSES,
-  type SymmetryClassId,
-} from '../data/pbca'
-import {
-  DEFAULT_PROJECTION,
-  PROJECTIONS,
   allProjectedGlides,
   allProjectedScrews,
+  buildProjections,
   formatHeightLabel,
+  planeEmbed,
   projectFrac,
   projectInversions,
   type ProjectionDir,
@@ -19,8 +15,10 @@ import {
   placedPositions,
   type PlacementMode,
 } from '../data/nearestImages'
+import type { SpaceGroupDemo, SymmetryClassId } from '../data/types'
 
 interface Props {
+  demo: SpaceGroupDemo
   selectedIndex: number
   onSelect: (index: number) => void
   showAllSites?: boolean
@@ -29,16 +27,8 @@ interface Props {
 
 const PAD = { left: 40, right: 32, top: 18, bottom: 34 }
 
-function classColor(id: SymmetryClassId): string {
-  return SYMMETRY_CLASSES[id].color
-}
-
-function screwColor(): string {
-  return SYMMETRY_CLASSES.screw.color
-}
-
-function inversionColor(): string {
-  return SYMMETRY_CLASSES.inversion.color
+function classColor(demo: SpaceGroupDemo, id: SymmetryClassId): string {
+  return demo.symmetryClasses[id].color
 }
 
 /** Curved half-arrow on an end-on 2₁ symbol (ITA-ish). */
@@ -95,23 +85,30 @@ function halfArrowHeads(
 }
 
 function ScrewsLayer({
+  demo,
   screws,
   selectedIndex,
   toSvg,
   labelScale,
 }: {
+  demo: SpaceGroupDemo
   screws: ProjectedScrew[]
   selectedIndex: number
   toSvg: (u: number, v: number) => { x: number; y: number }
   labelScale: number
 }) {
-  const color = screwColor()
   return (
     <g className="d2-screws">
       {screws.map((s, i) => {
+        const kind = s.spec.kind ?? '21'
+        const color =
+          kind === '2'
+            ? classColor(demo, 'twofold')
+            : classColor(demo, 'screw')
         const active = s.spec.opIndex === selectedIndex
         const opacity = selectedIndex === 1 ? 0.55 : active ? 1 : 0.22
         const strokeW = active ? 2.2 : 1.35
+        const symbol = kind === '2' ? '2' : '2₁'
         if (s.mode === 'end-on') {
           const { x, y } = toSvg(s.u, s.v)
           const r = active ? 9 : 7.5
@@ -121,19 +118,22 @@ function ScrewsLayer({
                 cx={x}
                 cy={y}
                 r={r}
-                fill="none"
+                fill={kind === '2' ? color : 'none'}
+                fillOpacity={kind === '2' ? 0.35 : 0}
                 stroke={color}
                 strokeWidth={strokeW}
               />
-              <path
-                d={endOnHalfArrow(x, y, r)}
-                fill="none"
-                stroke={color}
-                strokeWidth={strokeW}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <title>{`2₁ ${s.spec.locus}`}</title>
+              {kind === '21' && (
+                <path
+                  d={endOnHalfArrow(x, y, r)}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={strokeW}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+              <title>{`${symbol} ${s.spec.locus}`}</title>
             </g>
           )
         }
@@ -164,7 +164,7 @@ function ScrewsLayer({
                 {s.w === 0.25 ? '¼' : s.w === 0.75 ? '¾' : '½'}
               </text>
             )}
-            <title>{`2₁ ${s.spec.locus}`}</title>
+            <title>{`${symbol} ${s.spec.locus}`}</title>
           </g>
         )
       })}
@@ -317,11 +317,13 @@ function drawTraceGlideArrow(
 }
 
 function GlidesLayer({
+  demo,
   glides,
   selectedIndex,
   toSvg,
   labelScale,
 }: {
+  demo: SpaceGroupDemo
   glides: ProjectedGlide[]
   selectedIndex: number
   toSvg: (u: number, v: number) => { x: number; y: number }
@@ -331,7 +333,7 @@ function GlidesLayer({
     <g className="d2-glides">
       {glides.map((g, i) => {
         const active = g.spec.opIndex === selectedIndex
-        const color = classColor(g.spec.classId)
+        const color = classColor(demo, g.spec.classId)
         const opacity = selectedIndex === 1 ? 0.5 : active ? 1 : 0.2
         const strokeW = active ? 2 : 1.25
 
@@ -368,20 +370,24 @@ function GlidesLayer({
 }
 
 function InversionsLayer({
+  demo,
   selectedIndex,
   toSvg,
-  projDir,
+  proj,
 }: {
+  demo: SpaceGroupDemo
   selectedIndex: number
   toSvg: (u: number, v: number) => { x: number; y: number }
-  projDir: ProjectionDir
+  proj: ReturnType<typeof buildProjections>['c']
 }) {
   const inversions = useMemo(
-    () => projectInversions(PROJECTIONS[projDir]),
-    [projDir],
+    () => projectInversions(demo.inversionCenters, proj),
+    [demo, proj],
   )
-  const color = inversionColor()
-  const active = selectedIndex === 5
+  const color = classColor(demo, 'inversion')
+  const active =
+    demo.operators.find((o) => o.index === selectedIndex)?.classId ===
+    'inversion'
   return (
     <g className="d2-inversions">
       {inversions.map((inv, i) => {
@@ -423,14 +429,19 @@ function InversionsLayer({
 }
 
 export default function SpaceGroupDiagram2D({
+  demo,
   selectedIndex,
   onSelect,
   showAllSites = true,
   placementMode = 'nearest',
 }: Props) {
-  const [projDir, setProjDir] = useState<ProjectionDir>(DEFAULT_PROJECTION)
+  const [projDir, setProjDir] = useState<ProjectionDir>(demo.defaultProjection)
   const plotRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 440, h: 300 })
+
+  useEffect(() => {
+    setProjDir(demo.defaultProjection)
+  }, [demo.defaultProjection, demo.meta.number])
 
   useEffect(() => {
     const el = plotRef.current
@@ -447,26 +458,34 @@ export default function SpaceGroupDiagram2D({
     return () => ro.disconnect()
   }, [])
 
-  const proj = PROJECTIONS[projDir]
+  const projections = useMemo(() => buildProjections(demo.cell), [demo.cell])
+  const proj = projections[projDir]
   const points = useMemo(
-    () => placedPositions(selectedIndex, placementMode).points,
-    [selectedIndex, placementMode],
+    () => placedPositions(demo, selectedIndex, placementMode).points,
+    [demo, selectedIndex, placementMode],
   )
-  const screws = useMemo(() => allProjectedScrews(proj), [proj])
-  const glides = useMemo(() => allProjectedGlides(proj), [proj])
+  const screws = useMemo(
+    () => allProjectedScrews(demo.screwAxes, proj),
+    [demo.screwAxes, proj],
+  )
+  const glides = useMemo(
+    () => allProjectedGlides(demo.glidePlanes, proj),
+    [demo.glidePlanes, proj],
+  )
 
   const viewW = size.w
   const viewH = size.h
   const plotW = Math.max(40, viewW - PAD.left - PAD.right)
   const plotH = Math.max(40, viewH - PAD.top - PAD.bottom)
 
-  // Fractional window: always include the unit cell [0,1]²; in nearest mode
-  // expand to fit BASE/IMAGE (and other visible sites) that sit outside.
+  // Bounding box in plane-embed coords (handles monoclinic shear).
   const extent = useMemo(() => {
-    let u0 = 0
-    let u1 = 1
-    let v0 = 0
-    let v1 = 1
+    const samples: { x: number; y: number }[] = []
+    for (const uu of [0, 1]) {
+      for (const vv of [0, 1]) {
+        samples.push(planeEmbed(uu, vv, proj, demo.cell))
+      }
+    }
     for (const pt of points) {
       if (
         !showAllSites &&
@@ -476,48 +495,49 @@ export default function SpaceGroupDiagram2D({
         continue
       }
       const { u, v } = projectFrac(pt.fractional, proj)
-      u0 = Math.min(u0, u)
-      u1 = Math.max(u1, u)
-      v0 = Math.min(v0, v)
-      v1 = Math.max(v1, v)
+      samples.push(planeEmbed(u, v, proj, demo.cell))
     }
-    const pad = placementMode === 'nearest' ? 0.1 : 0.02
-    return {
-      u0: u0 - pad,
-      u1: u1 + pad,
-      v0: v0 - pad,
-      v1: v1 + pad,
-    }
-  }, [points, proj, placementMode, showAllSites, selectedIndex])
+    const pad = placementMode === 'nearest' ? 0.08 : 0.02
+    // pad in fractional → approx via cell sizes
+    const padX = pad * Math.max(proj.sizeU, proj.sizeV)
+    const padY = padX
+    let x0 = Math.min(...samples.map((s) => s.x)) - padX
+    let x1 = Math.max(...samples.map((s) => s.x)) + padX
+    let y0 = Math.min(...samples.map((s) => s.y)) - padY
+    let y1 = Math.max(...samples.map((s) => s.y)) + padY
+    return { x0, x1, y0, y1 }
+  }, [points, proj, demo.cell, placementMode, showAllSites, selectedIndex])
 
-  const spanU = Math.max(1e-6, extent.u1 - extent.u0)
-  const spanV = Math.max(1e-6, extent.v1 - extent.v0)
-  const worldW = spanU * proj.sizeU
-  const worldH = spanV * proj.sizeV
+  const worldW = Math.max(1e-6, extent.x1 - extent.x0)
+  const worldH = Math.max(1e-6, extent.y1 - extent.y0)
   const scale = Math.min(plotW / worldW, plotH / worldH)
-  // Keep labels readable at default panel size; grow slightly on larger panels.
   const labelScale = Math.max(1, Math.min(1.35, scale / 160))
   const drawnW = worldW * scale
   const drawnH = worldH * scale
   const offsetX = PAD.left + (plotW - drawnW) / 2
   const offsetY = PAD.top + (plotH - drawnH) / 2
 
-  const toSvg = (u: number, v: number) => ({
-    x: offsetX + (u - extent.u0) * proj.sizeU * scale,
-    y: offsetY + (extent.v1 - v) * proj.sizeV * scale,
-  })
+  const toSvg = (u: number, v: number) => {
+    const e = planeEmbed(u, v, proj, demo.cell)
+    return {
+      x: offsetX + (e.x - extent.x0) * scale,
+      y: offsetY + (extent.y1 - e.y) * scale,
+    }
+  }
 
   const origin = toSvg(0, 0)
   const cornerA = toSvg(1, 0)
   const cornerB = toSvg(0, 1)
-  const cellW = Math.abs(cornerA.x - origin.x)
-  const cellH = Math.abs(origin.y - cornerB.y)
+  const cornerAB = toSvg(1, 1)
 
   return (
-    <section className="diagram2d" aria-label="Pbca 2D space-group diagram">
+    <section
+      className="diagram2d"
+      aria-label={`${demo.shortName} 2D space-group diagram`}
+    >
       <header className="diagram2d-header">
         <div className="diagram2d-title">
-          <span className="eyebrow">Pbca · projection</span>
+          <span className="eyebrow">{demo.shortName} · projection</span>
           <span className="diagram2d-sub">
             JKC origin ·{' '}
             {placementMode === 'nearest'
@@ -538,7 +558,7 @@ export default function SpaceGroupDiagram2D({
               className={projDir === d ? 'seg active' : 'seg'}
               onClick={() => setProjDir(d)}
             >
-              {PROJECTIONS[d].label}
+              {projections[d].label}
             </button>
           ))}
         </div>
@@ -552,7 +572,7 @@ export default function SpaceGroupDiagram2D({
         viewBox={`0 0 ${viewW} ${viewH}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label={`Pbca diagram looking down ${proj.axisW}`}
+        aria-label={`${demo.shortName} diagram looking down ${proj.axisW}`}
       >
         <defs>
           <marker
@@ -569,12 +589,8 @@ export default function SpaceGroupDiagram2D({
         </defs>
 
         <g className="d2-cell">
-          {/* Unit cell [0,1]² — must use toSvg, not the padded view origin */}
-          <rect
-            x={toSvg(0, 1).x}
-            y={toSvg(0, 1).y}
-            width={cellW}
-            height={cellH}
+          <polygon
+            points={`${origin.x},${origin.y} ${cornerA.x},${cornerA.y} ${cornerAB.x},${cornerAB.y} ${cornerB.x},${cornerB.y}`}
             fill="rgba(15, 23, 42, 0.55)"
             stroke="#94a3b8"
             strokeWidth={1.6}
@@ -598,21 +614,24 @@ export default function SpaceGroupDiagram2D({
         </g>
 
         <GlidesLayer
+          demo={demo}
           glides={glides}
           selectedIndex={selectedIndex}
           toSvg={toSvg}
           labelScale={labelScale}
         />
         <ScrewsLayer
+          demo={demo}
           screws={screws}
           selectedIndex={selectedIndex}
           toSvg={toSvg}
           labelScale={labelScale}
         />
         <InversionsLayer
+          demo={demo}
           selectedIndex={selectedIndex}
           toSvg={toSvg}
-          projDir={projDir}
+          proj={proj}
         />
 
         <g className="d2-sites">

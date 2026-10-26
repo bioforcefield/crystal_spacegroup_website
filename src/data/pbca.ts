@@ -1,12 +1,47 @@
-/** Space group 61 · Pbca — Session 1 hard-coded demo data (ITA conventional). */
+/** Space group 61 · Pbca — interactive teaching demo (ITA conventional). */
 
-export type Vec3 = [number, number, number]
+import type {
+  CellParams,
+  GlidePlaneSpec,
+  InversionCenterSpec,
+  Operator,
+  ScrewAxisSpec,
+  SpaceGroupDemo,
+  SpaceGroupMeta,
+  SymmetryClass,
+  SymmetryClassId,
+  Vec3,
+} from './types'
+import {
+  applyOperator,
+  fracToCart,
+  isImproper,
+} from './math'
+import type { GeneralPoint } from './types'
 
-export interface CellParams {
-  a: number
-  b: number
-  c: number
-}
+export type {
+  Vec3,
+  CellParams,
+  SymmetryClassId,
+  SymmetryClass,
+  Operator,
+  SpaceGroupMeta,
+  Mat3,
+  GeneralPoint,
+  SpaceGroupDemo,
+} from './types'
+
+export {
+  det3,
+  isImproper,
+  properBasis,
+  wrap01,
+  applyOperator,
+  applyOperatorRaw,
+  addFrac,
+  fracToCart,
+  colorByHeight,
+} from './math'
 
 /** Teaching orthorhombic proportions (not a physical crystal). */
 export const CELL: CellParams = { a: 1, b: 1.2, c: 1.5 }
@@ -14,33 +49,18 @@ export const CELL: CellParams = { a: 1, b: 1.2, c: 1.5 }
 /** Seed point in the asymmetric unit (fractional coordinates). */
 export const SEED: Vec3 = [0.22, 0.15, 0.3]
 
-export type SymmetryClassId =
-  | 'identity'
-  | 'screw'
-  | 'inversion'
-  | 'a-glide'
-  | 'b-glide'
-  | 'c-glide'
-
-export interface SymmetryClass {
-  id: SymmetryClassId
-  /** Legend label */
-  label: string
-  /** Motif + row accent color */
-  color: string
-}
-
 /** Teaching palette — one distinct color per class shown in the legend. */
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },
+  twofold: { id: 'twofold', label: '2-fold', color: '#c4b5fd' },
   screw: { id: 'screw', label: '2₁ screw', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
   'a-glide': { id: 'a-glide', label: 'a-glide', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
   'c-glide': { id: 'c-glide', label: 'c-glide', color: '#fb923c' },
+  'n-glide': { id: 'n-glide', label: 'n-glide', color: '#2dd4bf' },
 }
 
-/** Legend order for the toolbar. */
 export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'identity',
   'screw',
@@ -50,22 +70,6 @@ export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'c-glide',
 ]
 
-export interface Operator {
-  index: number
-  triplet: string
-  label: string
-  classId: SymmetryClassId
-  /** Rotation matrix R (row-major 3×3) and translation t in fractional coords: x' = R x + t */
-  R: [Vec3, Vec3, Vec3]
-  t: Vec3
-  /** Seitz-style short form */
-  seitz: string
-}
-
-/**
- * General-position operators for Pbca (No. 61), multiplicity 8.
- * Coordinate triplets match the ITA conventional listing.
- */
 export const OPERATORS: Operator[] = [
   {
     index: 1,
@@ -173,16 +177,6 @@ export const OPERATORS: Operator[] = [
   },
 ]
 
-export interface SpaceGroupMeta {
-  number: number
-  hm: string
-  system: string
-  pointGroup: string
-  lattice: string
-  multiplicity: number
-  blurb: string
-}
-
 export const META: SpaceGroupMeta = {
   number: 61,
   hm: 'Pbca',
@@ -194,68 +188,172 @@ export const META: SpaceGroupMeta = {
     'Pbca is centrosymmetric orthorhombic: a b-glide ⊥ a, a c-glide ⊥ b, and an a-glide ⊥ c. Those three glides generate eight general positions (and three 2₁ screws + an inversion). Each site shows a chiral L-marker so screws twist it and glides/inversion flip its handedness.',
 }
 
+const SCREW_AXES: ScrewAxisSpec[] = [
+  {
+    origin: [0.25, 0, 0],
+    direction: [0, 0, 1],
+    locus: '(¼, 0, z)',
+    opIndex: 2,
+    primary: true,
+    kind: '21',
+  },
+  {
+    origin: [0.75, 0.5, 0],
+    direction: [0, 0, 1],
+    locus: '(¾, ½, z)',
+    opIndex: 2,
+    primary: false,
+    kind: '21',
+  },
+  {
+    origin: [0, 0, 0.25],
+    direction: [0, 1, 0],
+    locus: '(0, y, ¼)',
+    opIndex: 3,
+    primary: true,
+    kind: '21',
+  },
+  {
+    origin: [0.5, 0, 0.75],
+    direction: [0, 1, 0],
+    locus: '(½, y, ¾)',
+    opIndex: 3,
+    primary: false,
+    kind: '21',
+  },
+  {
+    origin: [0, 0.25, 0],
+    direction: [1, 0, 0],
+    locus: '(x, ¼, 0)',
+    opIndex: 4,
+    primary: true,
+    kind: '21',
+  },
+  {
+    origin: [0, 0.75, 0.5],
+    direction: [1, 0, 0],
+    locus: '(x, ¾, ½)',
+    opIndex: 4,
+    primary: false,
+    kind: '21',
+  },
+]
 
-export type Mat3 = [Vec3, Vec3, Vec3]
-
-/** det(R) for a 3×3 row-major matrix. */
-export function det3(R: Mat3): number {
-  return (
-    R[0][0] * (R[1][1] * R[2][2] - R[1][2] * R[2][1]) -
-    R[0][1] * (R[1][0] * R[2][2] - R[1][2] * R[2][0]) +
-    R[0][2] * (R[1][0] * R[2][1] - R[1][1] * R[2][0])
-  )
-}
-
-export function isImproper(R: Mat3): boolean {
-  return det3(R) < 0
-}
-
-/**
- * Split R into a proper rotation + optional mirror (scale.x = −1).
- * Flips the first column of an improper R so det becomes +1; the enantiomorph
- * is then restored by mirroring in the motif's local +x.
- */
-export function properBasis(R: Mat3): { proper: Mat3; mirror: boolean } {
-  if (!isImproper(R)) {
-    return { proper: R, mirror: false }
+const INVERSION_CENTERS: InversionCenterSpec[] = (
+  [
+    [0, 0, 0],
+    [0.5, 0, 0],
+    [0, 0.5, 0],
+    [0, 0, 0.5],
+    [0.5, 0.5, 0],
+    [0.5, 0, 0.5],
+    [0, 0.5, 0.5],
+    [0.5, 0.5, 0.5],
+  ] as Vec3[]
+).map((position) => {
+  const primary =
+    position[0] === 0 && position[1] === 0 && position[2] === 0
+  const fmt = (v: number) => (v === 0 ? '0' : v === 0.5 ? '½' : String(v))
+  return {
+    position,
+    primary,
+    locus: `(${fmt(position[0])}, ${fmt(position[1])}, ${fmt(position[2])})`,
   }
-  const proper: Mat3 = [
-    [-R[0][0], R[0][1], R[0][2]],
-    [-R[1][0], R[1][1], R[1][2]],
-    [-R[2][0], R[2][1], R[2][2]],
-  ]
-  return { proper, mirror: true }
+})
+
+const GLIDE_PLANES: GlidePlaneSpec[] = [
+  {
+    planeValue: 0.25,
+    normalAxis: 2,
+    glide: [0.5, 0, 0],
+    label: 'a-glide',
+    classId: 'a-glide',
+    opIndex: 6,
+    primary: true,
+    locus: 'z = ¼, glide (½, 0, 0)',
+  },
+  {
+    planeValue: 0.75,
+    normalAxis: 2,
+    glide: [0.5, 0, 0],
+    label: 'a-glide',
+    classId: 'a-glide',
+    opIndex: 6,
+    primary: false,
+    locus: 'z = ¾, glide (½, 0, 0)',
+  },
+  {
+    planeValue: 0.25,
+    normalAxis: 1,
+    glide: [0, 0, 0.5],
+    label: 'c-glide',
+    classId: 'c-glide',
+    opIndex: 7,
+    primary: true,
+    locus: 'y = ¼, glide (0, 0, ½)',
+  },
+  {
+    planeValue: 0.75,
+    normalAxis: 1,
+    glide: [0, 0, 0.5],
+    label: 'c-glide',
+    classId: 'c-glide',
+    opIndex: 7,
+    primary: false,
+    locus: 'y = ¾, glide (0, 0, ½)',
+  },
+  {
+    planeValue: 0.25,
+    normalAxis: 0,
+    glide: [0, 0.5, 0],
+    label: 'b-glide',
+    classId: 'b-glide',
+    opIndex: 8,
+    primary: true,
+    locus: 'x = ¼, glide (0, ½, 0)',
+  },
+  {
+    planeValue: 0.75,
+    normalAxis: 0,
+    glide: [0, 0.5, 0],
+    label: 'b-glide',
+    classId: 'b-glide',
+    opIndex: 8,
+    primary: false,
+    locus: 'x = ¾, glide (0, ½, 0)',
+  },
+]
+
+export function elementLocusForOp(opIndex: number): string | null {
+  switch (opIndex) {
+    case 1:
+      return null
+    case 2:
+      return '2₁ axis at (¼, 0, z)'
+    case 3:
+      return '2₁ axis at (0, y, ¼)'
+    case 4:
+      return '2₁ axis at (x, ¼, 0)'
+    case 5:
+      return 'inversion at (0, 0, 0) · others at 0/½'
+    case 6:
+      return 'a-glide plane z = ¼ · glide (½, 0, 0)'
+    case 7:
+      return 'c-glide plane y = ¼ · glide (0, 0, ½)'
+    case 8:
+      return 'b-glide plane x = ¼ · glide (0, ½, 0)'
+    default:
+      return null
+  }
 }
 
-/** Wrap fractional coordinate into [0, 1). */
-export function wrap01(v: number): number {
-  return ((v % 1) + 1) % 1
+/** Backward-compat wrappers used by older call sites. */
+export function classColor(classId: SymmetryClassId): string {
+  return SYMMETRY_CLASSES[classId].color
 }
 
-export function applyOperator(op: Operator, p: Vec3): Vec3 {
-  const x =
-    op.R[0][0] * p[0] + op.R[0][1] * p[1] + op.R[0][2] * p[2] + op.t[0]
-  const y =
-    op.R[1][0] * p[0] + op.R[1][1] * p[1] + op.R[1][2] * p[2] + op.t[1]
-  const z =
-    op.R[2][0] * p[0] + op.R[2][1] * p[1] + op.R[2][2] * p[2] + op.t[2]
-  return [wrap01(x), wrap01(y), wrap01(z)]
-}
-
-/** Fractional → Cartesian for orthorhombic cell (axes aligned). */
-export function fracToCart(p: Vec3, cell: CellParams = CELL): Vec3 {
-  return [p[0] * cell.a, p[1] * cell.b, p[2] * cell.c]
-}
-
-export interface GeneralPoint {
-  index: number
-  fractional: Vec3
-  cartesian: Vec3
-  operator: Operator
-  /** true when det(R) < 0 (inversion, glide, rotary-inversion) */
-  improper: boolean
-  classId: SymmetryClassId
-  classColor: string
+export function operatorClass(op: Operator): SymmetryClass {
+  return SYMMETRY_CLASSES[op.classId]
 }
 
 export function generalPositions(
@@ -276,33 +374,18 @@ export function generalPositions(
   })
 }
 
-/** Color by fractional height along c (subtle cue only). */
-export function colorByHeight(zFrac: number): string {
-  const t = Math.min(1, Math.max(0, zFrac))
-  const h = 210 - t * 180
-  return `hsl(${h} 85% 58%)`
-}
-
-export function classColor(classId: SymmetryClassId): string {
-  return SYMMETRY_CLASSES[classId].color
-}
-
-export function operatorClass(op: Operator): SymmetryClass {
-  return SYMMETRY_CLASSES[op.classId]
-}
-
-/** Apply operator without wrapping into [0, 1). */
-export function applyOperatorRaw(op: Operator, p: Vec3): Vec3 {
-  const x =
-    op.R[0][0] * p[0] + op.R[0][1] * p[1] + op.R[0][2] * p[2] + op.t[0]
-  const y =
-    op.R[1][0] * p[0] + op.R[1][1] * p[1] + op.R[1][2] * p[2] + op.t[1]
-  const z =
-    op.R[2][0] * p[0] + op.R[2][1] * p[1] + op.R[2][2] * p[2] + op.t[2]
-  return [x, y, z]
-}
-
-/** Add two fractional vectors. */
-export function addFrac(a: Vec3, b: Vec3): Vec3 {
-  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+export const pbcaDemo: SpaceGroupDemo = {
+  meta: META,
+  cell: CELL,
+  seed: SEED,
+  operators: OPERATORS,
+  symmetryClasses: SYMMETRY_CLASSES,
+  classLegendOrder: CLASS_LEGEND_ORDER,
+  screwAxes: SCREW_AXES,
+  inversionCenters: INVERSION_CENTERS,
+  glidePlanes: GLIDE_PLANES,
+  elementLocusForOp,
+  defaultProjection: 'c',
+  primaryInversionOp: 5,
+  shortName: 'Pbca',
 }

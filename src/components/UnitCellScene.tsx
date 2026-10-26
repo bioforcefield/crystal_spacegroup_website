@@ -3,33 +3,25 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
-import { CELL, type GeneralPoint, type Mat3, type Vec3 } from '../data/pbca'
+import { cellCenterCart, cellCornersCart, fracToCart } from '../data/math'
 import {
   placedPositions,
   type PlacementMode,
 } from '../data/nearestImages'
+import type { GeneralPoint, Mat3, SpaceGroupDemo, Vec3 } from '../data/types'
 import { ChiralMotifMesh, orientationFromR } from './ChiralMotif'
 import SymmetryElements from './SymmetryElements'
 
 interface SceneProps {
+  demo: SpaceGroupDemo
   selectedIndex: number
   animateToken: number
   placementMode: PlacementMode
   showAllSites: boolean
 }
 
-function UnitCellWireframe() {
-  const { a, b, c } = CELL
-  const corners: Vec3[] = [
-    [0, 0, 0],
-    [a, 0, 0],
-    [a, b, 0],
-    [0, b, 0],
-    [0, 0, c],
-    [a, 0, c],
-    [a, b, c],
-    [0, b, c],
-  ]
+function UnitCellWireframe({ demo }: { demo: SpaceGroupDemo }) {
+  const corners = cellCornersCart(demo.cell)
   const edges: [number, number][] = [
     [0, 1],
     [1, 2],
@@ -81,8 +73,14 @@ function UnitCellWireframe() {
   )
 }
 
-function AxisLabels() {
-  const { a, b, c } = CELL
+function AxisLabels({ demo }: { demo: SpaceGroupDemo }) {
+  const o = fracToCart([0, 0, 0], demo.cell)
+  const aEnd = fracToCart([1, 0, 0], demo.cell)
+  const bEnd = fracToCart([0, 1, 0], demo.cell)
+  const cEnd = fracToCart([0, 0, 1], demo.cell)
+  const aQ = fracToCart([0.25, 0, 0], demo.cell)
+  const bQ = fracToCart([0, 0.25, 0], demo.cell)
+  const cQ = fracToCart([0, 0, 0.25], demo.cell)
   const label = (text: string, position: Vec3, color: string) => (
     <Billboard key={text} position={position}>
       <Text
@@ -97,14 +95,21 @@ function AxisLabels() {
       </Text>
     </Billboard>
   )
+  const bump = (p: Vec3, q: Vec3): Vec3 => {
+    const dx = q[0] - p[0]
+    const dy = q[1] - p[1]
+    const dz = q[2] - p[2]
+    const len = Math.hypot(dx, dy, dz) || 1
+    return [q[0] + (dx / len) * 0.12, q[1] + (dy / len) * 0.12, q[2] + (dz / len) * 0.12]
+  }
   return (
     <group>
-      {label('a', [a + 0.12, 0, 0], '#f87171')}
-      {label('b', [0, b + 0.12, 0], '#4ade80')}
-      {label('c', [0, 0, c + 0.12], '#60a5fa')}
-      <Line points={[[0, 0, 0], [a * 0.25, 0, 0]]} color="#f87171" lineWidth={2} />
-      <Line points={[[0, 0, 0], [0, b * 0.25, 0]]} color="#4ade80" lineWidth={2} />
-      <Line points={[[0, 0, 0], [0, 0, c * 0.25]]} color="#60a5fa" lineWidth={2} />
+      {label('a', bump(o, aEnd), '#f87171')}
+      {label('b', bump(o, bEnd), '#4ade80')}
+      {label('c', bump(o, cEnd), '#60a5fa')}
+      <Line points={[o, aQ]} color="#f87171" lineWidth={2} />
+      <Line points={[o, bQ]} color="#4ade80" lineWidth={2} />
+      <Line points={[o, cQ]} color="#60a5fa" lineWidth={2} />
     </group>
   )
 }
@@ -354,20 +359,16 @@ const DEFAULT_CAM_DIR = new THREE.Vector3(2.4, 1.9, 2.6).normalize()
 type SceneBounds = { center: THREE.Vector3; radius: number }
 
 function computeSceneBounds(
+  demo: SpaceGroupDemo,
   visibleCartesians: Vec3[],
 ): SceneBounds {
-  const { a, b, c } = CELL
-  const ox = a / 2
-  const oy = b / 2
-  const oz = c / 2
+  const centerCart = cellCenterCart(demo.cell)
+  const ox = centerCart[0]
+  const oy = centerCart[1]
+  const oz = centerCart[2]
   const box = new THREE.Box3()
-  // Unit-cell corners in world space (group is centered at -half cell).
-  for (const x of [0, a]) {
-    for (const y of [0, b]) {
-      for (const z of [0, c]) {
-        box.expandByPoint(new THREE.Vector3(x - ox, y - oy, z - oz))
-      }
-    }
+  for (const c of cellCornersCart(demo.cell)) {
+    box.expandByPoint(new THREE.Vector3(c[0] - ox, c[1] - oy, c[2] - oz))
   }
   for (const p of visibleCartesians) {
     box.expandByPoint(new THREE.Vector3(p[0] - ox, p[1] - oy, p[2] - oz))
@@ -461,6 +462,7 @@ function FitCamera({
 }
 
 function SceneContent({
+  demo,
   selectedIndex,
   animateToken,
   placementMode,
@@ -476,8 +478,8 @@ function SceneContent({
   resetToken: number
 }) {
   const placement = useMemo(
-    () => placedPositions(selectedIndex, placementMode),
-    [selectedIndex, placementMode],
+    () => placedPositions(demo, selectedIndex, placementMode),
+    [demo, selectedIndex, placementMode],
   )
   const { points, baseCartesian, imageCartesian } = placement
   const selected = points.find((p) => p.index === selectedIndex) ?? points[0]
@@ -493,9 +495,10 @@ function SceneContent({
   )
 
   const bounds = useMemo(
-    () => computeSceneBounds(visiblePoints.map((p) => p.cartesian)),
-    [visiblePoints],
+    () => computeSceneBounds(demo, visiblePoints.map((p) => p.cartesian)),
+    [demo, visiblePoints],
   )
+  const center = cellCenterCart(demo.cell)
 
   return (
     <>
@@ -511,10 +514,10 @@ function SceneContent({
         resetToken={resetToken}
       />
 
-      <group position={[-CELL.a / 2, -CELL.b / 2, -CELL.c / 2]}>
-        <UnitCellWireframe />
-        <SymmetryElements selectedIndex={selectedIndex} />
-        <AxisLabels />
+      <group position={[-center[0], -center[1], -center[2]]}>
+        <UnitCellWireframe demo={demo} />
+        <SymmetryElements demo={demo} selectedIndex={selectedIndex} />
+        <AxisLabels demo={demo} />
         <BaseImageConnector from={baseCartesian} to={imageCartesian} />
         {visiblePoints.map((p) => {
           const isBase = p.index === 1
@@ -557,6 +560,7 @@ function SceneContent({
 }
 
 export default function UnitCellScene({
+  demo,
   selectedIndex,
   animateToken,
   placementMode,
@@ -586,6 +590,7 @@ export default function UnitCellScene({
       gl={{ antialias: true }}
     >
       <SceneContent
+        demo={demo}
         selectedIndex={selectedIndex}
         animateToken={animateToken}
         placementMode={placementMode}
