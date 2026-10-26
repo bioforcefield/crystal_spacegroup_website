@@ -67,35 +67,65 @@ export function addFrac(a: Vec3, b: Vec3): Vec3 {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
 }
 
-/** β in radians; unique axis b monoclinic (α = γ = 90°). */
+/** β in radians; unique axis b monoclinic (α = γ = 90° when unset). */
 export function betaRad(cell: CellParams): number {
   const deg = cell.betaDeg ?? 90
   return (deg * Math.PI) / 180
 }
 
+/** γ in radians; hexagonal/trigonal (α = β = 90° when unset). */
+export function gammaRad(cell: CellParams): number {
+  const deg = cell.gammaDeg ?? 90
+  return (deg * Math.PI) / 180
+}
+
 /**
- * Fractional → Cartesian.
- * Unique-axis b: x = xa + zc cosβ, y = yb, z = zc sinβ.
+ * Fractional → Cartesian with α = 90° teaching cells.
+ * Supports monoclinic unique-b (β) and/or hexagonal (γ); both default to 90°.
+ * Orthogonalization matches ITA with α fixed at 90°:
+ *   x = a xf + b yf cosγ + c zf cosβ
+ *   y =         b yf sinγ − c zf cosβ cosγ / sinγ
+ *   z =         c zf √(1 − cos²β − cos²γ) / sinγ
  */
+function angleCosSin(deg: number): { cos: number; sin: number } {
+  // Snap common teaching angles so γ=90 / β=90 stay exactly orthogonal.
+  if (Math.abs(deg - 90) < 1e-9) return { cos: 0, sin: 1 }
+  if (Math.abs(deg - 120) < 1e-9) return { cos: -0.5, sin: Math.sqrt(3) / 2 }
+  if (Math.abs(deg - 60) < 1e-9) return { cos: 0.5, sin: Math.sqrt(3) / 2 }
+  const rad = (deg * Math.PI) / 180
+  return { cos: Math.cos(rad), sin: Math.sin(rad) }
+}
+
 export function fracToCart(p: Vec3, cell: CellParams): Vec3 {
-  const beta = betaRad(cell)
-  const cosB = Math.cos(beta)
-  const sinB = Math.sin(beta)
+  const betaDeg = cell.betaDeg ?? 90
+  const gammaDeg = cell.gammaDeg ?? 90
+  const { cos: cosB } = angleCosSin(betaDeg)
+  const { cos: cosG, sin: sinG } = angleCosSin(gammaDeg)
+  const sinGSafe = Math.abs(sinG) < 1e-12 ? 1 : sinG
+  // α = 90° ⇒ √(1 − cos²β − cos²γ) = √(sin²β − cos²γ) when γ free;
+  // with snapped 90/120 this matches sinβ for monoclinic and 1 for hex.
+  const volFactor = Math.sqrt(Math.max(0, 1 - cosB * cosB - cosG * cosG))
   return [
-    p[0] * cell.a + p[2] * cell.c * cosB,
-    p[1] * cell.b,
-    p[2] * cell.c * sinB,
+    p[0] * cell.a + p[1] * cell.b * cosG + p[2] * cell.c * cosB,
+    p[1] * cell.b * sinG - p[2] * cell.c * cosB * cosG / sinGSafe,
+    p[2] * cell.c * volFactor / sinGSafe,
   ]
 }
 
-/** Cartesian → fractional (inverse of fracToCart; unique-axis b). */
+/** Cartesian → fractional (inverse of fracToCart; α = 90°). */
 export function cartToFrac(p: Vec3, cell: CellParams): Vec3 {
-  const beta = betaRad(cell)
-  const cosB = Math.cos(beta)
-  const sinB = Math.sin(beta)
-  const zFrac = Math.abs(sinB) < 1e-12 ? 0 : p[2] / (cell.c * sinB)
-  const yFrac = p[1] / cell.b
-  const xFrac = (p[0] - zFrac * cell.c * cosB) / cell.a
+  const betaDeg = cell.betaDeg ?? 90
+  const gammaDeg = cell.gammaDeg ?? 90
+  const { cos: cosB } = angleCosSin(betaDeg)
+  const { cos: cosG, sin: sinG } = angleCosSin(gammaDeg)
+  const sinGSafe = Math.abs(sinG) < 1e-12 ? 1 : sinG
+  const volFactor = Math.sqrt(Math.max(0, 1 - cosB * cosB - cosG * cosG))
+  const volSafe = Math.abs(volFactor) < 1e-12 ? 1 : volFactor
+  const zFrac = (p[2] * sinGSafe) / (cell.c * volSafe)
+  const yFrac =
+    (p[1] + zFrac * cell.c * cosB * cosG / sinGSafe) / (cell.b * sinGSafe)
+  const xFrac =
+    (p[0] - yFrac * cell.b * cosG - zFrac * cell.c * cosB) / cell.a
   return [xFrac, yFrac, zFrac]
 }
 

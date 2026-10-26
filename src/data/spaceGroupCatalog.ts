@@ -1140,7 +1140,7 @@ export const SPACE_GROUPS: SpaceGroupEntry[] = [
     hm: 'R-3',
     system: 'trigonal',
     status: 'ready',
-    slug: 'r3'
+    slug: 'rbar3'
   },
   {
     number: 149,
@@ -1266,14 +1266,14 @@ export const SPACE_GROUPS: SpaceGroupEntry[] = [
     hm: 'R-3m',
     system: 'trigonal',
     status: 'ready',
-    slug: 'r3m'
+    slug: 'rbar3m'
   },
   {
     number: 167,
     hm: 'R-3c',
     system: 'trigonal',
     status: 'ready',
-    slug: 'r3c'
+    slug: 'rbar3c'
   },
   {
     number: 168,

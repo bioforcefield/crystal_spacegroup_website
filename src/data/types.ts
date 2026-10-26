@@ -3,18 +3,21 @@
 export type Vec3 = [number, number, number]
 export type Mat3 = [Vec3, Vec3, Vec3]
 
-/** Teaching cell; optional β (deg) for monoclinic unique-axis b. */
+/** Teaching cell; optional β (monoclinic unique-b) and/or γ (hex/trigonal). */
 export interface CellParams {
   a: number
   b: number
   c: number
-  /** Monoclinic angle β in degrees (default 90). Unique axis b. */
+  /** Monoclinic angle β in degrees (default 90). Unique axis b; α = γ = 90°. */
   betaDeg?: number
+  /** Hexagonal/trigonal angle γ in degrees (default 90). α = β = 90°, typically a = b. */
+  gammaDeg?: number
 }
 
 export type SymmetryClassId =
   | 'identity'
   | 'twofold'
+  | 'threefold'
   | 'screw'
   | 'inversion'
   | 'a-glide'
@@ -57,8 +60,8 @@ export interface ScrewAxisSpec {
   locus: string
   opIndex: number
   primary: boolean
-  /** Pure 2-fold vs 2₁ screw (default '21' for backward compat). */
-  kind?: '2' | '21'
+  /** Pure 2-fold, 2₁ screw, or 3-fold (default '21' for backward compat). */
+  kind?: '2' | '21' | '3'
 }
 
 export interface InversionCenterSpec {

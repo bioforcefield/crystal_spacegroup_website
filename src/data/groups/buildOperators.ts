@@ -44,6 +44,34 @@ function classify(R: Mat3, t: Vec3): { classId: SymmetryClassId; label: string }
     }
     return { classId: 'twofold', label: '2-fold ‖ b' }
   }
+  // 3-fold ‖ c (hex/trigonal): −y,x−y,z and −x+y,−x,z
+  const THREE_P: Mat3 = [
+    [0, -1, 0],
+    [1, -1, 0],
+    [0, 0, 1],
+  ]
+  const THREE_M: Mat3 = [
+    [-1, 1, 0],
+    [-1, 0, 0],
+    [0, 0, 1],
+  ]
+  if (matClose(R, THREE_P, 1e-6) || matClose(R, THREE_M, 1e-6)) {
+    return { classId: 'threefold', label: '3-fold ‖ c' }
+  }
+  // −3 ‖ c (rotoinversion): y,−x+y,−z and x−y,x,−z
+  const BAR3_A: Mat3 = [
+    [0, 1, 0],
+    [-1, 1, 0],
+    [0, 0, -1],
+  ]
+  const BAR3_B: Mat3 = [
+    [1, -1, 0],
+    [1, 0, 0],
+    [0, 0, -1],
+  ]
+  if (matClose(R, BAR3_A, 1e-6) || matClose(R, BAR3_B, 1e-6)) {
+    return { classId: 'threefold', label: '−3 ‖ c' }
+  }
   if (matClose(R, MIRROR_B, 1e-6)) {
     const tx = ((t[0] % 1) + 1) % 1
     const tz = ((t[2] % 1) + 1) % 1

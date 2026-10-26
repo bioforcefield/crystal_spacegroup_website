@@ -50,7 +50,7 @@ const SEED: Vec3 = [0.17, 0.23, 0.31]
 function teachingCell(system: CrystalSystemId): CellParams {
   switch (system) {
     case 'triclinic':
-      // Unique-b β only today — full α/γ not modeled (see CONTRACT.md).
+      // Teaching: unique-b β only (full triclinic α/γ still deferred).
       return { a: 1, b: 1.2, c: 1.4, betaDeg: 105 }
     case 'monoclinic':
       return { a: 1, b: 1.15, c: 1.35, betaDeg: 110 }
@@ -60,8 +60,7 @@ function teachingCell(system: CrystalSystemId): CellParams {
       return { a: 1, b: 1, c: 1.3 }
     case 'trigonal':
     case 'hexagonal':
-      // Orthogonal teaching cell: γ=120° not modeled in fracToCart yet.
-      return { a: 1, b: 1, c: 1.5 }
+      return { a: 1, b: 1, c: 1.5, gammaDeg: 120 }
     case 'cubic':
       return { a: 1, b: 1, c: 1 }
     default:

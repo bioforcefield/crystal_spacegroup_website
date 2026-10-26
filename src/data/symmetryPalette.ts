@@ -5,6 +5,7 @@ import type { SymmetryClass, SymmetryClassId } from './types'
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },
   twofold: { id: 'twofold', label: '2-fold', color: '#c4b5fd' },
+  threefold: { id: 'threefold', label: '3-fold', color: '#67e8f9' },
   screw: { id: 'screw', label: 'screw', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
   'a-glide': { id: 'a-glide', label: 'a-glide', color: '#fbbf24' },
@@ -17,6 +18,7 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
 export const CLASS_PALETTE_ORDER: SymmetryClassId[] = [
   'identity',
   'twofold',
+  'threefold',
   'screw',
   'inversion',
   'a-glide',

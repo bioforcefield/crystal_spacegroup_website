@@ -25,6 +25,12 @@ describe('registry smoke', () => {
     expect(getDemo(33)?.meta.hm).toBe('Pna21')
     expect(getDemo(4)?.meta.hm).toBe('P21')
     expect(getDemo(9)?.meta.hm).toBe('Cc')
+    expect(getDemo(148)?.meta.hm).toBe('R-3')
+    expect(getDemo(7)?.meta.hm).toBe('Pc')
+    expect(getDemo(11)?.meta.hm).toBe('P21/m')
+    expect(getDemo(12)?.meta.hm).toBe('C2/m')
+    expect(getDemo(13)?.meta.hm).toBe('P2/c')
+    expect(getDemo(18)?.meta.hm).toBe('P21212')
     expect(getDemo('pbar1')?.meta.number).toBe(2)
     expect(getDemo('P-1')?.meta.number).toBe(2)
     expect(getDemo('p-1')?.meta.number).toBe(2)
@@ -40,6 +46,13 @@ describe('registry smoke', () => {
     expect(getDemo('P21')?.meta.number).toBe(4)
     expect(getDemo('cc')?.meta.number).toBe(9)
     expect(getDemo('Cc')?.meta.number).toBe(9)
+    expect(getDemo('rbar3')?.meta.number).toBe(148)
+    expect(getDemo('R-3')?.meta.number).toBe(148)
+    expect(getDemo('pc')?.meta.number).toBe(7)
+    expect(getDemo('p21m')?.meta.number).toBe(11)
+    expect(getDemo('c2m')?.meta.number).toBe(12)
+    expect(getDemo('p2c')?.meta.number).toBe(13)
+    expect(getDemo('p21212')?.meta.number).toBe(18)
   })
 
   it('resolves P1 as number 1 (not P-1)', () => {
@@ -56,9 +69,9 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the thirteen golden demos', () => {
+  it('has the nineteen golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      1, 2, 4, 5, 9, 14, 15, 19, 29, 33, 60, 61, 62,
+      1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 29, 33, 60, 61, 62, 148,
     ])
     expect(allHandDemos()).toEqual(demos)
   })
@@ -138,8 +151,8 @@ describe('generated catalog 1–230', () => {
     expect(bad).toEqual([])
   })
 
-  it('hand overrides win over generated for Wave A set', () => {
-    const handNums = [1, 2, 4, 5, 9, 14, 15, 19, 29, 33, 60, 61, 62]
+  it('hand overrides win over generated for hand-polished set', () => {
+    const handNums = [1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 29, 33, 60, 61, 62, 148]
     for (const n of handNums) {
       expect(getDemo(n)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     }
@@ -162,6 +175,14 @@ describe('generated catalog 1–230', () => {
     expect(getDemo(60)!.operators.length).toBe(8)
     expect(getDemo(29)!.operators.length).toBe(4)
     expect(getDemo(19)!.screwAxes.length).toBe(6)
+    expect(getDemo(148)!.operators.length).toBe(18)
+    expect(getDemo(148)!.cell.gammaDeg).toBe(120)
+    expect(getDemo(148)!.screwAxes.some((a) => a.kind === '3')).toBe(true)
+    expect(getDemo(7)!.operators.length).toBe(2)
+    expect(getDemo(11)!.operators.length).toBe(4)
+    expect(getDemo(12)!.operators.length).toBe(8)
+    expect(getDemo(13)!.operators.length).toBe(4)
+    expect(getDemo(18)!.operators.length).toBe(4)
   })
 })
 

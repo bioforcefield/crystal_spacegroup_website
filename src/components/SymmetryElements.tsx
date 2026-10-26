@@ -89,7 +89,9 @@ function ScrewAxisVisual({
   const color =
     kind === '2'
       ? classColor(demo, 'twofold')
-      : classColor(demo, 'screw')
+      : kind === '3'
+        ? classColor(demo, 'threefold')
+        : classColor(demo, 'screw')
   const opacity = emphasized ? EMPH_LINE : FAINT
   const lineWidth = emphasized ? 3.2 : 1.2
   const [p0, p1] = cartAlong(demo, axis.origin, axis.direction, 0, 1)
@@ -159,8 +161,9 @@ function ScrewAxisVisual({
     p0[1] + axisUnit[1] * axisLen * 0.35,
     p0[2] + axisUnit[2] * axisLen * 0.35,
   ]
+  const arcSpan = kind === '3' ? (2 * Math.PI) / 3 : Math.PI
   const arcPts: Vec3[] = [0, 0.25, 0.5, 0.75, 1].map((t) => {
-    const ang = Math.PI * t
+    const ang = arcSpan * t
     return [
       arcCenter[0] + r[0] * Math.cos(ang) + s[0] * Math.sin(ang),
       arcCenter[1] + r[1] * Math.cos(ang) + s[1] * Math.sin(ang),
@@ -168,7 +171,7 @@ function ScrewAxisVisual({
     ]
   })
 
-  const symbol = kind === '2' ? '2' : '2₁'
+  const symbol = kind === '2' ? '2' : kind === '3' ? '3' : '2₁'
 
   return (
     <group>
@@ -338,7 +341,7 @@ function GlidePlaneVisual({
   const corners = useMemo(
     () => fracCorners.map((p) => fracToCart(p, cell)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [n, v, cell.a, cell.b, cell.c, cell.betaDeg],
+    [n, v, cell.a, cell.b, cell.c, cell.betaDeg, cell.gammaDeg],
   )
   const geom = useMemo(() => {
     const g = new THREE.BufferGeometry()
@@ -474,7 +477,9 @@ export default function SymmetryElements({ demo, selectedIndex }: Props) {
 
       {demo.screwAxes.map((axis) => {
         const emphasized =
-          (classId === 'screw' || classId === 'twofold') &&
+          (classId === 'screw' ||
+            classId === 'twofold' ||
+            classId === 'threefold') &&
           axis.opIndex === selectedIndex &&
           axis.primary
         return (

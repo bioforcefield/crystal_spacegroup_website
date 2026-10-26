@@ -62,6 +62,7 @@ export default function OperatorPanel({
     placementMode === 'nearest' ? 'BASE (nearest)' : 'BASE (in cell)'
   const { meta } = demo
   const beta = demo.cell.betaDeg
+  const gamma = demo.cell.gammaDeg
 
   return (
     <aside className="panel">
@@ -95,6 +96,12 @@ export default function OperatorPanel({
             <div>
               <dt>β (teaching)</dt>
               <dd>{beta}°</dd>
+            </div>
+          )}
+          {gamma != null && gamma !== 90 && (
+            <div>
+              <dt>γ (teaching)</dt>
+              <dd>{gamma}°</dd>
             </div>
           )}
         </dl>

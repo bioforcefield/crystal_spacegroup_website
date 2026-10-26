@@ -189,6 +189,9 @@ export default function SpaceGroupPage({ demo }: Props) {
           {demo.cell.betaDeg && demo.cell.betaDeg !== 90
             ? ` · Monoclinic β = ${demo.cell.betaDeg}°`
             : ''}
+          {demo.cell.gammaDeg && demo.cell.gammaDeg !== 90
+            ? ` · Hexagonal γ = ${demo.cell.gammaDeg}°`
+            : ''}
         </footer>
       </main>
     </div>

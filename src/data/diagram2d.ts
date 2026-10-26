@@ -2,7 +2,7 @@
  * Projection helpers for interactive UCL/ITA-style 2D space-group diagrams.
  */
 
-import { betaRad } from './math'
+import { betaRad, gammaRad } from './math'
 import type {
   CellParams,
   GlidePlaneSpec,
@@ -90,6 +90,16 @@ export function planeEmbed(
     return {
       x: u * cell.a + v * cell.c * cosB,
       y: v * cell.c * sinB,
+    }
+  }
+  // ↓c (ab): hexagonal/trigonal γ ≠ 90° → parallelogram
+  if (proj.dir === 'c') {
+    const gamma = gammaRad(cell)
+    const cosG = Math.cos(gamma)
+    const sinG = Math.sin(gamma)
+    return {
+      x: u * cell.a + v * cell.b * cosG,
+      y: v * cell.b * sinG,
     }
   }
   return { x: u * proj.sizeU, y: v * proj.sizeV }
@@ -282,6 +292,14 @@ export function projectedAspect(
     const cosB = Math.cos(beta)
     const width = cell.a + Math.abs(cell.c * cosB)
     const height = cell.c * Math.abs(sinB)
+    return { width, height }
+  }
+  if (proj.dir === 'c') {
+    const gamma = gammaRad(cell)
+    const cosG = Math.cos(gamma)
+    const sinG = Math.sin(gamma)
+    const width = cell.a + Math.abs(cell.b * cosG)
+    const height = cell.b * Math.abs(sinG)
     return { width, height }
   }
   const sizes = [cell.a, cell.b, cell.c]
