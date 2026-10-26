@@ -345,8 +345,8 @@ function GhostAnimator({
 }
 
 
-const BOUND_PADDING = 0.35
-const FIT_MARGIN = 1.2
+const BOUND_PADDING = 0.3
+const FIT_MARGIN = 1.08
 const USER_ZOOM_MIN = 0.6
 const USER_ZOOM_MAX = 2.5
 const DEFAULT_CAM_DIR = new THREE.Vector3(2.4, 1.9, 2.6).normalize()

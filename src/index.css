@@ -530,13 +530,13 @@ button {
 }
 
 .viewport-body .canvas-wrap {
-  flex: 1 1 55%;
+  flex: 1 1 62%;
   min-width: 0;
   min-height: 0;
 }
 
 .diagram2d {
-  flex: 1 1 45%;
+  flex: 1 1 38%;
   width: auto;
   height: auto;
   max-height: none;
