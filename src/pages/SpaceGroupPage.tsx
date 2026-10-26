@@ -93,7 +93,8 @@ export default function SpaceGroupPage({ demo }: Props) {
                 onClick={() => setPlacementMode('nearest')}
                 title="Place BASE/IMAGE near the selected element (may leave the cell)"
               >
-                Nearest images
+                <span className="label-full">Nearest images</span>
+                <span className="label-short">Near</span>
               </button>
               <button
                 type="button"
@@ -103,7 +104,8 @@ export default function SpaceGroupPage({ demo }: Props) {
                 onClick={() => setPlacementMode('wrapped')}
                 title="Wrap every motif into the unit cell [0,1)³"
               >
-                In cell
+                <span className="label-full">In cell</span>
+                <span className="label-short">Cell</span>
               </button>
             </div>
             <div
@@ -117,7 +119,8 @@ export default function SpaceGroupPage({ demo }: Props) {
                 onClick={() => setShowAllSites(true)}
                 title={`Show all ${nOps} general-position motifs`}
               >
-                All sites
+                <span className="label-full">All sites</span>
+                <span className="label-short">All</span>
               </button>
               <button
                 type="button"
@@ -125,7 +128,8 @@ export default function SpaceGroupPage({ demo }: Props) {
                 onClick={() => setShowAllSites(false)}
                 title="Show only BASE and its IMAGE under the selected operator"
               >
-                BASE + IMAGE
+                <span className="label-full">BASE + IMAGE</span>
+                <span className="label-short">B+I</span>
               </button>
             </div>
             <button
@@ -133,7 +137,8 @@ export default function SpaceGroupPage({ demo }: Props) {
               className="btn"
               onClick={() => setResetToken((t) => t + 1)}
             >
-              Reset view
+              <span className="label-full">Reset view</span>
+              <span className="label-short">Reset</span>
             </button>
           </div>
         </div>

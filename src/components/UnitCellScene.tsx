@@ -354,7 +354,15 @@ const BOUND_PADDING = 0.3
 const FIT_MARGIN = 1.08
 const USER_ZOOM_MIN = 0.6
 const USER_ZOOM_MAX = 2.5
-const DEFAULT_CAM_DIR = new THREE.Vector3(2.4, 1.9, 2.6).normalize()
+/** Camera look-from relative to cell-centred scene. Negative X/Z puts the
+ * crystallographic origin (at −center) toward the front of the default view;
+ * +Y keeps a slight elevated angle. */
+const DEFAULT_CAM_DIR = new THREE.Vector3(-2.4, 1.55, -2.6).normalize()
+const DEFAULT_CAM_POS: [number, number, number] = [
+  DEFAULT_CAM_DIR.x * 4,
+  DEFAULT_CAM_DIR.y * 4,
+  DEFAULT_CAM_DIR.z * 4,
+]
 
 type SceneBounds = { center: THREE.Vector3; radius: number }
 
@@ -620,13 +628,13 @@ export default function UnitCellScene({
     const ctrl = controlsRef.current
     if (!ctrl) return
     ctrl.target.set(0, 0, 0)
-    ctrl.object.position.set(2.4, 1.9, 2.6)
+    ctrl.object.position.set(...DEFAULT_CAM_POS)
     ctrl.update()
   }, [resetToken])
 
   return (
     <Canvas
-      camera={{ position: [2.4, 1.9, 2.6], fov: 42, near: 0.1, far: 80 }}
+      camera={{ position: DEFAULT_CAM_POS, fov: 42, near: 0.1, far: 80 }}
       dpr={[1, 2]}
       gl={{ antialias: true }}
     >
