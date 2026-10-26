@@ -19,6 +19,7 @@ function SiteChrome({ children, variant }: { children: ReactNode; variant: 'inde
             Home
           </NavLink>
           <a href="/#explore">Explore</a>
+          <a href="/#stats">Statistics</a>
           <a href="/#guide">Guide</a>
           <NavLink to="/sg/61">Pbca</NavLink>
         </nav>

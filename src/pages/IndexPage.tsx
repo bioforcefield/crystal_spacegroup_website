@@ -1,6 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import SymmetryPrimer from '../components/SymmetryPrimer'
+import CsdStatistics from '../components/CsdStatistics'
 import {
   CRYSTAL_SYSTEMS,
   READY_COUNT,
@@ -17,6 +18,7 @@ type SystemFilter = CrystalSystemId | 'all'
 const NAV = [
   { id: 'explore', label: 'Explore' },
   { id: 'index', label: 'Index' },
+  { id: 'stats', label: 'Statistics' },
   { id: 'primer', label: 'Symmetry' },
   { id: 'guide', label: 'How to use' },
 ] as const
@@ -250,6 +252,20 @@ export default function IndexPage() {
               <p className="empty-hint">No groups match that filter.</p>
             ) : null}
           </div>
+        </section>
+
+
+        <section id="stats" className="index-section">
+          <div className="section-head">
+            <h2>In the CSD · space-group statistics</h2>
+            <p>
+              Why bother learning all 230? In the Cambridge Structural Database,
+              a small set of space groups covers the vast majority of organic and
+              organometallic crystal structures — so the groups you meet first in
+              the lab are usually the ones that matter most for teaching.
+            </p>
+          </div>
+          <CsdStatistics />
         </section>
 
         <section id="primer" className="index-section">
