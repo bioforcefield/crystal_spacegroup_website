@@ -31,6 +31,17 @@ describe('registry smoke', () => {
     expect(getDemo(12)?.meta.hm).toBe('C2/m')
     expect(getDemo(13)?.meta.hm).toBe('P2/c')
     expect(getDemo(18)?.meta.hm).toBe('P21212')
+    expect(getDemo(88)?.meta.hm).toBe('I41/a')
+    expect(getDemo(56)?.meta.hm).toBe('Pccn')
+    expect(getDemo(43)?.meta.hm).toBe('Fdd2')
+    expect(getDemo(20)?.meta.hm).toBe('C2221')
+    expect(getDemo(36)?.meta.hm).toBe('Cmc21')
+    expect(getDemo(146)?.meta.hm).toBe('R3')
+    expect(getDemo(82)?.meta.hm).toBe('I-4')
+    expect(getDemo(64)?.meta.hm).toBe('Cmca')
+    expect(getDemo(92)?.meta.hm).toBe('P41212')
+    expect(getDemo(96)?.meta.hm).toBe('P43212')
+    expect(getDemo(167)?.meta.hm).toBe('R-3c')
     expect(getDemo('pbar1')?.meta.number).toBe(2)
     expect(getDemo('P-1')?.meta.number).toBe(2)
     expect(getDemo('p-1')?.meta.number).toBe(2)
@@ -69,9 +80,9 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the nineteen golden demos', () => {
+  it('has the 30 golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 29, 33, 60, 61, 62, 148,
+      1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 82, 88, 92, 96, 146, 148, 167,
     ])
     expect(allHandDemos()).toEqual(demos)
   })
@@ -152,7 +163,7 @@ describe('generated catalog 1–230', () => {
   })
 
   it('hand overrides win over generated for hand-polished set', () => {
-    const handNums = [1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 29, 33, 60, 61, 62, 148]
+    const handNums = [1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 82, 88, 92, 96, 146, 148, 167]
     for (const n of handNums) {
       expect(getDemo(n)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     }
@@ -183,6 +194,16 @@ describe('generated catalog 1–230', () => {
     expect(getDemo(12)!.operators.length).toBe(8)
     expect(getDemo(13)!.operators.length).toBe(4)
     expect(getDemo(18)!.operators.length).toBe(4)
+    expect(getDemo(88)!.operators.length).toBe(16)
+    expect(getDemo(88)!.screwAxes.some((a) => a.kind === '41')).toBe(true)
+    expect(getDemo(56)!.operators.length).toBe(8)
+    expect(getDemo(43)!.glidePlanes.some((g) => g.classId === 'd-glide')).toBe(true)
+    expect(getDemo(43)!.operators.length).toBe(16)
+    expect(getDemo(20)!.operators.length).toBe(8)
+    expect(getDemo(92)!.screwAxes.some((a) => a.kind === '41')).toBe(true)
+    expect(getDemo(96)!.screwAxes.some((a) => a.kind === '43')).toBe(true)
+    expect(getDemo(167)!.operators.length).toBe(36)
+    expect(getDemo(167)!.cell.gammaDeg).toBe(120)
   })
 })
 

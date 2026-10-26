@@ -18,12 +18,14 @@ export type SymmetryClassId =
   | 'identity'
   | 'twofold'
   | 'threefold'
+  | 'fourfold'
   | 'screw'
   | 'inversion'
   | 'a-glide'
   | 'b-glide'
   | 'c-glide'
   | 'n-glide'
+  | 'd-glide'
 
 export interface SymmetryClass {
   id: SymmetryClassId
@@ -60,8 +62,8 @@ export interface ScrewAxisSpec {
   locus: string
   opIndex: number
   primary: boolean
-  /** Pure 2-fold, 2₁ screw, or 3-fold (default '21' for backward compat). */
-  kind?: '2' | '21' | '3'
+  /** Axis order/type (default '21' for backward compat). */
+  kind?: '2' | '21' | '3' | '4' | '41' | '43' | 'bar4'
 }
 
 export interface InversionCenterSpec {
@@ -75,7 +77,10 @@ export interface GlidePlaneSpec {
   normalAxis: 0 | 1 | 2
   glide: Vec3
   label: string
-  classId: Extract<SymmetryClassId, 'a-glide' | 'b-glide' | 'c-glide' | 'n-glide'>
+  classId: Extract<
+    SymmetryClassId,
+    'a-glide' | 'b-glide' | 'c-glide' | 'n-glide' | 'd-glide'
+  >
   opIndex: number
   primary: boolean
   locus: string

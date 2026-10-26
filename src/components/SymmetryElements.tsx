@@ -91,7 +91,9 @@ function ScrewAxisVisual({
       ? classColor(demo, 'twofold')
       : kind === '3'
         ? classColor(demo, 'threefold')
-        : classColor(demo, 'screw')
+        : kind === '4' || kind === 'bar4'
+          ? classColor(demo, 'fourfold')
+          : classColor(demo, 'screw')
   const opacity = emphasized ? EMPH_LINE : FAINT
   const lineWidth = emphasized ? 3.2 : 1.2
   const [p0, p1] = cartAlong(demo, axis.origin, axis.direction, 0, 1)
@@ -161,7 +163,12 @@ function ScrewAxisVisual({
     p0[1] + axisUnit[1] * axisLen * 0.35,
     p0[2] + axisUnit[2] * axisLen * 0.35,
   ]
-  const arcSpan = kind === '3' ? (2 * Math.PI) / 3 : Math.PI
+  const arcSpan =
+    kind === '3'
+      ? (2 * Math.PI) / 3
+      : kind === '4' || kind === '41' || kind === '43' || kind === 'bar4'
+        ? Math.PI / 2
+        : Math.PI
   const arcPts: Vec3[] = [0, 0.25, 0.5, 0.75, 1].map((t) => {
     const ang = arcSpan * t
     return [
@@ -171,7 +178,20 @@ function ScrewAxisVisual({
     ]
   })
 
-  const symbol = kind === '2' ? '2' : kind === '3' ? '3' : '2₁'
+  const symbol =
+    kind === '2'
+      ? '2'
+      : kind === '3'
+        ? '3'
+        : kind === '4'
+          ? '4'
+          : kind === '41'
+            ? '4₁'
+            : kind === '43'
+              ? '4₃'
+              : kind === 'bar4'
+                ? '−4'
+                : '2₁'
 
   return (
     <group>
@@ -190,7 +210,7 @@ function ScrewAxisVisual({
             color={color}
             opacity={opacity}
           />
-          {kind === '21' && (
+          {(kind === '21' || kind === '41' || kind === '43') && (
             <ArrowHead
               position={headFar}
               direction={axisUnit}
@@ -217,7 +237,7 @@ function ScrewAxisVisual({
             opacity={opacity}
             scale={0.7}
           />
-          {kind === '21' && (
+          {(kind === '21' || kind === '41' || kind === '43') && (
             <>
               <Line
                 points={[tickFrom, tickTo]}
@@ -241,7 +261,7 @@ function ScrewAxisVisual({
                   outlineWidth={0.005}
                   outlineColor="#0f172a"
                 >
-                  ½
+                  {kind === '41' ? '¼' : kind === '43' ? '¾' : '½'}
                 </Text>
               </Billboard>
             </>
@@ -479,7 +499,8 @@ export default function SymmetryElements({ demo, selectedIndex }: Props) {
         const emphasized =
           (classId === 'screw' ||
             classId === 'twofold' ||
-            classId === 'threefold') &&
+            classId === 'threefold' ||
+            classId === 'fourfold') &&
           axis.opIndex === selectedIndex &&
           axis.primary
         return (

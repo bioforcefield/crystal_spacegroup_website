@@ -549,10 +549,10 @@ export const SPACE_GROUPS: SpaceGroupEntry[] = [
   },
   {
     number: 64,
-    hm: 'Cmce',
+    hm: 'Cmca',
     system: 'orthorhombic',
     status: 'ready',
-    slug: 'cmce'
+    slug: 'cmca'
   },
   {
     number: 65,
@@ -678,7 +678,7 @@ export const SPACE_GROUPS: SpaceGroupEntry[] = [
     hm: 'I-4',
     system: 'tetragonal',
     status: 'ready',
-    slug: 'i4'
+    slug: 'ibar4'
   },
   {
     number: 83,

@@ -14,11 +14,22 @@ import { c2Demo } from './c2'
 import { pbcnDemo } from './pbcn'
 import { pca21Demo } from './pca21'
 import { rbar3Demo } from './rbar3'
+import { rbar3cDemo } from './rbar3c'
 import { pcDemo } from './pc'
 import { p21mDemo } from './p21m'
 import { c2mDemo } from './c2m'
 import { p2cDemo } from './p2c'
 import { p21212Demo } from './p21212'
+import { i41aDemo } from './i41a'
+import { pccnDemo } from './pccn'
+import { fdd2Demo } from './fdd2'
+import { c2221Demo } from './c2221'
+import { cmc21Demo } from './cmc21'
+import { r3Demo } from './r3'
+import { ibar4Demo } from './ibar4'
+import { cmcaDemo } from './cmca'
+import { p41212Demo } from './p41212'
+import { p43212Demo } from './p43212'
 import { buildGeneratedDemo } from './generatedDemo'
 import { findGroup } from './spaceGroupCatalog'
 import type { SpaceGroupDemo } from './types'
@@ -51,12 +62,23 @@ const HAND_DEMOS: SpaceGroupDemo[] = [
   c2cDemo,
   p21212Demo,
   p212121Demo,
+  c2221Demo,
   pca21Demo,
   pna21Demo,
+  cmc21Demo,
+  fdd2Demo,
+  pccnDemo,
   pbcnDemo,
   pbcaDemo,
   pnmaDemo,
+  cmcaDemo,
+  ibar4Demo,
+  i41aDemo,
+  p41212Demo,
+  p43212Demo,
+  r3Demo,
   rbar3Demo,
+  rbar3cDemo,
 ]
 
 const handByNumber = new Map(HAND_DEMOS.map((d) => [d.meta.number, d]))
@@ -117,10 +139,21 @@ export {
   c2cDemo,
   p21212Demo,
   p212121Demo,
+  c2221Demo,
   pca21Demo,
   pna21Demo,
+  cmc21Demo,
+  fdd2Demo,
+  pccnDemo,
   pbcnDemo,
   pbcaDemo,
   pnmaDemo,
+  cmcaDemo,
+  ibar4Demo,
+  i41aDemo,
+  p41212Demo,
+  p43212Demo,
+  r3Demo,
   rbar3Demo,
+  rbar3cDemo,
 }

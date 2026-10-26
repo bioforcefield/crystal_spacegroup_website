@@ -22,12 +22,14 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },
   twofold: { id: 'twofold', label: '2-fold', color: '#c4b5fd' },
   threefold: { id: 'threefold', label: '3-fold', color: '#67e8f9' },
+  fourfold: { id: 'fourfold', label: '4-fold', color: '#a5b4fc' },
   screw: { id: 'screw', label: '2₁ screw ‖ c', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
   'a-glide': { id: 'a-glide', label: 'a-glide ⊥ b', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
   'c-glide': { id: 'c-glide', label: 'c-glide ⊥ a', color: '#fb923c' },
   'n-glide': { id: 'n-glide', label: 'n-glide', color: '#2dd4bf' },
+  'd-glide': { id: 'd-glide', label: 'd-glide', color: '#f9a8d4' },
 }
 
 export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
