@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   SEED,
   SYMMETRY_CLASSES,
@@ -419,16 +419,34 @@ export default function SpaceGroupDiagram2D({
   onSelect,
 }: Props) {
   const [projDir, setProjDir] = useState<ProjectionDir>(DEFAULT_PROJECTION)
+  const plotRef = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState({ w: 440, h: 300 })
+
+  useEffect(() => {
+    const el = plotRef.current
+    if (!el) return
+    const sync = () => {
+      const r = el.getBoundingClientRect()
+      const w = Math.max(160, Math.round(r.width))
+      const h = Math.max(140, Math.round(r.height))
+      setSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }))
+    }
+    sync()
+    const ro = new ResizeObserver(sync)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   const proj = PROJECTIONS[projDir]
   const points = useMemo(() => generalPositions(SEED), [])
   const screws = useMemo(() => allProjectedScrews(proj), [proj])
   const glides = useMemo(() => allProjectedGlides(proj), [proj])
   const aspect = projectedAspect(proj)
 
-  const viewW = 440
-  const viewH = 300
-  const plotW = viewW - PAD.left - PAD.right
-  const plotH = viewH - PAD.top - PAD.bottom
+  const viewW = size.w
+  const viewH = size.h
+  const plotW = Math.max(40, viewW - PAD.left - PAD.right)
+  const plotH = Math.max(40, viewH - PAD.top - PAD.bottom)
   const scale = Math.min(plotW / aspect.width, plotH / aspect.height)
   const cellW = aspect.width * scale
   const cellH = aspect.height * scale
@@ -471,9 +489,13 @@ export default function SpaceGroupDiagram2D({
         </div>
       </header>
 
+      <div className="diagram2d-plot" ref={plotRef}>
       <svg
         className="diagram2d-svg"
+        width="100%"
+        height="100%"
         viewBox={`0 0 ${viewW} ${viewH}`}
+        preserveAspectRatio="none"
         role="img"
         aria-label={`Pbca diagram looking down ${proj.axisW}`}
       >
@@ -660,6 +682,7 @@ export default function SpaceGroupDiagram2D({
           </text>
         </g>
       </svg>
+      </div>
     </section>
   )
 }
