@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  SEED,
   SYMMETRY_CLASSES,
-  generalPositions,
   type SymmetryClassId,
 } from '../data/pbca'
 import {
@@ -13,16 +11,20 @@ import {
   formatHeightLabel,
   projectFrac,
   projectInversions,
-  projectedAspect,
   type ProjectionDir,
   type ProjectedGlide,
   type ProjectedScrew,
 } from '../data/diagram2d'
+import {
+  placedPositions,
+  type PlacementMode,
+} from '../data/nearestImages'
 
 interface Props {
   selectedIndex: number
   onSelect: (index: number) => void
   showAllSites?: boolean
+  placementMode?: PlacementMode
 }
 
 const PAD = { left: 40, right: 32, top: 18, bottom: 34 }
@@ -419,6 +421,7 @@ export default function SpaceGroupDiagram2D({
   selectedIndex,
   onSelect,
   showAllSites = true,
+  placementMode = 'nearest',
 }: Props) {
   const [projDir, setProjDir] = useState<ProjectionDir>(DEFAULT_PROJECTION)
   const plotRef = useRef<HTMLDivElement>(null)
@@ -440,29 +443,68 @@ export default function SpaceGroupDiagram2D({
   }, [])
 
   const proj = PROJECTIONS[projDir]
-  const points = useMemo(() => generalPositions(SEED), [])
+  const points = useMemo(
+    () => placedPositions(selectedIndex, placementMode).points,
+    [selectedIndex, placementMode],
+  )
   const screws = useMemo(() => allProjectedScrews(proj), [proj])
   const glides = useMemo(() => allProjectedGlides(proj), [proj])
-  const aspect = projectedAspect(proj)
 
   const viewW = size.w
   const viewH = size.h
   const plotW = Math.max(40, viewW - PAD.left - PAD.right)
   const plotH = Math.max(40, viewH - PAD.top - PAD.bottom)
-  const scale = Math.min(plotW / aspect.width, plotH / aspect.height)
-  const cellW = aspect.width * scale
-  const cellH = aspect.height * scale
-  const offsetX = PAD.left + (plotW - cellW) / 2
-  const offsetY = PAD.top + (plotH - cellH) / 2
+
+  // Fractional window: always include the unit cell [0,1]²; in nearest mode
+  // expand to fit BASE/IMAGE (and other visible sites) that sit outside.
+  const extent = useMemo(() => {
+    let u0 = 0
+    let u1 = 1
+    let v0 = 0
+    let v1 = 1
+    for (const pt of points) {
+      if (
+        !showAllSites &&
+        pt.index !== 1 &&
+        pt.index !== selectedIndex
+      ) {
+        continue
+      }
+      const { u, v } = projectFrac(pt.fractional, proj)
+      u0 = Math.min(u0, u)
+      u1 = Math.max(u1, u)
+      v0 = Math.min(v0, v)
+      v1 = Math.max(v1, v)
+    }
+    const pad = placementMode === 'nearest' ? 0.1 : 0.02
+    return {
+      u0: u0 - pad,
+      u1: u1 + pad,
+      v0: v0 - pad,
+      v1: v1 + pad,
+    }
+  }, [points, proj, placementMode, showAllSites, selectedIndex])
+
+  const spanU = Math.max(1e-6, extent.u1 - extent.u0)
+  const spanV = Math.max(1e-6, extent.v1 - extent.v0)
+  const worldW = spanU * proj.sizeU
+  const worldH = spanV * proj.sizeV
+  const scale = Math.min(plotW / worldW, plotH / worldH)
+  const drawnW = worldW * scale
+  const drawnH = worldH * scale
+  const offsetX = PAD.left + (plotW - drawnW) / 2
+  const offsetY = PAD.top + (plotH - drawnH) / 2
 
   const toSvg = (u: number, v: number) => ({
-    x: offsetX + u * cellW,
-    y: offsetY + (1 - v) * cellH,
+    x: offsetX + (u - extent.u0) * proj.sizeU * scale,
+    y: offsetY + (extent.v1 - v) * proj.sizeV * scale,
   })
 
   const origin = toSvg(0, 0)
   const cornerA = toSvg(1, 0)
   const cornerB = toSvg(0, 1)
+  const cellW = Math.abs(cornerA.x - origin.x)
+  const cellH = Math.abs(origin.y - cornerB.y)
 
   return (
     <section className="diagram2d" aria-label="Pbca 2D space-group diagram">
@@ -470,7 +512,11 @@ export default function SpaceGroupDiagram2D({
         <div className="diagram2d-title">
           <span className="eyebrow">Pbca · projection</span>
           <span className="diagram2d-sub">
-            JKC origin · wrapped [0,1)² · click a site to select
+            JKC origin ·{' '}
+            {placementMode === 'nearest'
+              ? 'nearest lattice copies (may leave cell)'
+              : 'wrapped [0,1)²'}{' '}
+            · click a site to select
           </span>
         </div>
         <div

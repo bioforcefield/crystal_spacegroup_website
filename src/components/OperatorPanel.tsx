@@ -107,7 +107,7 @@ export default function OperatorPanel({
           {formatVec(imagePoint.fractional)}
         </p>
         <p className="hint seed-note">
-          2D diagram always uses wrapped [0,1)² positions.
+          3D and 2D both follow Nearest images / In cell.
         </p>
       </section>
 

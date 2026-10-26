@@ -135,6 +135,7 @@ export default function App() {
             selectedIndex={selectedIndex}
             onSelect={handleSelect}
             showAllSites={showAllSites}
+            placementMode={placementMode}
           />
         </div>
         <footer className="viewport-footer">
@@ -142,9 +143,8 @@ export default function App() {
           a 2D site) to highlight IMAGE, connector, and its geometric element (⊙
           center · ‖ screw · ▭ glide)
           {placementMode === 'nearest'
-            ? ' · Nearest images may sit just outside the wireframe cell (UCL-style)'
-            : ' · In cell wraps every motif into [0, 1)³'}
-          {' · 2D diagram uses wrapped [0,1)² positions'}
+            ? ' · Nearest images (3D + 2D) may sit just outside the cell (UCL-style)'
+            : ' · In cell wraps motifs into [0, 1)³ / [0, 1)²'}
           {!showAllSites
             ? ' · Showing only BASE + IMAGE'
             : ''}
