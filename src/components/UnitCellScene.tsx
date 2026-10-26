@@ -142,11 +142,14 @@ function PointMarker({
   point,
   isBase,
   isImage,
+  showLabel,
   onSelect,
 }: {
   point: GeneralPoint
   isBase: boolean
   isImage: boolean
+  /** False for dim orbit sites when a non-identity op is selected. */
+  showLabel: boolean
   onSelect: (index: number) => void
 }) {
   const color = point.classColor
@@ -168,6 +171,40 @@ function PointMarker({
     g.quaternion.copy(quaternion)
     g.scale.set(mirror ? -1 : 1, 1, 1)
   }, [point.cartesian, quaternion, mirror])
+
+  // Offset BASE vs IMAGE billboards so they don't stack when close.
+  const labelPos: Vec3 = isBase && isImage
+    ? [
+        point.cartesian[0],
+        point.cartesian[1],
+        point.cartesian[2] + 0.3,
+      ]
+    : isBase
+      ? [
+          point.cartesian[0] - 0.08,
+          point.cartesian[1] + 0.04,
+          point.cartesian[2] + 0.28,
+        ]
+      : isImage
+        ? [
+            point.cartesian[0] + 0.08,
+            point.cartesian[1] - 0.04,
+            point.cartesian[2] + 0.34,
+          ]
+        : [
+            point.cartesian[0],
+            point.cartesian[1],
+            point.cartesian[2] + 0.2,
+          ]
+
+  const labelText =
+    isBase && isImage
+      ? 'BASE · IMAGE'
+      : isBase
+        ? 'BASE'
+        : isImage
+          ? 'IMAGE'
+          : String(point.index)
 
   return (
     <group>
@@ -206,30 +243,20 @@ function PointMarker({
         )}
       </group>
 
-      <Billboard
-        position={[
-          point.cartesian[0],
-          point.cartesian[1],
-          point.cartesian[2] + (isBase || isImage ? 0.26 : 0.2),
-        ]}
-      >
-        <Text
-          fontSize={isBase || isImage ? 0.085 : 0.07}
-          color={isImage ? '#fef08a' : isBase ? '#f8fafc' : '#cbd5e1'}
-          anchorX="center"
-          anchorY="middle"
-          outlineWidth={0.006}
-          outlineColor="#0f172a"
-        >
-          {isBase && isImage
-            ? 'BASE · IMAGE'
-            : isBase
-              ? 'BASE'
-              : isImage
-                ? `${point.index} · IMAGE`
-                : String(point.index)}
-        </Text>
-      </Billboard>
+      {showLabel && (
+        <Billboard position={labelPos}>
+          <Text
+            fontSize={isBase || isImage ? 0.085 : 0.07}
+            color={isImage ? '#fef08a' : isBase ? '#f8fafc' : '#cbd5e1'}
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.006}
+            outlineColor="#0f172a"
+          >
+            {labelText}
+          </Text>
+        </Billboard>
+      )}
     </group>
   )
 }
@@ -355,15 +382,23 @@ function SceneContent({
               p.index === 1 ||
               p.index === selectedIndex,
           )
-          .map((p) => (
-          <PointMarker
-            key={p.index}
-            point={p}
-            isBase={p.index === 1}
-            isImage={p.index === selectedIndex}
-            onSelect={onSelect}
-          />
-        ))}
+          .map((p) => {
+          const isBase = p.index === 1
+          const isImage = p.index === selectedIndex
+          // Hide numeric labels on non-BASE/non-IMAGE when focusing an op.
+          const showLabel =
+            isBase || isImage || selectedIndex === 1
+          return (
+            <PointMarker
+              key={p.index}
+              point={p}
+              isBase={isBase}
+              isImage={isImage}
+              showLabel={showLabel}
+              onSelect={onSelect}
+            />
+          )
+        })}
         <GhostAnimator
           fromPos={baseCartesian}
           toPos={imageCartesian}

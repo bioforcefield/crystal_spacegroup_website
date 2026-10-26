@@ -98,10 +98,12 @@ function ScrewsLayer({
   screws,
   selectedIndex,
   toSvg,
+  labelScale,
 }: {
   screws: ProjectedScrew[]
   selectedIndex: number
   toSvg: (u: number, v: number) => { x: number; y: number }
+  labelScale: number
 }) {
   const color = screwColor()
   return (
@@ -156,7 +158,7 @@ function ScrewsLayer({
                 y={(a.y + b.y) / 2 + (labelSide ? -8 : 4)}
                 textAnchor="middle"
                 fill={color}
-                fontSize={10}
+                fontSize={12 * labelScale}
                 fontWeight={600}
               >
                 {s.w === 0.25 ? '¼' : s.w === 0.75 ? '¾' : '½'}
@@ -175,6 +177,7 @@ function drawFaceGlideMarks(
   toSvg: (u: number, v: number) => { x: number; y: number },
   color: string,
   strokeW: number,
+  labelScale: number,
 ) {
   // Compact ITA-style: glide arrow near the edge + height fraction
   const band = g.spec.primary ? 0.12 : 0.88
@@ -201,7 +204,7 @@ function drawFaceGlideMarks(
           textAnchor="middle"
           dominantBaseline="middle"
           fill={color}
-          fontSize={11}
+          fontSize={12 * labelScale}
           fontWeight={700}
         >
           {g.spec.label} {g.planeLabel}
@@ -231,7 +234,7 @@ function drawFaceGlideMarks(
           textAnchor="middle"
           dominantBaseline="middle"
           fill={color}
-          fontSize={11}
+          fontSize={12 * labelScale}
           fontWeight={700}
         >
           {g.spec.label} {g.planeLabel}
@@ -247,7 +250,7 @@ function drawFaceGlideMarks(
       y={lab.y}
       textAnchor="middle"
       fill={color}
-      fontSize={11}
+      fontSize={12 * labelScale}
       fontWeight={700}
     >
       {g.spec.label} {g.planeLabel}
@@ -317,10 +320,12 @@ function GlidesLayer({
   glides,
   selectedIndex,
   toSvg,
+  labelScale,
 }: {
   glides: ProjectedGlide[]
   selectedIndex: number
   toSvg: (u: number, v: number) => { x: number; y: number }
+  labelScale: number
 }) {
   return (
     <g className="d2-glides">
@@ -333,7 +338,7 @@ function GlidesLayer({
         if (g.mode === 'face') {
           return (
             <g key={`gl-face-${i}`} opacity={opacity}>
-              {drawFaceGlideMarks(g, toSvg, color, strokeW)}
+              {drawFaceGlideMarks(g, toSvg, color, strokeW, labelScale)}
               <title>{g.spec.locus}</title>
             </g>
           )
@@ -490,6 +495,8 @@ export default function SpaceGroupDiagram2D({
   const worldW = spanU * proj.sizeU
   const worldH = spanV * proj.sizeV
   const scale = Math.min(plotW / worldW, plotH / worldH)
+  // Keep labels readable at default panel size; grow slightly on larger panels.
+  const labelScale = Math.max(1, Math.min(1.35, scale / 160))
   const drawnW = worldW * scale
   const drawnH = worldH * scale
   const offsetX = PAD.left + (plotW - drawnW) / 2
@@ -594,11 +601,13 @@ export default function SpaceGroupDiagram2D({
           glides={glides}
           selectedIndex={selectedIndex}
           toSvg={toSvg}
+          labelScale={labelScale}
         />
         <ScrewsLayer
           screws={screws}
           selectedIndex={selectedIndex}
           toSvg={toSvg}
+          labelScale={labelScale}
         />
         <InversionsLayer
           selectedIndex={selectedIndex}
@@ -623,7 +632,7 @@ export default function SpaceGroupDiagram2D({
             const dim =
               selectedIndex !== 1 && !isBase && !isImage ? 0.28 : 1
             const fill = pt.classColor
-            const r = isBase || isImage ? 8 : 6.5
+            const r = (isBase || isImage ? 8.5 : 7) * Math.min(1.12, labelScale)
 
             return (
               <g
@@ -669,10 +678,10 @@ export default function SpaceGroupDiagram2D({
                 {pt.improper && (
                   <text
                     x={x}
-                    y={y + 3.5}
+                    y={y + 3.5 * labelScale}
                     textAnchor="middle"
                     fill={fill}
-                    fontSize={14}
+                    fontSize={15 * labelScale}
                     fontWeight={700}
                     fontFamily="Georgia, 'Times New Roman', serif"
                   >
@@ -683,16 +692,16 @@ export default function SpaceGroupDiagram2D({
                   x={x + r + 3}
                   y={y - r + 2}
                   fill={isImage ? '#fef08a' : isBase ? '#f8fafc' : '#94a3b8'}
-                  fontSize={9}
+                  fontSize={12.5 * labelScale}
                   fontWeight={700}
                 >
                   {isBase ? 'B' : isImage ? 'I' : pt.index}
                 </text>
                 <text
                   x={x + r + 3}
-                  y={y + 5}
+                  y={y + 6 * labelScale}
                   fill="#64748b"
-                  fontSize={8}
+                  fontSize={10.5 * labelScale}
                   fontFamily="ui-monospace, Menlo, monospace"
                 >
                   {formatHeightLabel(w)}
@@ -707,12 +716,17 @@ export default function SpaceGroupDiagram2D({
           })}
         </g>
 
-        <g className="d2-axes" fill="#94a3b8" fontSize={12} fontWeight={600}>
+        <g
+          className="d2-axes"
+          fill="#94a3b8"
+          fontSize={14 * labelScale}
+          fontWeight={600}
+        >
           <text
             x={origin.x - 12}
-            y={origin.y + 16}
+            y={origin.y + 18}
             textAnchor="middle"
-            fontSize={14}
+            fontSize={16 * labelScale}
             fontStyle="italic"
             fontFamily="Georgia, 'Times New Roman', serif"
           >
@@ -720,16 +734,16 @@ export default function SpaceGroupDiagram2D({
           </text>
           <text
             x={(origin.x + cornerA.x) / 2}
-            y={origin.y + 20}
+            y={origin.y + 22}
             textAnchor="middle"
           >
             {proj.axisU} →
           </text>
           <text
-            x={origin.x - 16}
+            x={origin.x - 18}
             y={(origin.y + cornerB.y) / 2}
             textAnchor="middle"
-            transform={`rotate(-90 ${origin.x - 16} ${
+            transform={`rotate(-90 ${origin.x - 18} ${
               (origin.y + cornerB.y) / 2
             })`}
           >
@@ -737,9 +751,9 @@ export default function SpaceGroupDiagram2D({
           </text>
           <text
             x={toSvg(1, 1).x + 6}
-            y={toSvg(1, 1).y + 12}
+            y={toSvg(1, 1).y + 14}
             fill="#64748b"
-            fontSize={10}
+            fontSize={11 * labelScale}
           >
             {proj.axisW} ⊙
           </text>
