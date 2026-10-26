@@ -335,33 +335,37 @@ function GlidePlaneVisual({
   const n = plane.normalAxis
   const v = plane.planeValue
 
-  const fracCorners: Vec3[] =
-    n === 0
+  const fracCorners: Vec3[] = plane.corners
+    ? [...plane.corners]
+    : n === 0
       ? [
-          [v, 0, 0],
-          [v, 1, 0],
-          [v, 1, 1],
-          [v, 0, 1],
+          [v!, 0, 0],
+          [v!, 1, 0],
+          [v!, 1, 1],
+          [v!, 0, 1],
         ]
       : n === 1
         ? [
-            [0, v, 0],
-            [1, v, 0],
-            [1, v, 1],
-            [0, v, 1],
+            [0, v!, 0],
+            [1, v!, 0],
+            [1, v!, 1],
+            [0, v!, 1],
           ]
         : [
-            [0, 0, v],
-            [1, 0, v],
-            [1, 1, v],
-            [0, 1, v],
+            [0, 0, v!],
+            [1, 0, v!],
+            [1, 1, v!],
+            [0, 1, v!],
           ]
 
   const cell = demo.cell
+  const cornerKey = plane.corners
+    ? plane.corners.map((c) => c.join(',')).join('|')
+    : `${n}:${v}`
   const corners = useMemo(
     () => fracCorners.map((p) => fracToCart(p, cell)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [n, v, cell.a, cell.b, cell.c, cell.betaDeg, cell.gammaDeg],
+    [cornerKey, cell.a, cell.b, cell.c, cell.betaDeg, cell.gammaDeg],
   )
   const geom = useMemo(() => {
     const g = new THREE.BufferGeometry()
@@ -387,10 +391,29 @@ function GlidePlaneVisual({
 
   const hasGlide = plane.glide.some((c) => Math.abs(c) > 1e-6)
   const glideCart = fracToCart(plane.glide, demo.cell)
-  // Lift slightly along plane normal (approx y for ⊥b)
+  // Lift slightly along plane normal (cartesian cross of edges, or axis fallback)
   const lift = 0.025
-  const liftVec: Vec3 =
-    n === 0 ? [lift, 0, 0] : n === 1 ? [0, lift, 0] : [0, 0, lift]
+  let liftVec: Vec3
+  if (plane.corners) {
+    const e1: Vec3 = [
+      corners[1][0] - corners[0][0],
+      corners[1][1] - corners[0][1],
+      corners[1][2] - corners[0][2],
+    ]
+    const e2: Vec3 = [
+      corners[3][0] - corners[0][0],
+      corners[3][1] - corners[0][1],
+      corners[3][2] - corners[0][2],
+    ]
+    const nx = e1[1] * e2[2] - e1[2] * e2[1]
+    const ny = e1[2] * e2[0] - e1[0] * e2[2]
+    const nz = e1[0] * e2[1] - e1[1] * e2[0]
+    const len = Math.hypot(nx, ny, nz) || 1
+    liftVec = [(nx / len) * lift, (ny / len) * lift, (nz / len) * lift]
+  } else {
+    liftVec =
+      n === 0 ? [lift, 0, 0] : n === 1 ? [0, lift, 0] : [0, 0, lift]
+  }
   const arrowFrom: Vec3 = [
     center[0] - glideCart[0] * 0.35 + liftVec[0],
     center[1] - glideCart[1] * 0.35 + liftVec[1],

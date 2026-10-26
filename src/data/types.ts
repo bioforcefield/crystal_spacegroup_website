@@ -73,8 +73,18 @@ export interface InversionCenterSpec {
 }
 
 export interface GlidePlaneSpec {
-  planeValue: number
-  normalAxis: 0 | 1 | 2
+  /**
+   * Axis-aligned plane: constant fractional coordinate along normalAxis.
+   * Omit when `corners` is set (diagonal / non-axis-aligned planes).
+   */
+  planeValue?: number
+  normalAxis?: 0 | 1 | 2
+  /**
+   * Explicit fractional parallelogram (4 corners, CCW). Use for diagonal
+   * planes such as R-3c vertical c-glides (x = −y). When set, overrides
+   * planeValue/normalAxis for rendering.
+   */
+  corners?: [Vec3, Vec3, Vec3, Vec3]
   glide: Vec3
   label: string
   classId: Extract<
@@ -128,4 +138,9 @@ export interface SpaceGroupDemo {
   primaryInversionOp: number
   /** Short name for 2D diagram header */
   shortName: string
+  /**
+   * When set (e.g. cubic 96–192 ops), chip strip / panel prioritise these
+   * operator indices for teaching; remaining ops behind an expand control.
+   */
+  operatorFocusIndices?: number[]
 }

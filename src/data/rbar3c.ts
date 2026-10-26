@@ -2,6 +2,7 @@
 
 import type {
   CellParams,
+  GlidePlaneSpec,
   InversionCenterSpec,
   Operator,
   ScrewAxisSpec,
@@ -126,7 +127,7 @@ export const META: SpaceGroupMeta = {
   lattice: 'Rhombohedral (hexagonal axes)',
   multiplicity: 36,
   blurb:
-    'R-3c (~0.2% of CSD) extends R-3 with c-glides and 2-folds ⊥ c (point group −3m). Hexagonal setting: 3 / −3 ‖ c, inversion, vertical c-glides, plus R-centring — thirty-six general positions. Teaching cell a = b, γ = 120°. Completes the CSD top-30 hand set.',
+    'R-3c (~0.2% of CSD) extends R-3 with c-glides and 2-folds ⊥ c (point group −3m). Hexagonal setting: 3 / −3 ‖ c, inversion, vertical c-glides, plus R-centring — thirty-six general positions. Teaching cell a = b, γ = 120°. Vertical c-glides drawn via diagonal corner patches (x = −y family).',
 }
 
 /** 3 ‖ c at (0,0,z) and R-related; 2 ⊥ c along [110]-family. */
@@ -170,9 +171,54 @@ const INVERSION_CENTERS: InversionCenterSpec[] = INVERSION_POSITIONS.map(
 )
 
 /**
- * Vertical c-glides in R-3c:H are not axis-aligned in fractional a/b
- * (planes such as x = −y). Overlay planes omitted; operators still labelled.
+ * Vertical c-glides via explicit corners (x = −y and 3-fold images).
+ * Patches extend slightly outside the unit cell for readable teaching strips.
  */
+const GLIDE_PLANES: GlidePlaneSpec[] = [
+  {
+    corners: [
+      [0, 0, 0],
+      [1, -1, 0],
+      [1, -1, 1],
+      [0, 0, 1],
+    ],
+    glide: [0, 0, 0.5],
+    label: 'c-glide',
+    classId: 'c-glide',
+    opIndex: 10,
+    primary: true,
+    locus: 'plane x = −y · glide (0, 0, ½)',
+  },
+  {
+    corners: [
+      [0, 0, 0],
+      [1, 2, 0],
+      [1, 2, 1],
+      [0, 0, 1],
+    ],
+    glide: [0, 0, 0.5],
+    label: 'c-glide',
+    classId: 'c-glide',
+    opIndex: 11,
+    primary: true,
+    locus: 'plane y = 2x · glide (0, 0, ½)',
+  },
+  {
+    corners: [
+      [0, 0, 0],
+      [-2, -1, 0],
+      [-2, -1, 1],
+      [0, 0, 1],
+    ],
+    glide: [0, 0, 0.5],
+    label: 'c-glide',
+    classId: 'c-glide',
+    opIndex: 12,
+    primary: true,
+    locus: 'plane x = 2y · glide (0, 0, ½)',
+  },
+]
+
 export function elementLocusForOp(opIndex: number): string | null {
   if (opIndex === 1) return null
   if (opIndex === 2 || opIndex === 3) return '3-fold axis at (0, 0, z)'
@@ -194,7 +240,7 @@ export const rbar3cDemo: SpaceGroupDemo = {
   classLegendOrder: CLASS_LEGEND_ORDER,
   screwAxes: SCREW_AXES,
   inversionCenters: INVERSION_CENTERS,
-  glidePlanes: [],
+  glidePlanes: GLIDE_PLANES,
   elementLocusForOp,
   defaultProjection: 'c',
   primaryInversionOp: 7,

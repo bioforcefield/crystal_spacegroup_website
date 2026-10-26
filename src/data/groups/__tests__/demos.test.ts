@@ -42,6 +42,10 @@ describe('registry smoke', () => {
     expect(getDemo(92)?.meta.hm).toBe('P41212')
     expect(getDemo(96)?.meta.hm).toBe('P43212')
     expect(getDemo(167)?.meta.hm).toBe('R-3c')
+    expect(getDemo(76)?.meta.hm).toBe('P41')
+    expect(getDemo(80)?.meta.hm).toBe('I41')
+    expect(getDemo(227)?.meta.hm).toBe('Fd-3m')
+    expect(getDemo(147)?.meta.hm).toBe('P-3')
     expect(getDemo('pbar1')?.meta.number).toBe(2)
     expect(getDemo('P-1')?.meta.number).toBe(2)
     expect(getDemo('p-1')?.meta.number).toBe(2)
@@ -80,9 +84,9 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the 30 golden demos', () => {
+  it('has the 34 golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 82, 88, 92, 96, 146, 148, 167,
+      1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 146, 147, 148, 167, 227,
     ])
     expect(allHandDemos()).toEqual(demos)
   })
@@ -163,7 +167,7 @@ describe('generated catalog 1–230', () => {
   })
 
   it('hand overrides win over generated for hand-polished set', () => {
-    const handNums = [1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 82, 88, 92, 96, 146, 148, 167]
+    const handNums = [1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 146, 147, 148, 167, 227]
     for (const n of handNums) {
       expect(getDemo(n)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     }
@@ -204,6 +208,12 @@ describe('generated catalog 1–230', () => {
     expect(getDemo(96)!.screwAxes.some((a) => a.kind === '43')).toBe(true)
     expect(getDemo(167)!.operators.length).toBe(36)
     expect(getDemo(167)!.cell.gammaDeg).toBe(120)
+    expect(getDemo(167)!.glidePlanes.some((g) => !!g.corners)).toBe(true)
+    expect(getDemo(76)!.screwAxes.some((a) => a.kind === '41')).toBe(true)
+    expect(getDemo(80)!.operators.length).toBe(8)
+    expect(getDemo(227)!.operators.length).toBe(192)
+    expect(getDemo(227)!.operatorFocusIndices?.length).toBeGreaterThan(0)
+    expect(getDemo(147)!.cell.gammaDeg).toBe(120)
   })
 })
 

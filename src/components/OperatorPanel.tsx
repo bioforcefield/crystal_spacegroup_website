@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { isImproper, operatorClass } from '../data/math'
 import type { Operator, SpaceGroupDemo } from '../data/types'
@@ -48,6 +48,15 @@ export default function OperatorPanel({
   const selected =
     demo.operators.find((o) => o.index === selectedIndex) ?? demo.operators[0]
   const selectedClass = operatorClass(demo, selected)
+  const focus = demo.operatorFocusIndices
+  const [showAllOps, setShowAllOps] = useState(false)
+  const listedOps = useMemo(() => {
+    if (!focus || focus.length === 0 || showAllOps) return demo.operators
+    const set = new Set(focus)
+    // Always include the selected op so it stays visible
+    set.add(selectedIndex)
+    return demo.operators.filter((o) => set.has(o.index))
+  }, [demo.operators, focus, showAllOps, selectedIndex])
   const placement = useMemo(
     () => placedPositions(demo, selectedIndex, placementMode),
     [demo, selectedIndex, placementMode],
@@ -141,9 +150,23 @@ export default function OperatorPanel({
         <h2>General-position operators</h2>
         <p className="hint">
           Click a row — BASE stays marked; IMAGE and the dashed connector update.
+          {focus && focus.length > 0 && !showAllOps
+            ? ` Showing ${listedOps.length} teaching ops of ${demo.operators.length}.`
+            : ''}
         </p>
+        {focus && focus.length > 0 && (
+          <button
+            type="button"
+            className="btn btn-ghost op-expand"
+            onClick={() => setShowAllOps((v) => !v)}
+          >
+            {showAllOps
+              ? `Show teaching shortlist (${focus.length})`
+              : `Show all ${demo.operators.length} operators`}
+          </button>
+        )}
         <ul className="op-list">
-          {demo.operators.map((op) => {
+          {listedOps.map((op) => {
             const active = op.index === selectedIndex
             const cls = operatorClass(demo, op)
             return (

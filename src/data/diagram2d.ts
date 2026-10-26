@@ -193,10 +193,57 @@ export function projectGlide(
   spec: GlidePlaneSpec,
   proj: ProjectionInfo,
 ): ProjectedGlide {
+  const g = projectFrac(spec.glide, proj)
+  const glideOutOfPlane = Math.abs(g.u) < 1e-9 && Math.abs(g.v) < 1e-9
+
+  // Diagonal / explicit parallelogram: project corners → 2D trace or face.
+  if (spec.corners && spec.corners.length === 4) {
+    const pts = spec.corners.map((c) => projectFrac(c, proj))
+    const wSpread =
+      Math.max(...pts.map((p) => p.w)) - Math.min(...pts.map((p) => p.w))
+    const label = spec.locus || spec.label
+    // Nearly parallel to page → face (bounding box of projected corners)
+    if (wSpread < 0.15) {
+      const us = pts.map((p) => p.u)
+      const vs = pts.map((p) => p.v)
+      return {
+        spec,
+        mode: 'face',
+        u: Math.min(...us),
+        v: Math.min(...vs),
+        u2: Math.max(...us),
+        v2: Math.max(...vs),
+        planeLabel: label,
+        glideU: g.u,
+        glideV: g.v,
+        glideOutOfPlane,
+      }
+    }
+    // Vertical / steep: use the in-plane edge with largest UV span as the trace
+    let best = { u: pts[0].u, v: pts[0].v, u2: pts[1].u, v2: pts[1].v, len: 0 }
+    for (let i = 0; i < 4; i++) {
+      const a = pts[i]
+      const b = pts[(i + 1) % 4]
+      const len = Math.hypot(b.u - a.u, b.v - a.v)
+      if (len > best.len) best = { u: a.u, v: a.v, u2: b.u, v2: b.v, len }
+    }
+    return {
+      spec,
+      mode: 'trace',
+      u: best.u,
+      v: best.v,
+      u2: best.u2,
+      v2: best.v2,
+      planeLabel: label,
+      glideU: g.u,
+      glideV: g.v,
+      glideOutOfPlane,
+    }
+  }
+
   const planeParallelToPage = spec.normalAxis === proj.wIndex
 
   if (planeParallelToPage) {
-    const g = projectFrac(spec.glide, proj)
     return {
       spec,
       mode: 'face',
@@ -204,17 +251,15 @@ export function projectGlide(
       v: 0,
       u2: 1,
       v2: 1,
-      planeLabel: formatQuarter(spec.planeValue),
+      planeLabel: formatQuarter(spec.planeValue ?? 0),
       glideU: g.u,
       glideV: g.v,
-      glideOutOfPlane: Math.abs(g.u) < 1e-9 && Math.abs(g.v) < 1e-9,
+      glideOutOfPlane,
     }
   }
 
   const constIsU = spec.normalAxis === proj.uIndex
-  const constVal = spec.planeValue
-  const g = projectFrac(spec.glide, proj)
-  const glideOutOfPlane = Math.abs(g.u) < 1e-9 && Math.abs(g.v) < 1e-9
+  const constVal = spec.planeValue ?? 0
 
   if (constIsU) {
     return {
@@ -224,7 +269,7 @@ export function projectGlide(
       v: 0,
       u2: constVal,
       v2: 1,
-      planeLabel: formatQuarter(spec.planeValue),
+      planeLabel: formatQuarter(constVal),
       glideU: g.u,
       glideV: g.v,
       glideOutOfPlane,
@@ -237,7 +282,7 @@ export function projectGlide(
     v: constVal,
     u2: 1,
     v2: constVal,
-    planeLabel: formatQuarter(spec.planeValue),
+    planeLabel: formatQuarter(constVal),
     glideU: g.u,
     glideV: g.v,
     glideOutOfPlane,

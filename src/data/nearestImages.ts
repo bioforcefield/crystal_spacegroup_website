@@ -116,6 +116,31 @@ function distToGlidePlane(
   return Math.abs(p[normalAxis] - planeValue) * axisLen
 }
 
+function distToGlidePlaneSpec(
+  p: Vec3,
+  plane: { planeValue?: number; normalAxis?: 0 | 1 | 2; corners?: Vec3[] },
+  cell: CellParams,
+): number {
+  if (plane.corners && plane.corners.length >= 3) {
+    const c0 = fracToCart(plane.corners[0], cell)
+    const c1 = fracToCart(plane.corners[1], cell)
+    const c2 = fracToCart(plane.corners[3] ?? plane.corners[2], cell)
+    const e1: Vec3 = [c1[0] - c0[0], c1[1] - c0[1], c1[2] - c0[2]]
+    const e2: Vec3 = [c2[0] - c0[0], c2[1] - c0[1], c2[2] - c0[2]]
+    const nx = e1[1] * e2[2] - e1[2] * e2[1]
+    const ny = e1[2] * e2[0] - e1[0] * e2[2]
+    const nz = e1[0] * e2[1] - e1[1] * e2[0]
+    const len = Math.hypot(nx, ny, nz) || 1
+    const pc = fracToCart(p, cell)
+    return Math.abs(
+      ((pc[0] - c0[0]) * nx + (pc[1] - c0[1]) * ny + (pc[2] - c0[2]) * nz) / len,
+    )
+  }
+  if (plane.planeValue === undefined || plane.normalAxis === undefined) return 0
+  return distToGlidePlane(p, plane.planeValue, plane.normalAxis, cell)
+}
+
+
 function distToPoint(p: Vec3, target: Vec3, cell: CellParams): number {
   return cartDist(p, target, cell)
 }
@@ -153,12 +178,13 @@ export function distToElement(
     case 'a-glide':
     case 'b-glide':
     case 'c-glide':
-    case 'n-glide': {
+    case 'n-glide':
+    case 'd-glide': {
       const plane = demo.glidePlanes.find(
         (g) => g.opIndex === op.index && g.primary,
       )
       if (!plane) return 0
-      return distToGlidePlane(p, plane.planeValue, plane.normalAxis, cell)
+      return distToGlidePlaneSpec(p, plane, cell)
     }
     default:
       return 0

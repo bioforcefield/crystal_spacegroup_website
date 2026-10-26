@@ -1767,3 +1767,13 @@ a.csd-bar-row.ready:hover {
   }
 
 }
+
+/* Teaching shortlist expand (cubic clutter filter) */
+.op-expand {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 0.8rem;
+}
+.op-chip-expand {
+  border-style: dashed !important;
+  opacity: 0.85;
+}

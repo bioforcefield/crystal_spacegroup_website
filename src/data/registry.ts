@@ -15,6 +15,10 @@ import { pbcnDemo } from './pbcn'
 import { pca21Demo } from './pca21'
 import { rbar3Demo } from './rbar3'
 import { rbar3cDemo } from './rbar3c'
+import { p41Demo } from './p41'
+import { i41Demo } from './i41'
+import { fd3mDemo } from './fd3m'
+import { pbar3Demo } from './pbar3'
 import { pcDemo } from './pc'
 import { p21mDemo } from './p21m'
 import { c2mDemo } from './c2m'
@@ -79,6 +83,10 @@ const HAND_DEMOS: SpaceGroupDemo[] = [
   r3Demo,
   rbar3Demo,
   rbar3cDemo,
+  p41Demo,
+  i41Demo,
+  pbar3Demo,
+  fd3mDemo,
 ]
 
 const handByNumber = new Map(HAND_DEMOS.map((d) => [d.meta.number, d]))
@@ -156,4 +164,8 @@ export {
   r3Demo,
   rbar3Demo,
   rbar3cDemo,
+  p41Demo,
+  i41Demo,
+  pbar3Demo,
+  fd3mDemo,
 }

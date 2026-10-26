@@ -1,4 +1,4 @@
-import { useCallback, useState, type CSSProperties } from 'react'
+import { useCallback, useMemo, useState, type CSSProperties } from 'react'
 import { Navigate } from 'react-router-dom'
 import OperatorPanel from '../components/OperatorPanel'
 import SpaceGroupDiagram2D from '../components/SpaceGroupDiagram2D'
@@ -24,6 +24,14 @@ export default function SpaceGroupPage({ demo }: Props) {
   }, [])
 
   const nOps = demo.operators.length
+  const focus = demo.operatorFocusIndices
+  const [showAllChips, setShowAllChips] = useState(false)
+  const chipOps = useMemo(() => {
+    if (!focus || focus.length === 0 || showAllChips) return demo.operators
+    const set = new Set(focus)
+    set.add(selectedIndex)
+    return demo.operators.filter((o) => set.has(o.index))
+  }, [demo.operators, focus, showAllChips, selectedIndex])
 
   return (
     <div className="app layout-demo">
@@ -134,7 +142,24 @@ export default function SpaceGroupPage({ demo }: Props) {
           role="listbox"
           aria-label="General-position operators"
         >
-          {demo.operators.map((op) => {
+          {focus && focus.length > 0 && (
+            <button
+              type="button"
+              className="op-chip op-chip-expand"
+              onClick={() => setShowAllChips((v) => !v)}
+              title={
+                showAllChips
+                  ? 'Show teaching shortlist'
+                  : `Show all ${nOps} operators`
+              }
+            >
+              <span className="op-chip-idx">{showAllChips ? '⊖' : '⊕'}</span>
+              <span className="op-chip-triplet">
+                {showAllChips ? 'focus' : `all ${nOps}`}
+              </span>
+            </button>
+          )}
+          {chipOps.map((op) => {
             const active = op.index === selectedIndex
             const cls = operatorClass(demo, op)
             return (
