@@ -418,7 +418,8 @@ export default function IndexPage() {
               structures — our featured demos include{' '}
               <Link to="/sg/14">P21/c</Link> (rank 1),{' '}
               <Link to="/sg/2">P-1</Link> (rank 2),{' '}
-              <Link to="/sg/15">C2/c</Link> (rank 3), and{' '}
+              <Link to="/sg/15">C2/c</Link> (rank 3),{' '}
+              <Link to="/sg/19">P212121</Link> (rank 4), and{' '}
               <Link to="/sg/61">Pbca</Link> (rank 6).
             </p>
           </div>

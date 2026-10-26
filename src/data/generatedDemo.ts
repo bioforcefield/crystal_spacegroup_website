@@ -1,6 +1,6 @@
 /**
  * Build SpaceGroupDemo from gemmi/ITA general-position JSON + catalog meta.
- * Hand-polished demos (2, 14, 15, 61) stay as overrides in registry.ts.
+ * Hand-polished demos (2, 14, 15, 19, 61) stay as overrides in registry.ts.
  */
 
 import itaJson from './itaSpaceGroups.json'
