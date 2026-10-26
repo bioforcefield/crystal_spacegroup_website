@@ -64,6 +64,18 @@ function UnitCellWireframe() {
           emissiveIntensity={0.4}
         />
       </mesh>
+      <Billboard position={[-0.08, -0.08, -0.08]}>
+        <Text
+          fontSize={0.11}
+          color="#e2e8f0"
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.01}
+          outlineColor="#0f172a"
+        >
+          0
+        </Text>
+      </Billboard>
     </group>
   )
 }
