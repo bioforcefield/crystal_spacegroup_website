@@ -339,12 +339,14 @@ button {
   flex: 1;
   min-height: 0;
   position: relative;
+  touch-action: none;
 }
 
 .canvas-wrap canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  touch-action: none;
 }
 
 .viewport-footer {
@@ -355,17 +357,150 @@ button {
   background: rgba(15, 23, 42, 0.55);
 }
 
+/* Mobile op chips: hidden on desktop; shown in demo viewport on narrow screens */
+.mobile-op-strip {
+  display: none;
+}
+
 @media (max-width: 900px) {
-  .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(40vh, auto) 1fr;
+  /* Allow page scroll for details; #root:has(.layout-demo) otherwise locks overflow */
+  #root:has(.layout-demo) {
     overflow: auto;
+    height: auto;
+    min-height: 100%;
   }
 
-  .panel {
+  .app.layout-demo {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
+  /* 3D viewport first — majority of the screen */
+  .app.layout-demo .viewport {
+    order: -1;
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+  }
+
+  .app.layout-demo .panel {
+    order: 1;
     border-right: none;
+    border-bottom: none;
+    border-top: 1px solid var(--panel-border);
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* In details below the canvas: operators before seed/classes/matrix */
+  .app.layout-demo .panel .panel-header { order: 0; }
+  .app.layout-demo .panel .ops { order: 1; }
+  .app.layout-demo .panel .seed-box { order: 2; }
+  .app.layout-demo .panel .class-legend-panel { order: 3; }
+  .app.layout-demo .panel .matrix-section { order: 4; }
+
+  /* Operators as horizontal chips under the toolbar — always reachable */
+  .mobile-op-strip {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0.4rem;
+    padding: 0.45rem 0.65rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
     border-bottom: 1px solid var(--panel-border);
-    max-height: 48vh;
+    background: rgba(15, 23, 42, 0.85);
+    scrollbar-width: thin;
+  }
+
+  .op-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    min-width: 4.6rem;
+    max-width: 9.5rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-left: 3px solid var(--op-color, #64748b);
+    background: rgba(2, 6, 23, 0.65);
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .op-chip.active {
+    background: var(--active-bg);
+    border-color: rgba(250, 204, 21, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(250, 204, 21, 0.15);
+  }
+
+  .op-chip.is-base .op-chip-idx {
+    outline: 1.5px solid #f8fafc;
+    outline-offset: 1px;
+  }
+
+  .op-chip-idx {
+    display: inline-grid;
+    place-items: center;
+    min-width: 1.25rem;
+    height: 1.15rem;
+    padding: 0 0.25rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--op-color) 30%, #1e293b);
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #f8fafc;
+  }
+
+  .op-chip.active .op-chip-idx {
+    background: #854d0e;
+    color: var(--active);
+  }
+
+  .op-chip-triplet {
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 8.5rem;
+  }
+
+  /* Dedicated 3D height so the cell is usable; one-finger orbit stays on canvas */
+  .app.layout-demo .viewport-body .canvas-wrap {
+    flex: 0 0 auto;
+    height: 46vh;
+    min-height: 240px;
+  }
+
+  .app.layout-demo .diagram2d {
+    height: 220px;
+  }
+
+  /* Compact toolbar on phones */
+  .app.layout-demo .viewport-toolbar {
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .app.layout-demo .legend-stack {
+    display: none;
+  }
+
+  /* Full operator list still in details; chip strip is the primary picker */
+  .app.layout-demo .panel .ops .hint {
+    display: none;
   }
 
   html,

@@ -414,17 +414,58 @@ function FitCamera({
 
   useEffect(() => {
     const el = gl.domElement
+    let pinchStartDist = 0
+    let pinchStartZoom = 1
+
+    const pinchDistance = (touches: TouchList) => {
+      const dx = touches[0].clientX - touches[1].clientX
+      const dy = touches[0].clientY - touches[1].clientY
+      return Math.hypot(dx, dy)
+    }
+
+    const clampZoom = (z: number) =>
+      Math.min(USER_ZOOM_MAX, Math.max(USER_ZOOM_MIN, z))
+
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
       const factor = Math.exp(e.deltaY * 0.0015)
       const z = userZoomRef.current ?? 1
-      userZoomRef.current = Math.min(
-        USER_ZOOM_MAX,
-        Math.max(USER_ZOOM_MIN, z * factor),
-      )
+      userZoomRef.current = clampZoom(z * factor)
     }
+
+    // Two-finger pinch → same userZoomRef scale as wheel (FitCamera framing).
+    // Capture + preventDefault so the browser / OrbitControls do not steal it.
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchStartDist = pinchDistance(e.touches)
+        pinchStartZoom = userZoomRef.current ?? 1
+      }
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || pinchStartDist <= 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      const d = pinchDistance(e.touches)
+      // Fingers apart → zoom in → smaller distance factor (closer camera).
+      const factor = pinchStartDist / Math.max(d, 1e-6)
+      userZoomRef.current = clampZoom(pinchStartZoom * factor)
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchStartDist = 0
+    }
+
     el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
+    el.addEventListener('touchstart', onTouchStart, { passive: true })
+    el.addEventListener('touchmove', onTouchMove, { passive: false, capture: true })
+    el.addEventListener('touchend', onTouchEnd)
+    el.addEventListener('touchcancel', onTouchEnd)
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove, true)
+      el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchEnd)
+    }
   }, [gl, userZoomRef])
 
   // Priority -2: run after drei OrbitControls (-1) so rotate angles stick,

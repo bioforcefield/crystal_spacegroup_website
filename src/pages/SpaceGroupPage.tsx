@@ -1,8 +1,9 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, type CSSProperties } from 'react'
 import { Navigate } from 'react-router-dom'
 import OperatorPanel from '../components/OperatorPanel'
 import SpaceGroupDiagram2D from '../components/SpaceGroupDiagram2D'
 import UnitCellScene from '../components/UnitCellScene'
+import { operatorClass } from '../data/math'
 import type { PlacementMode } from '../data/nearestImages'
 import type { SpaceGroupDemo } from '../data/types'
 
@@ -127,6 +128,35 @@ export default function SpaceGroupPage({ demo }: Props) {
               Reset view
             </button>
           </div>
+        </div>
+        <div
+          className="mobile-op-strip"
+          role="listbox"
+          aria-label="General-position operators"
+        >
+          {demo.operators.map((op) => {
+            const active = op.index === selectedIndex
+            const cls = operatorClass(demo, op)
+            return (
+              <button
+                key={op.index}
+                type="button"
+                role="option"
+                aria-selected={active}
+                className={`op-chip${active ? ' active' : ''}${op.index === 1 ? ' is-base' : ''}`}
+                style={
+                  {
+                    ['--op-color' as string]: cls.color,
+                  } as CSSProperties
+                }
+                onClick={() => handleSelect(op.index)}
+                title={`${op.triplet} · ${op.label}`}
+              >
+                <span className="op-chip-idx">{op.index}</span>
+                <span className="op-chip-triplet">{op.triplet}</span>
+              </button>
+            )
+          })}
         </div>
         <div className="viewport-body">
           <div className="canvas-wrap">
