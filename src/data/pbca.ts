@@ -148,28 +148,28 @@ export const OPERATORS: Operator[] = [
   {
     index: 7,
     triplet: 'x, −y+½, z+½',
-    label: 'b-glide ⊥ a',
-    classId: 'b-glide',
+    label: 'c-glide ⊥ b',
+    classId: 'c-glide',
     R: [
       [1, 0, 0],
       [0, -1, 0],
       [0, 0, 1],
     ],
     t: [0, 0.5, 0.5],
-    seitz: '{m₁₀₀ | 0,½,½}',
+    seitz: '{m₀₁₀ | 0,½,½}',
   },
   {
     index: 8,
     triplet: '−x+½, y+½, z',
-    label: 'c-glide ⊥ b',
-    classId: 'c-glide',
+    label: 'b-glide ⊥ a',
+    classId: 'b-glide',
     R: [
       [-1, 0, 0],
       [0, 1, 0],
       [0, 0, 1],
     ],
     t: [0.5, 0.5, 0],
-    seitz: '{m₀₁₀ | ½,½,0}',
+    seitz: '{m₁₀₀ | ½,½,0}',
   },
 ]
 
@@ -289,4 +289,20 @@ export function classColor(classId: SymmetryClassId): string {
 
 export function operatorClass(op: Operator): SymmetryClass {
   return SYMMETRY_CLASSES[op.classId]
+}
+
+/** Apply operator without wrapping into [0, 1). */
+export function applyOperatorRaw(op: Operator, p: Vec3): Vec3 {
+  const x =
+    op.R[0][0] * p[0] + op.R[0][1] * p[1] + op.R[0][2] * p[2] + op.t[0]
+  const y =
+    op.R[1][0] * p[0] + op.R[1][1] * p[1] + op.R[1][2] * p[2] + op.t[1]
+  const z =
+    op.R[2][0] * p[0] + op.R[2][1] * p[1] + op.R[2][2] * p[2] + op.t[2]
+  return [x, y, z]
+}
+
+/** Add two fractional vectors. */
+export function addFrac(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
 }

@@ -3,18 +3,18 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
+import { CELL, type GeneralPoint, type Mat3, type Vec3 } from '../data/pbca'
 import {
-  CELL,
-  generalPositions,
-  type GeneralPoint,
-  type Mat3,
-  type Vec3,
-} from '../data/pbca'
+  placedPositions,
+  type PlacementMode,
+} from '../data/nearestImages'
 import { ChiralMotifMesh, orientationFromR } from './ChiralMotif'
+import SymmetryElements from './SymmetryElements'
 
 interface SceneProps {
   selectedIndex: number
   animateToken: number
+  placementMode: PlacementMode
 }
 
 function UnitCellWireframe() {
@@ -321,15 +321,20 @@ function GhostAnimator({
 function SceneContent({
   selectedIndex,
   animateToken,
+  placementMode,
   onSelect,
   controlsRef,
 }: SceneProps & {
   onSelect: (index: number) => void
   controlsRef: RefObject<OrbitControlsImpl | null>
 }) {
-  const points = useMemo(() => generalPositions(), [])
+  const placement = useMemo(
+    () => placedPositions(selectedIndex, placementMode),
+    [selectedIndex, placementMode],
+  )
+  const { points, baseCartesian, imageCartesian } = placement
   const selected = points.find((p) => p.index === selectedIndex) ?? points[0]
-  const identity = points[0]
+  const identity = points.find((p) => p.index === 1) ?? points[0]
 
   return (
     <>
@@ -340,8 +345,9 @@ function SceneContent({
 
       <group position={[-CELL.a / 2, -CELL.b / 2, -CELL.c / 2]}>
         <UnitCellWireframe />
+        <SymmetryElements selectedIndex={selectedIndex} />
         <AxisLabels />
-        <BaseImageConnector from={identity.cartesian} to={selected.cartesian} />
+        <BaseImageConnector from={baseCartesian} to={imageCartesian} />
         {points.map((p) => (
           <PointMarker
             key={p.index}
@@ -352,8 +358,8 @@ function SceneContent({
           />
         ))}
         <GhostAnimator
-          fromPos={identity.cartesian}
-          toPos={selected.cartesian}
+          fromPos={baseCartesian}
+          toPos={imageCartesian}
           fromR={identity.operator.R}
           toR={selected.operator.R}
           ghostColor={selected.classColor}
@@ -376,6 +382,7 @@ function SceneContent({
 export default function UnitCellScene({
   selectedIndex,
   animateToken,
+  placementMode,
   onSelectPoint,
   resetToken,
 }: SceneProps & {
@@ -402,6 +409,7 @@ export default function UnitCellScene({
       <SceneContent
         selectedIndex={selectedIndex}
         animateToken={animateToken}
+        placementMode={placementMode}
         onSelect={onSelectPoint}
         controlsRef={controlsRef}
       />

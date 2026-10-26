@@ -451,3 +451,67 @@ button {
   color: #fef08a;
   border: 1px solid rgba(250, 204, 21, 0.5);
 }
+
+.legend.elements-legend {
+  font-size: 0.78rem;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.chip.element {
+  background: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  min-width: 1.35rem;
+  text-align: center;
+}
+
+.element-locus {
+  margin: 0.65rem 0 0;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.85rem;
+  color: #fde68a;
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.22);
+  border-radius: 6px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.segmented .seg {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 0.38rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmented .seg + .seg {
+  border-left: 1px solid rgba(56, 189, 248, 0.22);
+}
+
+.segmented .seg:hover {
+  color: var(--accent);
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.segmented .seg.active {
+  background: rgba(56, 189, 248, 0.22);
+  color: #e0f2fe;
+}
