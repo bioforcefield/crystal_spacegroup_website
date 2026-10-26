@@ -24,9 +24,10 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   fourfold: { id: 'fourfold', label: '4-fold', color: '#a5b4fc' },
   screw: { id: 'screw', label: '2₁ screw', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
+  mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide ⊥ c', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
-  'c-glide': { id: 'c-glide', label: 'mirror / c-glide', color: '#fb923c' },
+  'c-glide': { id: 'c-glide', label: 'c-glide', color: '#fb923c' },
   'n-glide': { id: 'n-glide', label: 'n-glide', color: '#2dd4bf' },
   'd-glide': { id: 'd-glide', label: 'd-glide', color: '#f9a8d4' },
 }
@@ -36,7 +37,7 @@ export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'twofold',
   'screw',
   'inversion',
-  'c-glide',
+  'mirror',
   'a-glide',
   'n-glide',
 ]
@@ -75,7 +76,7 @@ export const OPERATORS: Operator[] = RAW.map((op) => {
     case 6:
       return { ...op, label: 'a-glide ⊥ c', classId: 'a-glide' }
     case 7:
-      return { ...op, label: 'mirror ⊥ a', classId: 'c-glide' }
+      return { ...op, label: 'mirror ⊥ a', classId: 'mirror' }
     case 8:
       return { ...op, label: 'n-glide ⊥ b', classId: 'n-glide' }
     case 9:
@@ -141,7 +142,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 0,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 7,
     primary: true,
     locus: 'x = 0, mirror (no glide)',
@@ -151,7 +152,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 0,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 7,
     primary: false,
     locus: 'x = ½, mirror (no glide)',

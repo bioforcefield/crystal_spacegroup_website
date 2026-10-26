@@ -86,9 +86,9 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the 36 golden demos', () => {
+  it('has the 41 golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 146, 147, 148, 167, 225, 227, 230,
+      1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 123, 146, 147, 148, 167, 194, 221, 225, 227, 229, 230,
     ])
     expect(allHandDemos()).toEqual(demos)
   })
@@ -169,7 +169,7 @@ describe('generated catalog 1–230', () => {
   })
 
   it('hand overrides win over generated for hand-polished set', () => {
-    const handNums = [1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 146, 147, 148, 167, 225, 227, 230]
+    const handNums = [1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 123, 146, 147, 148, 167, 194, 221, 225, 227, 229, 230]
     for (const n of handNums) {
       expect(getDemo(n)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     }
@@ -221,6 +221,20 @@ describe('generated catalog 1–230', () => {
     expect(getDemo(230)!.operators.length).toBe(96)
     expect(getDemo(1)!.cell.alphaDeg).toBe(75)
     expect(getDemo(2)!.cell.alphaDeg).toBe(75)
+    expect(getDemo(10)?.meta.hm).toBe('P2/m')
+    expect(getDemo(123)?.meta.hm).toBe('P4/mmm')
+    expect(getDemo(123)!.cell.a).toBe(getDemo(123)!.cell.b)
+    expect(getDemo(194)?.meta.hm).toBe('P63/mmc')
+    expect(getDemo(194)!.cell.gammaDeg).toBe(120)
+    expect(getDemo(194)!.screwAxes.some((a) => a.kind === '63')).toBe(true)
+    expect(getDemo(221)?.meta.hm).toBe('Pm-3m')
+    expect(getDemo(221)!.operators.length).toBe(48)
+    expect(getDemo(221)!.operatorFocusIndices?.length).toBeGreaterThan(0)
+    expect(getDemo(229)?.meta.hm).toBe('Im-3m')
+    expect(getDemo(229)!.operators.length).toBe(96)
+    // dedicated mirror class (not c-glide piggyback)
+    expect(getDemo(10)!.operators.some((o) => o.classId === 'mirror')).toBe(true)
+    expect(getDemo(221)!.operators.some((o) => o.classId === 'mirror')).toBe(true)
   })
 })
 

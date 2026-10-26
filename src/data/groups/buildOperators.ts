@@ -80,7 +80,7 @@ function classify(R: Mat3, t: Vec3): { classId: SymmetryClassId; label: string }
     if (gx && gz) return { classId: 'n-glide', label: 'n-glide ⊥ b' }
     if (gx) return { classId: 'a-glide', label: 'a-glide ⊥ b' }
     if (gz) return { classId: 'c-glide', label: 'c-glide ⊥ b' }
-    return { classId: 'c-glide', label: 'mirror ⊥ b' }
+    return { classId: 'mirror', label: 'mirror ⊥ b' }
   }
   // Fallback: improper → treat as glide-ish; proper → screw-ish
   if (det3(R) < 0) {

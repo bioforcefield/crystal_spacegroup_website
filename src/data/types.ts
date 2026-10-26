@@ -23,6 +23,7 @@ export type SymmetryClassId =
   | 'fourfold'
   | 'screw'
   | 'inversion'
+  | 'mirror'
   | 'a-glide'
   | 'b-glide'
   | 'c-glide'
@@ -65,7 +66,7 @@ export interface ScrewAxisSpec {
   opIndex: number
   primary: boolean
   /** Axis order/type (default '21' for backward compat). */
-  kind?: '2' | '21' | '3' | '4' | '41' | '43' | 'bar4'
+  kind?: '2' | '21' | '3' | '4' | '41' | '43' | '63' | 'bar4'
 }
 
 export interface InversionCenterSpec {
@@ -91,7 +92,7 @@ export interface GlidePlaneSpec {
   label: string
   classId: Extract<
     SymmetryClassId,
-    'a-glide' | 'b-glide' | 'c-glide' | 'n-glide' | 'd-glide'
+    'a-glide' | 'b-glide' | 'c-glide' | 'n-glide' | 'd-glide' | 'mirror'
   >
   opIndex: number
   primary: boolean

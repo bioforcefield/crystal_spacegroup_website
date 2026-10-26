@@ -166,9 +166,11 @@ function ScrewAxisVisual({
   const arcSpan =
     kind === '3'
       ? (2 * Math.PI) / 3
-      : kind === '4' || kind === '41' || kind === '43' || kind === 'bar4'
-        ? Math.PI / 2
-        : Math.PI
+      : kind === '63'
+        ? Math.PI / 3
+        : kind === '4' || kind === '41' || kind === '43' || kind === 'bar4'
+          ? Math.PI / 2
+          : Math.PI
   const arcPts: Vec3[] = [0, 0.25, 0.5, 0.75, 1].map((t) => {
     const ang = arcSpan * t
     return [
@@ -189,9 +191,11 @@ function ScrewAxisVisual({
             ? '4₁'
             : kind === '43'
               ? '4₃'
-              : kind === 'bar4'
-                ? '−4'
-                : '2₁'
+              : kind === '63'
+                ? '6₃'
+                : kind === 'bar4'
+                  ? '−4'
+                  : '2₁'
 
   return (
     <group>
@@ -210,7 +214,7 @@ function ScrewAxisVisual({
             color={color}
             opacity={opacity}
           />
-          {(kind === '21' || kind === '41' || kind === '43') && (
+          {(kind === '21' || kind === '41' || kind === '43' || kind === '63') && (
             <ArrowHead
               position={headFar}
               direction={axisUnit}
@@ -237,7 +241,7 @@ function ScrewAxisVisual({
             opacity={opacity}
             scale={0.7}
           />
-          {(kind === '21' || kind === '41' || kind === '43') && (
+          {(kind === '21' || kind === '41' || kind === '43' || kind === '63') && (
             <>
               <Line
                 points={[tickFrom, tickTo]}

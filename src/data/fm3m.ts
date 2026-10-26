@@ -25,9 +25,10 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   fourfold: { id: 'fourfold', label: '4-fold ‖〈100〉', color: '#a5b4fc' },
   screw: { id: 'screw', label: '2-fold / screw', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
+  mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
-  'c-glide': { id: 'c-glide', label: 'mirror / c-glide', color: '#fb923c' },
+  'c-glide': { id: 'c-glide', label: 'c-glide', color: '#fb923c' },
   'n-glide': { id: 'n-glide', label: 'n-glide', color: '#2dd4bf' },
   'd-glide': { id: 'd-glide', label: 'd-glide', color: '#f9a8d4' },
 }
@@ -38,7 +39,7 @@ export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'threefold',
   'screw',
   'inversion',
-  'c-glide',
+  'mirror',
 ]
 
 const triplets = (
@@ -81,13 +82,13 @@ export const OPERATORS: Operator[] = RAW.map((op) => {
     return { ...op, label: '4-fold ‖〈100〉', classId: 'fourfold' as SymmetryClassId }
   }
   if (det === -1 && tr === 1 && t.every((c) => Math.abs(c) < 1e-6)) {
-    return { ...op, label: 'mirror', classId: 'c-glide' as SymmetryClassId }
+    return { ...op, label: 'mirror', classId: 'mirror' as SymmetryClassId }
   }
   if (det === 1 && tr === -1) {
     return { ...op, label: '2-fold', classId: 'screw' as SymmetryClassId }
   }
   if (det === -1 && tr === 1) {
-    return { ...op, label: 'mirror / glide', classId: 'c-glide' as SymmetryClassId }
+    return { ...op, label: 'glide', classId: 'c-glide' as SymmetryClassId }
   }
   return op
 })
@@ -135,7 +136,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 2,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 27,
     primary: true,
     locus: 'z = 0, mirror (no glide)',
@@ -145,7 +146,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 0,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 29,
     primary: true,
     locus: 'x = 0, mirror (no glide)',
@@ -155,7 +156,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 1,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 31,
     primary: false,
     locus: 'y = 0, mirror (no glide)',
@@ -172,7 +173,8 @@ export function elementLocusForOp(opIndex: number): string | null {
   if (op.classId === 'threefold') return '3-fold axis along 〈111〉'
   if (op.classId === 'fourfold') return '4-fold axis ‖〈100〉'
   if (op.classId === 'inversion') return 'inversion at (0, 0, 0)'
-  if (op.classId === 'c-glide') return 'mirror plane'
+  if (op.classId === 'mirror') return 'mirror plane'
+  if (op.classId === 'c-glide') return 'glide plane'
   return op.label
 }
 

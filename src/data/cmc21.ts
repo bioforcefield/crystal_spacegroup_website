@@ -23,6 +23,7 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   fourfold: { id: 'fourfold', label: '4-fold', color: '#a5b4fc' },
   screw: { id: 'screw', label: '2₁ screw ‖ c', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
+  mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
   'c-glide': { id: 'c-glide', label: 'c-glide ⊥ b', color: '#fb923c' },
@@ -33,11 +34,12 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
 export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'identity',
   'screw',
+  'mirror',
   'c-glide',
   'n-glide',
 ]
 
-/** Mirror ⊥ a reuses c-glide slot label overridden per-op; true mirror at op3. */
+/** Mirror ⊥ a uses dedicated mirror class; c-glide ⊥ b kept separate. */
 const RAW = buildOperatorsFromTriplets([
   'x,y,z',
   '-x,-y,z+1/2',
@@ -56,7 +58,7 @@ export const OPERATORS: Operator[] = RAW.map((op) => {
     case 2:
       return { ...op, label: '2₁ screw ‖ c', classId: 'screw', seitz: '{2₀₀₁ | 0,0,½}' }
     case 3:
-      return { ...op, label: 'mirror ⊥ a', classId: 'c-glide', seitz: '{m₁₀₀ | 0}' }
+      return { ...op, label: 'mirror ⊥ a', classId: 'mirror', seitz: '{m₁₀₀ | 0}' }
     case 4:
       return { ...op, label: 'c-glide ⊥ b', classId: 'c-glide', seitz: '{m₀₁₀ | 0,0,½}' }
     case 5:
@@ -64,7 +66,7 @@ export const OPERATORS: Operator[] = RAW.map((op) => {
     case 6:
       return { ...op, label: '2₁ screw ‖ c (C)', classId: 'screw' }
     case 7:
-      return { ...op, label: 'mirror ⊥ a (C)', classId: 'c-glide' }
+      return { ...op, label: 'mirror ⊥ a (C)', classId: 'mirror' }
     case 8:
       return { ...op, label: 'n-glide ⊥ b', classId: 'n-glide', seitz: '{m₀₁₀ | ½,½,½}' }
     default:
@@ -94,7 +96,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 0,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 3,
     primary: true,
     locus: 'x = 0, mirror (no glide)',
@@ -104,7 +106,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 0,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 3,
     primary: false,
     locus: 'x = ½, mirror (no glide)',

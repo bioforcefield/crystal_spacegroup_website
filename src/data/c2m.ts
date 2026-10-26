@@ -24,9 +24,10 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   fourfold: { id: 'fourfold', label: '4-fold', color: '#a5b4fc' },
   screw: { id: 'screw', label: '2₁ screw ‖ b', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
+  mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide ⊥ b', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
-  'c-glide': { id: 'c-glide', label: 'mirror ⊥ b', color: '#fb923c' },
+  'c-glide': { id: 'c-glide', label: 'c-glide', color: '#fb923c' },
   'n-glide': { id: 'n-glide', label: 'n-glide', color: '#2dd4bf' },
   'd-glide': { id: 'd-glide', label: 'd-glide', color: '#f9a8d4' },
 }
@@ -36,7 +37,7 @@ export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'twofold',
   'screw',
   'inversion',
-  'c-glide',
+  'mirror',
   'a-glide',
 ]
 
@@ -61,7 +62,7 @@ export const OPERATORS: Operator[] = buildOperatorsFromTriplets([
       return {
         ...op,
         label: 'mirror ⊥ b',
-        classId: 'c-glide',
+        classId: 'mirror',
         seitz: '{m₀₁₀ | 0}',
       }
     case 5:
@@ -171,7 +172,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 1,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 4,
     primary: true,
     locus: 'y = 0, mirror (no glide)',
@@ -181,7 +182,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
     normalAxis: 1,
     glide: [0, 0, 0],
     label: 'mirror',
-    classId: 'c-glide',
+    classId: 'mirror',
     opIndex: 4,
     primary: false,
     locus: 'y = ½, mirror (no glide)',

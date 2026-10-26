@@ -25,6 +25,7 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   fourfold: { id: 'fourfold', label: '−4 ‖ c', color: '#a5b4fc' },
   screw: { id: 'screw', label: '4₁ screw ‖ c', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
+  mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide ⊥ c', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
   'c-glide': { id: 'c-glide', label: 'c-glide', color: '#fb923c' },
