@@ -67,65 +67,91 @@ export function addFrac(a: Vec3, b: Vec3): Vec3 {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
 }
 
-/** β in radians; unique axis b monoclinic (α = γ = 90° when unset). */
+/** α in radians; triclinic b∧c (default 90°). */
+export function alphaRad(cell: CellParams): number {
+  const deg = cell.alphaDeg ?? 90
+  return (deg * Math.PI) / 180
+}
+
+/** β in radians; unique-b monoclinic / triclinic a∧c (default 90°). */
 export function betaRad(cell: CellParams): number {
   const deg = cell.betaDeg ?? 90
   return (deg * Math.PI) / 180
 }
 
-/** γ in radians; hexagonal/trigonal (α = β = 90° when unset). */
+/** γ in radians; hexagonal/trigonal / triclinic a∧b (default 90°). */
 export function gammaRad(cell: CellParams): number {
   const deg = cell.gammaDeg ?? 90
   return (deg * Math.PI) / 180
 }
 
 /**
- * Fractional → Cartesian with α = 90° teaching cells.
- * Supports monoclinic unique-b (β) and/or hexagonal (γ); both default to 90°.
- * Orthogonalization matches ITA with α fixed at 90°:
+ * Fractional → Cartesian (ITA orthogonalization).
+ * Supports triclinic α / monoclinic β / hexagonal γ (each default 90°).
  *   x = a xf + b yf cosγ + c zf cosβ
- *   y =         b yf sinγ − c zf cosβ cosγ / sinγ
- *   z =         c zf √(1 − cos²β − cos²γ) / sinγ
+ *   y =         b yf sinγ + c zf (cosα − cosβ cosγ) / sinγ
+ *   z =                       c zf √(1 − cos²α − cos²β − cos²γ + 2 cosα cosβ cosγ) / sinγ
  */
 function angleCosSin(deg: number): { cos: number; sin: number } {
-  // Snap common teaching angles so γ=90 / β=90 stay exactly orthogonal.
+  // Snap common teaching angles so 90° stays exactly orthogonal.
   if (Math.abs(deg - 90) < 1e-9) return { cos: 0, sin: 1 }
   if (Math.abs(deg - 120) < 1e-9) return { cos: -0.5, sin: Math.sqrt(3) / 2 }
   if (Math.abs(deg - 60) < 1e-9) return { cos: 0.5, sin: Math.sqrt(3) / 2 }
+  if (Math.abs(deg - 105) < 1e-9) {
+    const rad = (105 * Math.PI) / 180
+    return { cos: Math.cos(rad), sin: Math.sin(rad) }
+  }
+  if (Math.abs(deg - 75) < 1e-9) {
+    const rad = (75 * Math.PI) / 180
+    return { cos: Math.cos(rad), sin: Math.sin(rad) }
+  }
   const rad = (deg * Math.PI) / 180
   return { cos: Math.cos(rad), sin: Math.sin(rad) }
 }
 
 export function fracToCart(p: Vec3, cell: CellParams): Vec3 {
+  const alphaDeg = cell.alphaDeg ?? 90
   const betaDeg = cell.betaDeg ?? 90
   const gammaDeg = cell.gammaDeg ?? 90
+  const { cos: cosA } = angleCosSin(alphaDeg)
   const { cos: cosB } = angleCosSin(betaDeg)
   const { cos: cosG, sin: sinG } = angleCosSin(gammaDeg)
   const sinGSafe = Math.abs(sinG) < 1e-12 ? 1 : sinG
-  // α = 90° ⇒ √(1 − cos²β − cos²γ) = √(sin²β − cos²γ) when γ free;
-  // with snapped 90/120 this matches sinβ for monoclinic and 1 for hex.
-  const volFactor = Math.sqrt(Math.max(0, 1 - cosB * cosB - cosG * cosG))
+  const cx = cosB
+  const cy = (cosA - cosB * cosG) / sinGSafe
+  const cz2 = Math.max(
+    0,
+    1 - cosA * cosA - cosB * cosB - cosG * cosG + 2 * cosA * cosB * cosG,
+  )
+  const cz = Math.sqrt(cz2) / sinGSafe
   return [
-    p[0] * cell.a + p[1] * cell.b * cosG + p[2] * cell.c * cosB,
-    p[1] * cell.b * sinG - p[2] * cell.c * cosB * cosG / sinGSafe,
-    p[2] * cell.c * volFactor / sinGSafe,
+    p[0] * cell.a + p[1] * cell.b * cosG + p[2] * cell.c * cx,
+    p[1] * cell.b * sinG + p[2] * cell.c * cy,
+    p[2] * cell.c * cz,
   ]
 }
 
-/** Cartesian → fractional (inverse of fracToCart; α = 90°). */
+/** Cartesian → fractional (inverse of fracToCart). */
 export function cartToFrac(p: Vec3, cell: CellParams): Vec3 {
+  const alphaDeg = cell.alphaDeg ?? 90
   const betaDeg = cell.betaDeg ?? 90
   const gammaDeg = cell.gammaDeg ?? 90
+  const { cos: cosA } = angleCosSin(alphaDeg)
   const { cos: cosB } = angleCosSin(betaDeg)
   const { cos: cosG, sin: sinG } = angleCosSin(gammaDeg)
   const sinGSafe = Math.abs(sinG) < 1e-12 ? 1 : sinG
-  const volFactor = Math.sqrt(Math.max(0, 1 - cosB * cosB - cosG * cosG))
-  const volSafe = Math.abs(volFactor) < 1e-12 ? 1 : volFactor
-  const zFrac = (p[2] * sinGSafe) / (cell.c * volSafe)
-  const yFrac =
-    (p[1] + zFrac * cell.c * cosB * cosG / sinGSafe) / (cell.b * sinGSafe)
+  const cx = cosB
+  const cy = (cosA - cosB * cosG) / sinGSafe
+  const cz2 = Math.max(
+    0,
+    1 - cosA * cosA - cosB * cosB - cosG * cosG + 2 * cosA * cosB * cosG,
+  )
+  const cz = Math.sqrt(cz2) / sinGSafe
+  const czSafe = Math.abs(cz) < 1e-12 ? 1 : cz
+  const zFrac = p[2] / (cell.c * czSafe)
+  const yFrac = (p[1] - zFrac * cell.c * cy) / (cell.b * sinGSafe)
   const xFrac =
-    (p[0] - yFrac * cell.b * cosG - zFrac * cell.c * cosB) / cell.a
+    (p[0] - yFrac * cell.b * cosG - zFrac * cell.c * cx) / cell.a
   return [xFrac, yFrac, zFrac]
 }
 

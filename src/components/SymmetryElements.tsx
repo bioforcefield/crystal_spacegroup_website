@@ -365,7 +365,7 @@ function GlidePlaneVisual({
   const corners = useMemo(
     () => fracCorners.map((p) => fracToCart(p, cell)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cornerKey, cell.a, cell.b, cell.c, cell.betaDeg, cell.gammaDeg],
+    [cornerKey, cell.a, cell.b, cell.c, cell.alphaDeg, cell.betaDeg, cell.gammaDeg],
   )
   const geom = useMemo(() => {
     const g = new THREE.BufferGeometry()

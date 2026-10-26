@@ -50,8 +50,7 @@ const SEED: Vec3 = [0.17, 0.23, 0.31]
 function teachingCell(system: CrystalSystemId): CellParams {
   switch (system) {
     case 'triclinic':
-      // Teaching: unique-b β only (full triclinic α/γ still deferred).
-      return { a: 1, b: 1.2, c: 1.4, betaDeg: 105 }
+      return { a: 1, b: 1.15, c: 1.35, alphaDeg: 75, betaDeg: 85, gammaDeg: 100 }
     case 'monoclinic':
       return { a: 1, b: 1.15, c: 1.35, betaDeg: 110 }
     case 'orthorhombic':

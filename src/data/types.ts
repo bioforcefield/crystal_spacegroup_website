@@ -3,14 +3,16 @@
 export type Vec3 = [number, number, number]
 export type Mat3 = [Vec3, Vec3, Vec3]
 
-/** Teaching cell; optional β (monoclinic unique-b) and/or γ (hex/trigonal). */
+/** Teaching cell; optional α / β / γ (degrees, default 90). */
 export interface CellParams {
   a: number
   b: number
   c: number
-  /** Monoclinic angle β in degrees (default 90). Unique axis b; α = γ = 90°. */
+  /** Triclinic angle α (b∧c) in degrees (default 90). */
+  alphaDeg?: number
+  /** Monoclinic unique-b / triclinic angle β (a∧c) in degrees (default 90). */
   betaDeg?: number
-  /** Hexagonal/trigonal angle γ in degrees (default 90). α = β = 90°, typically a = b. */
+  /** Hexagonal/trigonal / triclinic angle γ (a∧b) in degrees (default 90). */
   gammaDeg?: number
 }
 

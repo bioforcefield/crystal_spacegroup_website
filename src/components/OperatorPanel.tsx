@@ -70,6 +70,7 @@ export default function OperatorPanel({
   const baseLabel =
     placementMode === 'nearest' ? 'BASE (nearest)' : 'BASE (in cell)'
   const { meta } = demo
+  const alpha = demo.cell.alphaDeg
   const beta = demo.cell.betaDeg
   const gamma = demo.cell.gammaDeg
 
@@ -101,6 +102,12 @@ export default function OperatorPanel({
             <dt>Multiplicity</dt>
             <dd>{meta.multiplicity}</dd>
           </div>
+          {alpha != null && alpha !== 90 && (
+            <div>
+              <dt>α (teaching)</dt>
+              <dd>{alpha}°</dd>
+            </div>
+          )}
           {beta != null && beta !== 90 && (
             <div>
               <dt>β (teaching)</dt>

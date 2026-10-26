@@ -46,6 +46,8 @@ describe('registry smoke', () => {
     expect(getDemo(80)?.meta.hm).toBe('I41')
     expect(getDemo(227)?.meta.hm).toBe('Fd-3m')
     expect(getDemo(147)?.meta.hm).toBe('P-3')
+    expect(getDemo(225)?.meta.hm).toBe('Fm-3m')
+    expect(getDemo(230)?.meta.hm).toBe('Ia-3d')
     expect(getDemo('pbar1')?.meta.number).toBe(2)
     expect(getDemo('P-1')?.meta.number).toBe(2)
     expect(getDemo('p-1')?.meta.number).toBe(2)
@@ -84,9 +86,9 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the 34 golden demos', () => {
+  it('has the 36 golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 146, 147, 148, 167, 227,
+      1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 146, 147, 148, 167, 225, 227, 230,
     ])
     expect(allHandDemos()).toEqual(demos)
   })
@@ -167,7 +169,7 @@ describe('generated catalog 1–230', () => {
   })
 
   it('hand overrides win over generated for hand-polished set', () => {
-    const handNums = [1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 146, 147, 148, 167, 227]
+    const handNums = [1, 2, 4, 5, 7, 9, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 146, 147, 148, 167, 225, 227, 230]
     for (const n of handNums) {
       expect(getDemo(n)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     }
@@ -214,6 +216,11 @@ describe('generated catalog 1–230', () => {
     expect(getDemo(227)!.operators.length).toBe(192)
     expect(getDemo(227)!.operatorFocusIndices?.length).toBeGreaterThan(0)
     expect(getDemo(147)!.cell.gammaDeg).toBe(120)
+    expect(getDemo(225)!.operators.length).toBe(192)
+    expect(getDemo(225)!.operatorFocusIndices?.length).toBeGreaterThan(0)
+    expect(getDemo(230)!.operators.length).toBe(96)
+    expect(getDemo(1)!.cell.alphaDeg).toBe(75)
+    expect(getDemo(2)!.cell.alphaDeg).toBe(75)
   })
 })
 

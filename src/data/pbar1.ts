@@ -16,7 +16,7 @@ import { buildOperatorsFromTriplets } from './groups'
  * Teaching cell: unequal edges + mild β so the cell isn’t a brick.
  * Full triclinic α/γ can come later; CellParams currently models unique-b β only.
  */
-export const CELL: CellParams = { a: 1, b: 1.2, c: 1.4, betaDeg: 105 }
+export const CELL: CellParams = { a: 1, b: 1.15, c: 1.35, alphaDeg: 75, betaDeg: 85, gammaDeg: 100 }
 
 /** Seed off special positions (fractional). */
 export const SEED: Vec3 = [0.18, 0.22, 0.31]
@@ -59,7 +59,7 @@ export const META: SpaceGroupMeta = {
   lattice: 'Primitive',
   multiplicity: 2,
   blurb:
-    'P-1 is the most common triclinic space group (~¼ of CSD entries). Only identity and inversion (−1) — no screws, glides, or mirrors. Teaching cell uses unequal edges and a single oblique angle (β ≈ 105°) for clarity; full triclinic α/γ can come later.',
+    'P-1 is the most common triclinic space group (~¼ of CSD entries). Only identity and inversion (−1) — no screws, glides, or mirrors. Teaching cell is fully triclinic (α = 75°, β = 85°, γ = 100°) so the parallelepiped is visibly skewed on all faces.',
 }
 
 function fmtFrac(v: number): string {

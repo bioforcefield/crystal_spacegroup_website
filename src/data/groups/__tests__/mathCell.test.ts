@@ -65,4 +65,31 @@ describe('fracToCart / cartToFrac teaching cells', () => {
     roundTrip(cell, [0, 0, 0])
     roundTrip(cell, [1, 1, 1])
   })
+
+  it('triclinic α ≠ 90° skews c out of the xz plane', () => {
+    const cell: CellParams = {
+      a: 1,
+      b: 1.15,
+      c: 1.35,
+      alphaDeg: 75,
+      betaDeg: 85,
+      gammaDeg: 100,
+    }
+    const cAxis = fracToCart([0, 0, 1], cell)
+    // With α ≠ 90, cy = (cosα − cosβ cosγ)/sinγ is nonzero → c has a y component
+    expect(Math.abs(cAxis[1])).toBeGreaterThan(0.05)
+    expect(cAxis[2]).toBeGreaterThan(0.5)
+    roundTrip(cell, [0.17, 0.23, 0.31])
+    roundTrip(cell, [0.5, 0.5, 0.5])
+    roundTrip(cell, [0, 0, 0])
+  })
+
+  it('α = 90° reduces to prior monoclinic/hex formulas', () => {
+    const mono: CellParams = { a: 1, b: 1.15, c: 1.35, betaDeg: 110 }
+    const beta = (110 * Math.PI) / 180
+    const p = fracToCart([0, 0, 1], mono)
+    expect(p[0]).toBeCloseTo(1.35 * Math.cos(beta), 9)
+    expect(p[1]).toBeCloseTo(0, 9)
+    expect(p[2]).toBeCloseTo(1.35 * Math.sin(beta), 9)
+  })
 })

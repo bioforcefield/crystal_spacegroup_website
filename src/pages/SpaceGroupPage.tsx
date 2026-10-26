@@ -211,11 +211,14 @@ export default function SpaceGroupPage({ demo }: Props) {
             ? ' · Nearest images (3D + 2D) may sit just outside the cell (UCL-style)'
             : ' · In cell wraps motifs into [0, 1)³ / [0, 1)²'}
           {!showAllSites ? ' · Showing only BASE + IMAGE' : ''}
+          {demo.cell.alphaDeg && demo.cell.alphaDeg !== 90
+            ? ` · α = ${demo.cell.alphaDeg}°`
+            : ''}
           {demo.cell.betaDeg && demo.cell.betaDeg !== 90
-            ? ` · Monoclinic β = ${demo.cell.betaDeg}°`
+            ? ` · β = ${demo.cell.betaDeg}°`
             : ''}
           {demo.cell.gammaDeg && demo.cell.gammaDeg !== 90
-            ? ` · Hexagonal γ = ${demo.cell.gammaDeg}°`
+            ? ` · γ = ${demo.cell.gammaDeg}°`
             : ''}
         </footer>
       </main>

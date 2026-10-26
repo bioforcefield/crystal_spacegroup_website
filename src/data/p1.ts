@@ -14,7 +14,7 @@ import type {
  * Teaching cell: unequal edges + mild β so the cell isn’t a brick.
  * Full triclinic α/γ not modeled yet (unique-b β only) — same compromise as P-1.
  */
-export const CELL: CellParams = { a: 1, b: 1.2, c: 1.4, betaDeg: 105 }
+export const CELL: CellParams = { a: 1, b: 1.15, c: 1.35, alphaDeg: 75, betaDeg: 85, gammaDeg: 100 }
 
 /** Seed anywhere — every position is general in P1. */
 export const SEED: Vec3 = [0.18, 0.22, 0.31]
@@ -59,7 +59,7 @@ export const META: SpaceGroupMeta = {
   lattice: 'Primitive',
   multiplicity: 1,
   blurb:
-    'P1 is the simplest space group (~1% of CSD): only the identity. The asymmetric unit is the whole cell — every motif sits in a general position with no symmetry copies inside the cell. Teaching baseline before P-1 adds inversion; cell uses unequal edges and β ≈ 105° (full triclinic α/γ later).',
+    'P1 is the simplest space group (~1% of CSD): only the identity. The asymmetric unit is the whole cell. Teaching cell α = 75°, β = 85°, γ = 100° — a fully triclinic parallelepiped (baseline before P-1).',
 }
 
 export function elementLocusForOp(opIndex: number): string | null {
