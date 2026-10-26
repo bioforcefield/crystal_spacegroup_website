@@ -18,7 +18,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <OperatorPanel selectedIndex={selectedIndex} onSelect={handleSelect} />
+      <OperatorPanel
+        selectedIndex={selectedIndex}
+        onSelect={handleSelect}
+        placementMode={placementMode}
+      />
 
       <main className="viewport">
         <div className="viewport-toolbar">

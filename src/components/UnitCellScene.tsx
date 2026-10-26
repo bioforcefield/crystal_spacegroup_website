@@ -64,13 +64,13 @@ function UnitCellWireframe() {
           emissiveIntensity={0.4}
         />
       </mesh>
-      <Billboard position={[-0.08, -0.08, -0.08]}>
+      <Billboard position={[-0.14, -0.1, 0.02]}>
         <Text
-          fontSize={0.11}
+          fontSize={0.13}
           color="#e2e8f0"
           anchorX="center"
           anchorY="middle"
-          outlineWidth={0.01}
+          outlineWidth={0.012}
           outlineColor="#0f172a"
         >
           o
@@ -209,7 +209,7 @@ function PointMarker({
         position={[
           point.cartesian[0],
           point.cartesian[1],
-          point.cartesian[2] + (isBase ? 0.26 : 0.2),
+          point.cartesian[2] + (isBase || isImage ? 0.26 : 0.2),
         ]}
       >
         <Text
@@ -220,29 +220,15 @@ function PointMarker({
           outlineWidth={0.006}
           outlineColor="#0f172a"
         >
-          {isBase ? (isImage ? `${point.index} · BASE` : `BASE`) : String(point.index)}
+          {isBase && isImage
+            ? 'BASE · IMAGE'
+            : isBase
+              ? 'BASE'
+              : isImage
+                ? `${point.index} · IMAGE`
+                : String(point.index)}
         </Text>
       </Billboard>
-      {isImage && !isBase && (
-        <Billboard
-          position={[
-            point.cartesian[0],
-            point.cartesian[1],
-            point.cartesian[2] + 0.32,
-          ]}
-        >
-          <Text
-            fontSize={0.07}
-            color="#fef08a"
-            anchorX="center"
-            anchorY="middle"
-            outlineWidth={0.005}
-            outlineColor="#0f172a"
-          >
-            IMAGE
-          </Text>
-        </Billboard>
-      )}
     </group>
   )
 }

@@ -652,8 +652,15 @@ export default function SpaceGroupDiagram2D({
         </g>
 
         <g className="d2-axes" fill="#94a3b8" fontSize={12} fontWeight={600}>
-          <text x={origin.x - 12} y={origin.y + 16} textAnchor="middle">
-            O
+          <text
+            x={origin.x - 12}
+            y={origin.y + 16}
+            textAnchor="middle"
+            fontSize={14}
+            fontStyle="italic"
+            fontFamily="Georgia, 'Times New Roman', serif"
+          >
+            o
           </text>
           <text
             x={(origin.x + cornerA.x) / 2}

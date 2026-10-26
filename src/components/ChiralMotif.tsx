@@ -36,8 +36,9 @@ export function orientationFromR(R: Mat3): {
 }
 
 /**
- * Compact chiral "L" triad: three unequal orthogonal arms + a handed flag
- * on the long (+z) arm. Mirror via parent scale.x = −1 for improper ops.
+ * Compact chiral "L" triad: three unequal orthogonal arms ending in
+ * distinct shapes (ball / triangle / square) so rotations and mirrors
+ * are easy to read. Mirror via parent scale.x = −1 for improper ops.
  */
 export function ChiralMotifMesh({
   color,
@@ -63,62 +64,65 @@ export function ChiralMotifMesh({
   }
 
   const armR = selected ? 0.018 : 0.015
+  const tip = selected ? 0.032 : 0.026
   const lx = 0.07
   const ly = 0.11
   const lz = 0.15
 
   return (
     <group>
+      {/* Origin hub */}
       <mesh>
-        <sphereGeometry args={[selected ? 0.028 : 0.022, 16, 16]} />
+        <sphereGeometry args={[selected ? 0.024 : 0.02, 16, 16]} />
         <meshStandardMaterial
           {...matProps}
           emissiveIntensity={emissiveIntensity + 0.15}
         />
       </mesh>
 
-      {/* +x short (red tip) */}
+      {/* +x short → ball (sphere) */}
       <mesh position={[lx / 2, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <cylinderGeometry args={[armR, armR, lx, 10]} />
         <meshStandardMaterial {...matProps} />
       </mesh>
       <mesh position={[lx, 0, 0]}>
-        <sphereGeometry args={[armR * 1.35, 12, 12]} />
+        <sphereGeometry args={[tip, 16, 16]} />
         <meshStandardMaterial
           {...matProps}
           color="#fca5a5"
           emissive="#f87171"
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.5}
         />
       </mesh>
 
-      {/* +y medium (green tip) */}
+      {/* +y medium → triangle (3-sided cone / tetrahedral tip) */}
       <mesh position={[0, ly / 2, 0]}>
         <cylinderGeometry args={[armR, armR, ly, 10]} />
         <meshStandardMaterial {...matProps} />
       </mesh>
-      <mesh position={[0, ly, 0]}>
-        <sphereGeometry args={[armR * 1.35, 12, 12]} />
+      <mesh position={[0, ly, 0]} rotation={[0, Math.PI / 6, 0]}>
+        <coneGeometry args={[tip * 1.15, tip * 1.9, 3]} />
         <meshStandardMaterial
           {...matProps}
           color="#86efac"
           emissive="#4ade80"
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.5}
+          flatShading
         />
       </mesh>
 
-      {/* +z long (blue tip) */}
+      {/* +z long → square (box) */}
       <mesh position={[0, 0, lz / 2]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[armR, armR, lz, 10]} />
         <meshStandardMaterial {...matProps} />
       </mesh>
-      <mesh position={[0, 0, lz]}>
-        <sphereGeometry args={[armR * 1.45, 12, 12]} />
+      <mesh position={[0, 0, lz]} rotation={[Math.PI / 8, Math.PI / 8, 0]}>
+        <boxGeometry args={[tip * 1.55, tip * 1.55, tip * 1.55]} />
         <meshStandardMaterial
           {...matProps}
           color="#93c5fd"
           emissive="#60a5fa"
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.5}
         />
       </mesh>
 

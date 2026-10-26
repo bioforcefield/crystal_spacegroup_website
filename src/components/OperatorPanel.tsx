@@ -1,19 +1,25 @@
 import type { CSSProperties } from 'react'
+import { useMemo } from 'react'
 import {
   OPERATORS,
   META,
   SEED,
-  applyOperator,
   isImproper,
   operatorClass,
   CLASS_LEGEND_ORDER,
   SYMMETRY_CLASSES,
   type Operator,
 } from '../data/pbca'
+import { elementLocusForOp } from '../data/symmetryElements'
+import {
+  placedPositions,
+  type PlacementMode,
+} from '../data/nearestImages'
 
 interface Props {
   selectedIndex: number
   onSelect: (index: number) => void
+  placementMode: PlacementMode
 }
 
 function formatFrac(v: number): string {
@@ -22,6 +28,10 @@ function formatFrac(v: number): string {
     .replace(/\.?0+$/, (m) =>
       m.includes('.') ? m.replace(/0+$/, '').replace(/\.$/, '') : m,
     )
+}
+
+function formatVec(v: [number, number, number]): string {
+  return `(${v.map(formatFrac).join(', ')})`
 }
 
 function MatrixBlock({ op }: { op: Operator }) {
@@ -36,10 +46,25 @@ function MatrixBlock({ op }: { op: Operator }) {
   )
 }
 
-export default function OperatorPanel({ selectedIndex, onSelect }: Props) {
+export default function OperatorPanel({
+  selectedIndex,
+  onSelect,
+  placementMode,
+}: Props) {
   const selected = OPERATORS.find((o) => o.index === selectedIndex) ?? OPERATORS[0]
-  const image = applyOperator(selected, SEED)
   const selectedClass = operatorClass(selected)
+  const placement = useMemo(
+    () => placedPositions(selectedIndex, placementMode),
+    [selectedIndex, placementMode],
+  )
+  const basePoint =
+    placement.points.find((p) => p.index === 1) ?? placement.points[0]
+  const imagePoint =
+    placement.points.find((p) => p.index === selectedIndex) ?? basePoint
+  const imageLabel =
+    placementMode === 'nearest' ? 'IMAGE (nearest)' : 'IMAGE (in cell)'
+  const baseLabel =
+    placementMode === 'nearest' ? 'BASE (nearest)' : 'BASE (in cell)'
 
   return (
     <aside className="panel">
@@ -72,11 +97,17 @@ export default function OperatorPanel({ selectedIndex, onSelect }: Props) {
       <section className="seed-box">
         <h2>Asymmetric seed · BASE</h2>
         <p>
-          (x, y, z) = ({SEED.map(formatFrac).join(', ')})
+          Seed (x, y, z) = {formatVec(SEED)}
+        </p>
+        <p>
+          {baseLabel}: {formatVec(basePoint.fractional)}
         </p>
         <p className="muted">
-          IMAGE under op {selected.index} ({selectedClass.label}): (
-          {image.map(formatFrac).join(', ')})
+          {imageLabel} under op {selected.index} ({selectedClass.label}):{' '}
+          {formatVec(imagePoint.fractional)}
+        </p>
+        <p className="hint seed-note">
+          2D diagram always uses wrapped [0,1)² positions.
         </p>
       </section>
 
@@ -145,6 +176,11 @@ export default function OperatorPanel({ selectedIndex, onSelect }: Props) {
           x′ = R x + t &nbsp;·&nbsp; {selected.seitz}
         </p>
         <MatrixBlock op={selected} />
+        {elementLocusForOp(selected.index) && (
+          <p className="element-locus">
+            Element · {elementLocusForOp(selected.index)}
+          </p>
+        )}
       </section>
     </aside>
   )

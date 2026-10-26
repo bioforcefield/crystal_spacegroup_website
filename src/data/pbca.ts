@@ -12,7 +12,7 @@ export interface CellParams {
 export const CELL: CellParams = { a: 1, b: 1.2, c: 1.5 }
 
 /** Seed point in the asymmetric unit (fractional coordinates). */
-export const SEED: Vec3 = [0.25, 0.15, 0.3]
+export const SEED: Vec3 = [0.22, 0.15, 0.3]
 
 export type SymmetryClassId =
   | 'identity'
