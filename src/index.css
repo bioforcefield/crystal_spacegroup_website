@@ -515,3 +515,81 @@ button {
   background: rgba(56, 189, 248, 0.22);
   color: #e0f2fe;
 }
+
+/* —— Viewport body: 3D + 2D split —— */
+.viewport-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.viewport-body .canvas-wrap {
+  flex: 1 1 58%;
+  min-height: 180px;
+}
+
+.diagram2d {
+  flex: 0 0 auto;
+  height: 310px;
+  max-height: 42vh;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--panel-border);
+  background: rgba(8, 12, 22, 0.92);
+  min-height: 240px;
+}
+
+.diagram2d-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.9rem 0.35rem;
+  flex-shrink: 0;
+}
+
+.diagram2d-title {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.diagram2d-title .eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+}
+
+.diagram2d-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.diagram2d-svg {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: 0 0.5rem 0.35rem;
+  display: block;
+}
+
+.d2-site:focus {
+  outline: none;
+}
+
+.d2-site:focus-visible circle:first-of-type,
+.d2-site:hover > circle:nth-of-type(2),
+.d2-site:hover > circle:first-of-type {
+  filter: brightness(1.15);
+}
+
+@media (max-width: 900px) {
+  .diagram2d {
+    height: 280px;
+    max-height: none;
+  }
+}
