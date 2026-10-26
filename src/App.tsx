@@ -10,6 +10,7 @@ export default function App() {
   const [animateToken, setAnimateToken] = useState(0)
   const [resetToken, setResetToken] = useState(0)
   const [placementMode, setPlacementMode] = useState<PlacementMode>('nearest')
+  const [showAllSites, setShowAllSites] = useState(true)
 
   const handleSelect = useCallback((index: number) => {
     setSelectedIndex(index)
@@ -88,6 +89,28 @@ export default function App() {
                 In cell
               </button>
             </div>
+            <div
+              className="segmented"
+              role="group"
+              aria-label="Motif visibility"
+            >
+              <button
+                type="button"
+                className={showAllSites ? 'seg active' : 'seg'}
+                onClick={() => setShowAllSites(true)}
+                title="Show all eight general-position motifs"
+              >
+                All sites
+              </button>
+              <button
+                type="button"
+                className={!showAllSites ? 'seg active' : 'seg'}
+                onClick={() => setShowAllSites(false)}
+                title="Show only BASE and its IMAGE under the selected operator"
+              >
+                BASE + IMAGE
+              </button>
+            </div>
             <button
               type="button"
               className="btn"
@@ -103,6 +126,7 @@ export default function App() {
               selectedIndex={selectedIndex}
               animateToken={animateToken}
               placementMode={placementMode}
+              showAllSites={showAllSites}
               onSelectPoint={handleSelect}
               resetToken={resetToken}
             />
@@ -110,6 +134,7 @@ export default function App() {
           <SpaceGroupDiagram2D
             selectedIndex={selectedIndex}
             onSelect={handleSelect}
+            showAllSites={showAllSites}
           />
         </div>
         <footer className="viewport-footer">
@@ -120,6 +145,9 @@ export default function App() {
             ? ' · Nearest images may sit just outside the wireframe cell (UCL-style)'
             : ' · In cell wraps every motif into [0, 1)³'}
           {' · 2D diagram uses wrapped [0,1)² positions'}
+          {!showAllSites
+            ? ' · Showing only BASE + IMAGE'
+            : ''}
         </footer>
       </main>
     </div>

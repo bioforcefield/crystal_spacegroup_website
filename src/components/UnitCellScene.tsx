@@ -15,6 +15,7 @@ interface SceneProps {
   selectedIndex: number
   animateToken: number
   placementMode: PlacementMode
+  showAllSites: boolean
 }
 
 function UnitCellWireframe() {
@@ -320,6 +321,7 @@ function SceneContent({
   selectedIndex,
   animateToken,
   placementMode,
+  showAllSites,
   onSelect,
   controlsRef,
 }: SceneProps & {
@@ -346,7 +348,14 @@ function SceneContent({
         <SymmetryElements selectedIndex={selectedIndex} />
         <AxisLabels />
         <BaseImageConnector from={baseCartesian} to={imageCartesian} />
-        {points.map((p) => (
+        {points
+          .filter(
+            (p) =>
+              showAllSites ||
+              p.index === 1 ||
+              p.index === selectedIndex,
+          )
+          .map((p) => (
           <PointMarker
             key={p.index}
             point={p}
@@ -381,6 +390,7 @@ export default function UnitCellScene({
   selectedIndex,
   animateToken,
   placementMode,
+  showAllSites,
   onSelectPoint,
   resetToken,
 }: SceneProps & {
@@ -408,6 +418,7 @@ export default function UnitCellScene({
         selectedIndex={selectedIndex}
         animateToken={animateToken}
         placementMode={placementMode}
+        showAllSites={showAllSites}
         onSelect={onSelectPoint}
         controlsRef={controlsRef}
       />

@@ -22,6 +22,7 @@ import {
 interface Props {
   selectedIndex: number
   onSelect: (index: number) => void
+  showAllSites?: boolean
 }
 
 const PAD = { left: 40, right: 32, top: 18, bottom: 34 }
@@ -417,6 +418,7 @@ function InversionsLayer({
 export default function SpaceGroupDiagram2D({
   selectedIndex,
   onSelect,
+  showAllSites = true,
 }: Props) {
   const [projDir, setProjDir] = useState<ProjectionDir>(DEFAULT_PROJECTION)
   const plotRef = useRef<HTMLDivElement>(null)
@@ -558,7 +560,14 @@ export default function SpaceGroupDiagram2D({
         />
 
         <g className="d2-sites">
-          {points.map((pt) => {
+          {points
+            .filter(
+              (pt) =>
+                showAllSites ||
+                pt.index === 1 ||
+                pt.index === selectedIndex,
+            )
+            .map((pt) => {
             const { u, v, w } = projectFrac(pt.fractional, proj)
             const { x, y } = toSvg(u, v)
             const isBase = pt.index === 1
