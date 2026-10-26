@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import SymmetryPrimer from '../components/SymmetryPrimer'
 import CsdStatistics from '../components/CsdStatistics'
@@ -14,14 +14,6 @@ import {
 import { CLASS_LEGEND_ORDER, SYMMETRY_CLASSES } from '../data/pbca'
 
 type SystemFilter = CrystalSystemId | 'all'
-
-const NAV = [
-  { id: 'explore', label: 'Explore' },
-  { id: 'index', label: 'Index' },
-  { id: 'stats', label: 'Statistics' },
-  { id: 'primer', label: 'Symmetry' },
-  { id: 'guide', label: 'How to use' },
-] as const
 
 function GroupChip({ g }: { g: SpaceGroupEntry }) {
   const sys = systemInfo(g.system)
@@ -54,14 +46,31 @@ function GroupChip({ g }: { g: SpaceGroupEntry }) {
 export default function IndexPage() {
   const [system, setSystem] = useState<SystemFilter>('all')
   const [query, setQuery] = useState('')
+  const [liveOnly, setLiveOnly] = useState(false)
 
-  const filtered = useMemo(
-    () => filterGroups(query, system),
-    [query, system],
-  )
+  const filtered = useMemo(() => {
+    const base = filterGroups(query, system)
+    return liveOnly ? base.filter((g) => g.status === 'ready') : base
+  }, [query, system, liveOnly])
 
-  const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const plannedHidden = useMemo(() => {
+    if (!liveOnly) return 0
+    return filterGroups(query, system).filter((g) => g.status !== 'ready').length
+  }, [query, system, liveOnly])
+
+  const comingCount = TOTAL_GROUPS - READY_COUNT
+
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, '')
+    if (!hash) return
+    requestAnimationFrame(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [])
+
+  const selectSystem = (id: SystemFilter) => {
+    setSystem(id)
+    document.getElementById('index')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
@@ -71,21 +80,23 @@ export default function IndexPage() {
         <div className="hero-grid" aria-hidden />
         <div className="hero-inner">
           <div className="hero-copy">
-            <p className="eyebrow">Teaching crystallography</p>
+            <p className="eyebrow">Interactive crystallography</p>
             <h1>Crystal Space Groups</h1>
             <p className="hero-lead">
-              Interactive diagrams of the 230 crystallographic space groups —
-              operators, screws, glides, and general positions — in the spirit
-              of ITA / UCL-style teaching figures.
+              Learn how the 230 crystallographic space groups rearrange atoms —
+              rotations, screws, mirrors, and glides — with linked 3D and 2D
+              diagrams built for students.
             </p>
             <div className="hero-stats">
               <div>
                 <strong>{TOTAL_GROUPS}</strong>
-                <span>space groups catalogued</span>
+                <span>space groups listed</span>
               </div>
               <div>
-                <strong>{READY_COUNT}</strong>
-                <span>interactive demo{READY_COUNT === 1 ? '' : 's'}</span>
+                <strong>
+                  {READY_COUNT} · {comingCount}
+                </strong>
+                <span>live · coming soon</span>
               </div>
               <div>
                 <strong>7</strong>
@@ -94,18 +105,14 @@ export default function IndexPage() {
             </div>
             <div className="hero-cta">
               <Link to="/sg/15" className="btn btn-primary">
-                Open C2/c (15)
+                Try C2/c (15)
               </Link>
-              <Link to="/sg/61" className="btn btn-ghost">
-                Open Pbca (61)
+              <Link to="/sg/61" className="btn btn-primary">
+                Try Pbca (61)
               </Link>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => scrollTo('guide')}
-              >
+              <a href="#guide" className="btn btn-ghost">
                 How to use
-              </button>
+              </a>
             </div>
           </div>
           <div className="hero-motif" aria-hidden>
@@ -116,7 +123,6 @@ export default function IndexPage() {
                   <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.15" />
                 </linearGradient>
               </defs>
-              {/* isometric-ish unit cell */}
               <path
                 d="M40 70 L110 35 L180 70 L180 140 L110 175 L40 140 Z"
                 fill="url(#cellFace)"
@@ -159,62 +165,44 @@ export default function IndexPage() {
               <text x="132" y="132" fill="#a78bfa" fontSize="9" fontWeight="700">
                 I
               </text>
-              <text x="150" y="58" fill="#38bdf8" fontSize="11" fontWeight="700">
-                Pbca
+              <text x="118" y="52" fill="#38bdf8" fontSize="10" fontWeight="700">
+                C2/c · Pbca
               </text>
             </svg>
           </div>
         </div>
       </header>
 
-      <nav className="index-subnav" aria-label="On this page">
-        {NAV.map((n) => (
-          <button key={n.id} type="button" onClick={() => scrollTo(n.id)}>
-            {n.label}
-          </button>
-        ))}
-      </nav>
-
       <main className="index-main">
         <section id="explore" className="index-section">
           <div className="section-head">
             <h2>Explore by crystal system</h2>
             <p>
-              Pick a system to filter the index. Live demos:{' '}
-              <Link to="/sg/15">C2/c (15)</Link> and{' '}
-              <Link to="/sg/61">Pbca (61)</Link> — other groups show as coming
-              soon.
+              Start from the lattice family you care about, then jump into a live
+              demo — currently <Link to="/sg/15">C2/c (15)</Link> and{' '}
+              <Link to="/sg/61">Pbca (61)</Link>. More groups are on the way.
             </p>
           </div>
+          <p className="explore-hint">Click a system to filter the index below.</p>
           <div className="system-grid">
             <button
               type="button"
-              className={
-                system === 'all' ? 'system-card active' : 'system-card'
-              }
-              onClick={() => {
-                setSystem('all')
-                scrollTo('index')
-              }}
+              className={system === 'all' ? 'system-card active' : 'system-card'}
+              onClick={() => selectSystem('all')}
             >
               <span className="system-name">All systems</span>
               <span className="system-range">1 – 230</span>
               <span className="system-blurb">
-                Full ITA numbering across all seven crystal systems.
+                Browse every ITA number across the seven crystal systems.
               </span>
             </button>
             {CRYSTAL_SYSTEMS.map((s) => (
               <button
                 key={s.id}
                 type="button"
-                className={
-                  system === s.id ? 'system-card active' : 'system-card'
-                }
+                className={system === s.id ? 'system-card active' : 'system-card'}
                 style={{ '--sys': s.accent } as CSSProperties}
-                onClick={() => {
-                  setSystem(s.id)
-                  scrollTo('index')
-                }}
+                onClick={() => selectSystem(s.id)}
               >
                 <span className="system-name">{s.name}</span>
                 <span className="system-range">
@@ -230,21 +218,43 @@ export default function IndexPage() {
           <div className="section-head">
             <h2>Space-group index</h2>
             <p>
-              Search by ITA number or Hermann–Mauguin symbol. Ready groups are
-              links; planned ones are muted.
+              Search by ITA number or Hermann–Mauguin symbol. Highlighted tiles
+              open interactive demos; others are listed for navigation as we add
+              them.
+              {system !== 'all' ? (
+                <span className="filter-chip">
+                  {systemInfo(system).name}
+                  <button
+                    type="button"
+                    aria-label="Clear system filter"
+                    onClick={() => setSystem('all')}
+                  >
+                    ×
+                  </button>
+                </span>
+              ) : null}
             </p>
           </div>
           <div className="index-toolbar">
             <input
               type="search"
               className="sg-search"
-              placeholder="Filter by number or symbol… e.g. 61 or Pbca"
+              placeholder="Filter by number or symbol… e.g. 15, 61, C2/c, Pbca"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Filter space groups"
             />
+            <label className="live-toggle" data-on={liveOnly ? 'true' : 'false'}>
+              <input
+                type="checkbox"
+                checked={liveOnly}
+                onChange={(e) => setLiveOnly(e.target.checked)}
+              />
+              Live only
+            </label>
             <span className="index-count">
-              {filtered.length} of {TOTAL_GROUPS}
+              {filtered.length}
+              {liveOnly ? ` live` : ` of ${TOTAL_GROUPS}`}
               {system !== 'all' ? ` · ${systemInfo(system).name}` : ''}
             </span>
           </div>
@@ -252,33 +262,26 @@ export default function IndexPage() {
             {filtered.map((g) => (
               <GroupChip key={g.number} g={g} />
             ))}
+            {liveOnly && plannedHidden > 0 ? (
+              <p className="planned-summary">
+                {plannedHidden} more group{plannedHidden === 1 ? '' : 's'} in this
+                filter are planned. Turn off <strong>Live only</strong> to browse
+                the full list.
+              </p>
+            ) : null}
             {filtered.length === 0 ? (
               <p className="empty-hint">No groups match that filter.</p>
             ) : null}
           </div>
         </section>
 
-
-        <section id="stats" className="index-section">
-          <div className="section-head">
-            <h2>In the CSD · space-group statistics</h2>
-            <p>
-              Why bother learning all 230? In the Cambridge Structural Database,
-              a small set of space groups covers the vast majority of organic and
-              organometallic crystal structures — so the groups you meet first in
-              the lab are usually the ones that matter most for teaching.
-            </p>
-          </div>
-          <CsdStatistics />
-        </section>
-
         <section id="primer" className="index-section">
           <div className="section-head">
             <h2>Symmetry operations primer</h2>
             <p>
-              Space groups are infinite wallpaper patterns in 3D — finite
+              Space groups are infinite 3D wallpaper patterns — finite
               combinations of the moves below, wrapped by the lattice. Colors
-              match the Pbca demo legend where applicable.
+              match the demo legend where they apply.
             </p>
           </div>
           <SymmetryPrimer />
@@ -288,8 +291,8 @@ export default function IndexPage() {
           <div className="section-head">
             <h2>How to use &amp; legend</h2>
             <p>
-              The interactive demos share one UI vocabulary. Learn it once on
-              Pbca; later groups will reuse the same controls.
+              Every interactive demo shares the same controls. Learn them once —
+              they carry over as new space groups are added.
             </p>
           </div>
 
@@ -298,13 +301,13 @@ export default function IndexPage() {
               <h3>Views</h3>
               <ul>
                 <li>
-                  <strong>3D unit cell</strong> — orbit with the mouse; scroll
-                  to zoom. The camera auto-fits so the cell stays in frame while
-                  you rotate. <em>Reset view</em> restores the default angle.
+                  <strong>3D unit cell</strong> — orbit with the mouse; scroll to
+                  zoom. The camera auto-fits so the cell stays in frame while you
+                  rotate. <em>Reset view</em> restores the default angle.
                 </li>
                 <li>
-                  <strong>2D projection</strong> — synced orthographic cut
-                  (↓c / ↓b / ↓a) with the same BASE / IMAGE / sites.
+                  <strong>2D projection</strong> — synced orthographic cut (↓c /
+                  ↓b / ↓a) with the same BASE / IMAGE / sites.
                 </li>
               </ul>
             </article>
@@ -313,17 +316,16 @@ export default function IndexPage() {
               <h3>Placement &amp; visibility</h3>
               <ul>
                 <li>
-                  <strong>Nearest images</strong> — place BASE and IMAGE near
-                  the selected element (may sit just outside the cell,
-                  UCL-style).
+                  <strong>Nearest images</strong> — place BASE and IMAGE near the
+                  selected element (may sit just outside the cell).
                 </li>
                 <li>
                   <strong>In cell</strong> — wrap every motif into [0, 1)³.
                 </li>
                 <li>
                   <strong>All sites</strong> vs <strong>BASE + IMAGE</strong> —
-                  show the full general position or only the pair for the
-                  selected operator.
+                  show the full general position or only the pair for the selected
+                  operator.
                 </li>
               </ul>
             </article>
@@ -332,19 +334,18 @@ export default function IndexPage() {
               <h3>Chiral motifs</h3>
               <ul>
                 <li>
-                  Tips <span className="chip proper">● △ ■</span> (ball ·
-                  triangle · square) encode orientation.
+                  Tips <span className="chip proper">● △ ■</span> (ball · triangle
+                  · square) encode orientation.
                 </li>
                 <li>
-                  <span className="chip proper">solid</span> = proper (same
-                  hand);{' '}
+                  <span className="chip proper">solid</span> = proper (same hand);{' '}
                   <span className="chip mirrored">mirrored</span> = improper
                   (opposite hand).
                 </li>
                 <li>
                   <span className="chip base">BASE</span> →{' '}
-                  <span className="chip image">IMAGE</span> highlights the
-                  selected mapping.
+                  <span className="chip image">IMAGE</span> highlights the selected
+                  mapping.
                 </li>
               </ul>
             </article>
@@ -354,12 +355,12 @@ export default function IndexPage() {
               <ul>
                 <li>
                   <span className="chip element">⊙</span> inversion center ·{' '}
-                  <span className="chip element">‖</span> 2₁ screw ·{' '}
-                  <span className="chip element">▭</span> glide plane
+                  <span className="chip element">‖</span> 2₁ / 2-fold ·{' '}
+                  <span className="chip element">▭</span> glide / mirror
                 </li>
                 <li>
-                  Select an operator (or click a 2D site) to emphasize its
-                  element; others stay faint.
+                  Select an operator (or click a 2D site) to emphasize its element;
+                  others stay faint.
                 </li>
               </ul>
               <div className="guide-legend class-legend">
@@ -367,10 +368,7 @@ export default function IndexPage() {
                   const c = SYMMETRY_CLASSES[id]
                   return (
                     <span key={id} className="legend-item">
-                      <span
-                        className="swatch"
-                        style={{ background: c.color }}
-                      />
+                      <span className="swatch" style={{ background: c.color }} />
                       {c.label}
                     </span>
                   )
@@ -382,17 +380,32 @@ export default function IndexPage() {
           <div className="guide-cta">
             <div className="hero-cta" style={{ justifyContent: 'flex-start' }}>
               <Link to="/sg/15" className="btn btn-primary">
-                Try C2/c (15) →
+                Open C2/c →
               </Link>
               <Link to="/sg/61" className="btn btn-ghost">
-                Try Pbca (61) →
+                Open Pbca →
               </Link>
             </div>
             <p className="muted">
-              Teaching software inspired by International Tables for
-              Crystallography (ITA) diagrams — not an official IUCr product.
+              Diagrams follow the usual teaching conventions used in
+              International Tables for Crystallography (ITA). This is an
+              independent student tool — not an official IUCr product.
             </p>
           </div>
+        </section>
+
+        <section id="stats" className="index-section">
+          <div className="section-head">
+            <h2>In the CSD · space-group statistics</h2>
+            <p>
+              Why prioritize some groups first? In the Cambridge Structural
+              Database, a small set of space groups covers most organic and
+              organometallic structures — including our live demos{' '}
+              <Link to="/sg/15">C2/c</Link> (rank 3) and{' '}
+              <Link to="/sg/61">Pbca</Link> (rank 6).
+            </p>
+          </div>
+          <CsdStatistics />
         </section>
       </main>
 
@@ -403,7 +416,7 @@ export default function IndexPage() {
         </div>
         <span className="footer-demos">
           <Link to="/sg/15">15 · C2/c</Link>
-          <span className="sep">·</span>
+          <span className="sep"> · </span>
           <Link to="/sg/61">61 · Pbca</Link>
         </span>
       </footer>

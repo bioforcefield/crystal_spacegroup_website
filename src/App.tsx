@@ -6,11 +6,30 @@ import {
   Routes,
   Link,
   NavLink,
+  useLocation,
   useParams,
 } from 'react-router-dom'
 import IndexPage from './pages/IndexPage'
 import SpaceGroupPage from './pages/SpaceGroupPage'
 import { getDemo } from './data/registry'
+
+const SECTION_NAV = [
+  { id: 'explore', label: 'Explore' },
+  { id: 'index', label: 'Index' },
+  { id: 'primer', label: 'Symmetry' },
+  { id: 'guide', label: 'How to use' },
+  { id: 'stats', label: 'Statistics' },
+] as const
+
+function scrollToSection(id: string) {
+  const el = document.getElementById(id)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    history.replaceState(null, '', `/#${id}`)
+    return
+  }
+  window.location.assign(`/#${id}`)
+}
 
 function SiteChrome({
   children,
@@ -19,9 +38,13 @@ function SiteChrome({
   children: ReactNode
   variant: 'index' | 'demo'
 }) {
+  const location = useLocation()
+  const onIndex = location.pathname === '/'
+
   if (variant === 'demo') {
     return <>{children}</>
   }
+
   return (
     <div className="site-shell">
       <header className="site-topbar">
@@ -33,11 +56,28 @@ function SiteChrome({
           <NavLink to="/" end>
             Home
           </NavLink>
-          <a href="/#explore">Explore</a>
-          <a href="/#stats">Statistics</a>
-          <a href="/#guide">Guide</a>
-          <NavLink to="/sg/15">C2/c</NavLink>
-          <NavLink to="/sg/61">Pbca</NavLink>
+          {SECTION_NAV.map((s) =>
+            onIndex ? (
+              <button
+                key={s.id}
+                type="button"
+                className="nav-jump"
+                onClick={() => scrollToSection(s.id)}
+              >
+                {s.label}
+              </button>
+            ) : (
+              <Link key={s.id} to={`/#${s.id}`}>
+                {s.label}
+              </Link>
+            ),
+          )}
+          <NavLink to="/sg/15" className="nav-demo">
+            C2/c
+          </NavLink>
+          <NavLink to="/sg/61" className="nav-demo">
+            Pbca
+          </NavLink>
         </nav>
       </header>
       {children}

@@ -9,13 +9,20 @@ import {
 } from '../data/csdStatistics'
 import { findGroup } from '../data/spaceGroupCatalog'
 
-const HIGHLIGHT_NUMBER = 61
+/** Live demos currently on the site — highlight in chart + table. */
+const LIVE_NUMBERS = new Set([15, 61])
+
+function barWidthPercent(row: CsdFrequencyRow, maxPercent: number): number {
+  // Square-root scale keeps ranks 7–10 readable under P21/c (~34%).
+  const scaled = Math.sqrt(Math.max(row.percent, 0)) / Math.sqrt(Math.max(maxPercent, 1e-6))
+  return Math.max(4, scaled * 100)
+}
 
 function RankBar({ row, maxPercent }: { row: CsdFrequencyRow; maxPercent: number }) {
-  const width = Math.max(2.5, (row.percent / maxPercent) * 100)
+  const width = barWidthPercent(row, maxPercent)
   const entry = findGroup(row.number)
   const ready = entry?.status === 'ready'
-  const isHighlight = row.number === HIGHLIGHT_NUMBER
+  const isLive = LIVE_NUMBERS.has(row.number)
 
   const barInner = (
     <>
@@ -28,7 +35,7 @@ function RankBar({ row, maxPercent }: { row: CsdFrequencyRow; maxPercent: number
       </div>
       <div className="csd-bar-track" aria-hidden>
         <div
-          className={`csd-bar-fill${isHighlight ? ' highlight' : ''}`}
+          className={`csd-bar-fill${isLive ? ' highlight' : ''}`}
           style={{ width: `${width}%` }}
         />
       </div>
@@ -43,7 +50,7 @@ function RankBar({ row, maxPercent }: { row: CsdFrequencyRow; maxPercent: number
     return (
       <Link
         to={`/sg/${row.number}`}
-        className={`csd-bar-row ready${isHighlight ? ' highlight' : ''}`}
+        className={`csd-bar-row ready${isLive ? ' highlight' : ''}`}
         title={`Open interactive demo for ${row.number} · ${row.hm}`}
       >
         {barInner}
@@ -52,7 +59,7 @@ function RankBar({ row, maxPercent }: { row: CsdFrequencyRow; maxPercent: number
   }
 
   return (
-    <div className={`csd-bar-row${isHighlight ? ' highlight' : ''}`}>{barInner}</div>
+    <div className={`csd-bar-row${isLive ? ' highlight' : ''}`}>{barInner}</div>
   )
 }
 
@@ -97,11 +104,20 @@ export default function CsdStatistics() {
             <h3>Most common space groups</h3>
             <p>
               A handful of groups dominate organic and organometallic crystal
-              structures. Rank 6 — <strong>Pbca</strong> — is the interactive
-              demo on this site.
+              structures. Live demos on this site:{' '}
+              <strong>C2/c</strong> (rank 3) and <strong>Pbca</strong> (rank 6).
+            </p>
+            <p className="csd-scale-note">
+              Bar lengths use a <strong>square-root scale</strong> so rarer groups
+              stay readable — P2₁/c alone is about 34% of the CSD. Exact % and
+              counts are shown at right; the table keeps a linear top-20 view.
             </p>
           </div>
-          <div className="csd-bar-chart" role="list" aria-label="Top space groups by CSD frequency">
+          <div
+            className="csd-bar-chart"
+            role="list"
+            aria-label="Top space groups by CSD frequency (square-root scaled bars)"
+          >
             {CSD_CHART_ROWS.map((row) => (
               <RankBar key={row.rank} row={row} maxPercent={maxPercent} />
             ))}
@@ -132,12 +148,9 @@ export default function CsdStatistics() {
                 {CSD_TABLE_ROWS.map((row) => {
                   const entry = findGroup(row.number)
                   const ready = entry?.status === 'ready'
-                  const isHighlight = row.number === HIGHLIGHT_NUMBER
+                  const isLive = LIVE_NUMBERS.has(row.number)
                   return (
-                    <tr
-                      key={row.rank}
-                      className={isHighlight ? 'highlight' : undefined}
-                    >
+                    <tr key={row.rank} className={isLive ? 'highlight' : undefined}>
                       <td>{row.rank}</td>
                       <td>{row.number}</td>
                       <td>
@@ -169,11 +182,7 @@ export default function CsdStatistics() {
         </p>
         <ul>
           <li>
-            <a
-              href={s.pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a href={s.pdfUrl} target="_blank" rel="noopener noreferrer">
               CSD Space Group Frequency Ordering 2026 (PDF)
             </a>
             <span className="csd-link-note">full frequency ordering for all 230</span>
@@ -203,10 +212,10 @@ export default function CsdStatistics() {
 
       <p className="csd-attribution">
         Data from the Cambridge Crystallographic Data Centre (CCDC) Cambridge
-        Structural Database statistics ({s.asOf}). Counts are for structures
-        with a fully defined space group and may differ from live totals on the
-        interactive charts page. This site is independent teaching software —
-        not an official CCDC or IUCr product.
+        Structural Database statistics ({s.asOf}). Counts are for structures with
+        a fully defined space group and may differ from live totals on the
+        interactive charts page. This site is independent teaching software — not
+        an official CCDC or IUCr product.
       </p>
     </div>
   )

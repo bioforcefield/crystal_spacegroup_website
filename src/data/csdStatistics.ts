@@ -140,8 +140,8 @@ export const CSD_TOP_FREQUENCY: CsdFrequencyRow[] = [
   },
 ]
 
-/** Rows used for the horizontal ranking chart (top 12). */
-export const CSD_CHART_ROWS = CSD_TOP_FREQUENCY.slice(0, 12)
+/** Rows used for the horizontal ranking chart (top 10; bars use √ scale in UI). */
+export const CSD_CHART_ROWS = CSD_TOP_FREQUENCY.slice(0, 10)
 
 /** Rows used for the compact table (top 20). */
 export const CSD_TABLE_ROWS = CSD_TOP_FREQUENCY.slice(0, 20)

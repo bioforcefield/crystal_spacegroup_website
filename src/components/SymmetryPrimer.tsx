@@ -46,7 +46,7 @@ const DEMOS: DemoSpec[] = [
     title: '2₁ screw',
     subtitle: '180° + ½ translation',
     color: SYMMETRY_CLASSES.screw.color,
-    body: 'Rotate 180° and slide half a cell along the axis. Pbca has three mutually perpendicular 2₁ screws.',
+    body: 'Rotate 180° and slide half a cell along the axis. Many common groups (including Pbca) use 2₁ screws.',
   },
   {
     id: 'mirror',
@@ -60,7 +60,7 @@ const DEMOS: DemoSpec[] = [
     title: 'Glide plane',
     subtitle: 'reflect + translate',
     color: SYMMETRY_CLASSES['a-glide'].color,
-    body: 'Reflect, then translate by a fraction of a lattice vector (a-, b-, or c-glide). Core of the Pbca symbol.',
+    body: 'Reflect, then translate by a fraction of a lattice vector (a-, b-, c-, or n-glide). Named in symbols like Pbca and C2/c.',
   },
 ]
 
