@@ -16,20 +16,28 @@ import { OPERATORS as P21C_OPS } from '../../p21c'
 
 describe('registry smoke', () => {
   it('resolves ready demos by number and slug', () => {
+    expect(getDemo(2)?.meta.hm).toBe('P-1')
     expect(getDemo(14)?.meta.hm).toBe('P21/c')
     expect(getDemo(15)?.meta.hm).toBe('C2/c')
     expect(getDemo(61)?.meta.hm).toBe('Pbca')
+    expect(getDemo('pbar1')?.meta.number).toBe(2)
+    expect(getDemo('P-1')?.meta.number).toBe(2)
+    expect(getDemo('p-1')?.meta.number).toBe(2)
     expect(getDemo('p21c')?.meta.number).toBe(14)
     expect(getDemo('P21/c')?.meta.number).toBe(14)
+    expect(getDemo('c2c')?.meta.number).toBe(15)
+    expect(getDemo('pbca')?.meta.number).toBe(61)
+    // Do not map bare p1 → P-1 (reserved for future P1)
+    expect(getDemo('p1')).toBeUndefined()
   })
 })
 
 describe('allDemos suite', () => {
   const demos = allDemos()
 
-  it('has the three golden demos', () => {
+  it('has the four golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      14, 15, 61,
+      2, 14, 15, 61,
     ])
   })
 

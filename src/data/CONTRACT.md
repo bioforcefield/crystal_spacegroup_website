@@ -29,9 +29,9 @@ Operators use Seitz form **x′ = R x + t** with fractional coords. `|det(R)|` m
 
 1. **Author or generate operators** from ITA general-position triplets (`buildOperatorsFromTriplets` helps; golden demos still hand-tune labels/loci).
 2. **Validate** with `npm test` (closure, det, multiplicity, seed orbit, parse round-trip).
-3. **Module:** add `src/data/<slug>.ts` exporting `<slug>Demo: SpaceGroupDemo` (keep beside existing `p21c.ts` / `c2c.ts` / `pbca.ts` for now). Shared helpers go under `src/data/groups/`.
-4. **Registry:** import and append in `registry.ts` (`DEMOS` array).
-5. **Catalog:** set that entry’s status to `ready` in `spaceGroupCatalog.ts` (and any hub ordering you need).
+3. **Module:** add `src/data/<slug>.ts` exporting `<slug>Demo: SpaceGroupDemo` (keep beside existing `pbar1.ts` / `p21c.ts` / `c2c.ts` / `pbca.ts` for now). Shared helpers go under `src/data/groups/`.
+4. **Registry:** import and append in `registry.ts` (`DEMOS` array). Slugs use `slugifyHm`: crystallographic bar `-` → `bar` (so **P-1 → pbar1**, not `p1`).
+5. **Catalog:** set that entry’s status to `ready` and matching `slug` in `spaceGroupCatalog.ts` (and any hub ordering you need).
 6. **UI routes** already resolve via `getDemo(number | slug)` — no new space groups in Foundation itself.
 
 ## Generator limitations (Foundation)

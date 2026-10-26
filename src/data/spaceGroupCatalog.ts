@@ -27,7 +27,7 @@ export interface SpaceGroupEntry {
   hm: string
   system: CrystalSystemId
   status: GroupStatus
-  /** URL slug from HM (lowercase alnum) */
+  /** URL slug from HM (lowercase alnum; crystallographic bar → 'bar', e.g. P-1 → pbar1) */
   slug: string
 }
 
@@ -39,7 +39,7 @@ export const CRYSTAL_SYSTEMS: CrystalSystemInfo[] = [
       1,
       2
     ],
-    blurb: 'Lowest symmetry. Only identity and (often) inversion. Axes unequal, angles all oblique.',
+    blurb: 'Lowest symmetry. Home of P-1 (2) — identity + inversion. Axes unequal, angles oblique.',
     accent: '#94a3b8'
   },
   {
@@ -104,7 +104,7 @@ export const CRYSTAL_SYSTEMS: CrystalSystemInfo[] = [
   }
 ]
 
-/** All 230 space groups — interactive demos: P21/c (14), C2/c (15), Pbca (61). */
+/** All 230 space groups — interactive demos: P-1 (2), P21/c (14), C2/c (15), Pbca (61). */
 export const SPACE_GROUPS: SpaceGroupEntry[] = [
   {
     number: 1,
@@ -117,8 +117,8 @@ export const SPACE_GROUPS: SpaceGroupEntry[] = [
     number: 2,
     hm: 'P-1',
     system: 'triclinic',
-    status: 'planned',
-    slug: 'p1'
+    status: 'ready',
+    slug: 'pbar1'
   },
   {
     number: 3,
@@ -1734,11 +1734,12 @@ export function findGroup(query: string | number): SpaceGroupEntry | undefined {
   if (!Number.isNaN(asNum) && asNum >= 1 && asNum <= 230) {
     return SPACE_GROUPS.find((g) => g.number === asNum)
   }
+  const slugQ = q.replace(/-/g, 'bar').replace(/[^a-z0-9]/g, '')
   return SPACE_GROUPS.find(
     (g) =>
       g.hm.toLowerCase() === q ||
-      g.slug === q.replace(/[^a-z0-9]/g, '') ||
-      g.hm.toLowerCase().replace(/[^a-z0-9]/g, '') === q.replace(/[^a-z0-9]/g, ''),
+      g.slug === slugQ ||
+      g.hm.toLowerCase().replace(/-/g, 'bar').replace(/[^a-z0-9]/g, '') === slugQ,
   )
 }
 
@@ -1749,7 +1750,7 @@ export function filterGroups(query: string, system?: CrystalSystemId | 'all'): S
     if (!q) return true
     if (String(g.number).includes(q)) return true
     if (g.hm.toLowerCase().includes(q)) return true
-    if (g.slug.includes(q.replace(/[^a-z0-9]/g, ''))) return true
+    if (g.slug.includes(q.replace(/-/g, 'bar').replace(/[^a-z0-9]/g, ''))) return true
     return false
   })
 }

@@ -10,7 +10,7 @@ import {
 import { findGroup } from '../data/spaceGroupCatalog'
 
 /** Live demos currently on the site — highlight in chart + table. */
-const LIVE_NUMBERS = new Set([15, 61])
+const LIVE_NUMBERS = new Set([2, 14, 15, 61])
 
 function barWidthPercent(row: CsdFrequencyRow, maxPercent: number): number {
   // Square-root scale keeps ranks 7–10 readable under P21/c (~34%).
@@ -105,8 +105,8 @@ export default function CsdStatistics() {
             <p>
               A handful of groups dominate organic and organometallic crystal
               structures. Live demos on this site:{' '}
-              <strong>P21/c</strong> (rank 1), <strong>C2/c</strong> (rank 3),
-              and <strong>Pbca</strong> (rank 6).
+              <strong>P21/c</strong> (rank 1), <strong>P-1</strong> (rank 2),{' '}
+              <strong>C2/c</strong> (rank 3), and <strong>Pbca</strong> (rank 6).
             </p>
             <p className="csd-scale-note">
               Bar lengths use a <strong>square-root scale</strong> so rarer groups

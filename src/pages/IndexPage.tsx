@@ -107,6 +107,9 @@ export default function IndexPage() {
               <Link to="/sg/14" className="btn btn-primary">
                 Try P21/c (14)
               </Link>
+              <Link to="/sg/2" className="btn btn-primary">
+                Try P-1 (2)
+              </Link>
               <Link to="/sg/15" className="btn btn-primary">
                 Try C2/c (15)
               </Link>
@@ -169,7 +172,7 @@ export default function IndexPage() {
                 I
               </text>
               <text x="118" y="52" fill="#38bdf8" fontSize="10" fontWeight="700">
-                P21/c · C2/c
+                P21/c · P-1
               </text>
             </svg>
           </div>
@@ -183,6 +186,7 @@ export default function IndexPage() {
             <p>
               Start from the lattice family you care about, then jump into a live
               demo — currently <Link to="/sg/14">P21/c (14)</Link>,{' '}
+              <Link to="/sg/2">P-1 (2)</Link>,{' '}
               <Link to="/sg/15">C2/c (15)</Link>, and{' '}
               <Link to="/sg/61">Pbca (61)</Link>. More groups are on the way.
             </p>
@@ -243,7 +247,7 @@ export default function IndexPage() {
             <input
               type="search"
               className="sg-search"
-              placeholder="Filter by number or symbol… e.g. 14, 15, P21/c, C2/c"
+              placeholder="Filter by number or symbol… e.g. 2, 14, P-1, P21/c"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Filter space groups"
@@ -386,6 +390,9 @@ export default function IndexPage() {
               <Link to="/sg/14" className="btn btn-primary">
                 Open P21/c →
               </Link>
+              <Link to="/sg/2" className="btn btn-ghost">
+                Open P-1 →
+              </Link>
               <Link to="/sg/15" className="btn btn-ghost">
                 Open C2/c →
               </Link>
@@ -409,6 +416,7 @@ export default function IndexPage() {
               Database, a small set of space groups covers most organic and
               organometallic structures — including our live demos{' '}
               <Link to="/sg/14">P21/c</Link> (rank 1),{' '}
+              <Link to="/sg/2">P-1</Link> (rank 2),{' '}
               <Link to="/sg/15">C2/c</Link> (rank 3), and{' '}
               <Link to="/sg/61">Pbca</Link> (rank 6).
             </p>
@@ -424,6 +432,8 @@ export default function IndexPage() {
         </div>
         <span className="footer-demos">
           <Link to="/sg/14">14 · P21/c</Link>
+          <span className="sep"> · </span>
+          <Link to="/sg/2">2 · P-1</Link>
           <span className="sep"> · </span>
           <Link to="/sg/15">15 · C2/c</Link>
           <span className="sep"> · </span>
