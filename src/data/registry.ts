@@ -7,6 +7,7 @@ import { pbar1Demo } from './pbar1'
 import { p212121Demo } from './p212121'
 import { pna21Demo } from './pna21'
 import { p21Demo } from './p21'
+import { ccDemo } from './cc'
 import { buildGeneratedDemo } from './generatedDemo'
 import { findGroup } from './spaceGroupCatalog'
 import type { SpaceGroupDemo } from './types'
@@ -29,6 +30,7 @@ const HAND_DEMOS: SpaceGroupDemo[] = [
   pbar1Demo,
   p21Demo,
   p21cDemo,
+  ccDemo,
   c2cDemo,
   p212121Demo,
   pna21Demo,
@@ -79,4 +81,4 @@ export function allDemos(): SpaceGroupDemo[] {
   return HAND_DEMOS
 }
 
-export { pbar1Demo, p21Demo, p21cDemo, c2cDemo, p212121Demo, pna21Demo, pbcaDemo }
+export { pbar1Demo, p21Demo, p21cDemo, ccDemo, c2cDemo, p212121Demo, pna21Demo, pbcaDemo }
