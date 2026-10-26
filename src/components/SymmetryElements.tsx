@@ -362,6 +362,7 @@ function GlidePlaneVisual({
   ]
   const border: Vec3[] = [...corners, corners[0]]
 
+  const hasGlide = plane.glide.some((c) => Math.abs(c) > 1e-6)
   const glideCart = fracToCart(plane.glide, demo.cell)
   // Lift slightly along plane normal (approx y for ⊥b)
   const lift = 0.025
@@ -410,17 +411,19 @@ function GlidePlaneVisual({
           opacity={lineOpacity * 0.7}
         />
       )}
-      <Line
-        points={[arrowFrom, arrowTo]}
-        color={color}
-        lineWidth={emphasized ? 2.4 : 1}
-        transparent
-        opacity={lineOpacity}
-        dashed
-        dashSize={0.05}
-        gapSize={0.035}
-        dashScale={1}
-      />
+      {hasGlide && (
+        <Line
+          points={[arrowFrom, arrowTo]}
+          color={color}
+          lineWidth={emphasized ? 2.4 : 1}
+          transparent
+          opacity={lineOpacity}
+          dashed
+          dashSize={0.05}
+          gapSize={0.035}
+          dashScale={1}
+        />
+      )}
       {emphasized && (
         <>
           <ArrowHead

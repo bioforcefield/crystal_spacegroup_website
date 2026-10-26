@@ -8,6 +8,11 @@ import { p212121Demo } from './p212121'
 import { pna21Demo } from './pna21'
 import { p21Demo } from './p21'
 import { ccDemo } from './cc'
+import { p1Demo } from './p1'
+import { pnmaDemo } from './pnma'
+import { c2Demo } from './c2'
+import { pbcnDemo } from './pbcn'
+import { pca21Demo } from './pca21'
 import { buildGeneratedDemo } from './generatedDemo'
 import { findGroup } from './spaceGroupCatalog'
 import type { SpaceGroupDemo } from './types'
@@ -27,14 +32,19 @@ export function slugifyHm(hm: string): string {
 
 /** Hand-polished teaching demos — win over generated for these ITA numbers. */
 const HAND_DEMOS: SpaceGroupDemo[] = [
+  p1Demo,
   pbar1Demo,
   p21Demo,
-  p21cDemo,
+  c2Demo,
   ccDemo,
+  p21cDemo,
   c2cDemo,
   p212121Demo,
+  pca21Demo,
   pna21Demo,
+  pbcnDemo,
   pbcaDemo,
+  pnmaDemo,
 ]
 
 const handByNumber = new Map(HAND_DEMOS.map((d) => [d.meta.number, d]))
@@ -81,4 +91,18 @@ export function allDemos(): SpaceGroupDemo[] {
   return HAND_DEMOS
 }
 
-export { pbar1Demo, p21Demo, p21cDemo, ccDemo, c2cDemo, p212121Demo, pna21Demo, pbcaDemo }
+export {
+  p1Demo,
+  pbar1Demo,
+  p21Demo,
+  c2Demo,
+  ccDemo,
+  p21cDemo,
+  c2cDemo,
+  p212121Demo,
+  pca21Demo,
+  pna21Demo,
+  pbcnDemo,
+  pbcaDemo,
+  pnmaDemo,
+}

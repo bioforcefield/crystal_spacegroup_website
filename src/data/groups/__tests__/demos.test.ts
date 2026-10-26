@@ -56,9 +56,9 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the eight golden demos', () => {
+  it('has the thirteen golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      2, 4, 9, 14, 15, 19, 33, 61,
+      1, 2, 4, 5, 9, 14, 15, 19, 29, 33, 60, 61, 62,
     ])
     expect(allHandDemos()).toEqual(demos)
   })
@@ -138,30 +138,30 @@ describe('generated catalog 1–230', () => {
     expect(bad).toEqual([])
   })
 
-  it('hand overrides win over generated for 2, 4, 9, 14, 15, 19, 33, 61', () => {
+  it('hand overrides win over generated for Wave A set', () => {
+    const handNums = [1, 2, 4, 5, 9, 14, 15, 19, 29, 33, 60, 61, 62]
+    for (const n of handNums) {
+      expect(getDemo(n)!.meta.blurb.startsWith('ITA No.')).toBe(false)
+    }
+    expect(getDemo(1)).toBe(getDemo('p1'))
     expect(getDemo(2)).toBe(getDemo('pbar1'))
     expect(getDemo(4)).toBe(getDemo('p21'))
+    expect(getDemo(5)).toBe(getDemo('c2'))
     expect(getDemo(9)).toBe(getDemo('cc'))
     expect(getDemo(19)).toBe(getDemo('p212121'))
+    expect(getDemo(29)).toBe(getDemo('pca21'))
     expect(getDemo(33)).toBe(getDemo('pna21'))
+    expect(getDemo(60)).toBe(getDemo('pbcn'))
+    expect(getDemo(62)).toBe(getDemo('pnma'))
     expect(getDemo(14)?.meta.blurb).toMatch(/P21\/c/)
-    // Generated blurbs start with "ITA No."; hand demos have prose blurbs.
-    expect(getDemo(2)!.meta.blurb.startsWith('ITA No.')).toBe(false)
-    expect(getDemo(4)!.meta.blurb.startsWith('ITA No.')).toBe(false)
-    expect(getDemo(9)!.meta.blurb.startsWith('ITA No.')).toBe(false)
-    expect(getDemo(14)!.meta.blurb.startsWith('ITA No.')).toBe(false)
-    expect(getDemo(15)!.meta.blurb.startsWith('ITA No.')).toBe(false)
-    expect(getDemo(19)!.meta.blurb.startsWith('ITA No.')).toBe(false)
-    expect(getDemo(33)!.meta.blurb.startsWith('ITA No.')).toBe(false)
-    expect(getDemo(61)!.meta.blurb.startsWith('ITA No.')).toBe(false)
-    expect(getDemo(19)!.operators.length).toBe(4)
+    expect(getDemo(1)!.operators.length).toBe(1)
+    expect(getDemo(5)!.operators.length).toBe(4)
+    expect(getDemo(5)!.screwAxes.length).toBe(4)
+    expect(getDemo(62)!.operators.length).toBe(8)
+    expect(getDemo(62)!.glidePlanes.length).toBe(6)
+    expect(getDemo(60)!.operators.length).toBe(8)
+    expect(getDemo(29)!.operators.length).toBe(4)
     expect(getDemo(19)!.screwAxes.length).toBe(6)
-    expect(getDemo(33)!.operators.length).toBe(4)
-    expect(getDemo(33)!.glidePlanes.length).toBe(4)
-    expect(getDemo(4)!.operators.length).toBe(2)
-    expect(getDemo(4)!.screwAxes.length).toBe(2)
-    expect(getDemo(9)!.operators.length).toBe(4)
-    expect(getDemo(9)!.glidePlanes.length).toBe(4)
   })
 })
 

@@ -29,11 +29,11 @@ Operators use Seitz form **x′ = R x + t** with fractional coords. `|det(R)|` m
 
 1. **Source:** `scripts/ita_space_groups.json` (gemmi) copied to `src/data/itaSpaceGroups.json` (`npm run gen:ita`).
 2. **Builder:** `generatedDemo.ts` → `buildGeneratedDemo(n)` from triplets + **catalog HM/system** (not gemmi’s compact `P121/c1` form).
-3. **Registry:** `getDemo(n)` returns a **hand override** for 2 (P-1), **4 (P21)**, **9 (Cc)**, 14 (P21/c), 15 (C2/c), **19 (P212121)**, **33 (Pna21)**, 61 (Pbca); otherwise the generated demo. Every `n` in 1…230 resolves.
+3. **Registry:** `getDemo(n)` returns a **hand override** for **1 (P1)**, 2 (P-1), **4 (P21)**, **5 (C2)**, **9 (Cc)**, 14 (P21/c), 15 (C2/c), **19 (P212121)**, **29 (Pca21)**, **33 (Pna21)**, **60 (Pbcn)**, 61 (Pbca), **62 (Pnma)**; otherwise the generated demo. Every `n` in 1…230 resolves.
 4. **Catalog:** all entries `status: 'ready'` so the hub Live filter shows every group.
 5. **Validate:** `npm test` (hand golden suite + multiplicity/det for all 230 + stratified closure samples).
 
-Hand modules (`pbar1.ts`, `p21.ts`, `p21c.ts`, `cc.ts`, `c2c.ts`, `p212121.ts`, `pna21.ts`, `pbca.ts`) keep teaching-quality loci and blurbs. Generated groups are valid closed operator sets; element overlays are best-effort.
+Hand modules (`p1.ts`, `pbar1.ts`, `p21.ts`, `c2.ts`, `cc.ts`, `p21c.ts`, `c2c.ts`, `p212121.ts`, `pca21.ts`, `pna21.ts`, `pbcn.ts`, `pbca.ts`, `pnma.ts`) keep teaching-quality loci and blurbs. Generated groups are valid closed operator sets; element overlays are best-effort.
 
 ## How to polish one group further
 
