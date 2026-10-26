@@ -3,14 +3,14 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`  
 Plan canvas: https://cursor.com/canvas/store-47b63095-92bb-4ade-8ecd-d65e434f207d/99fd7be7-25b5-4ea5-9402-ecaaffb9adf8  
-Latest: `main` (pending mobile UX) · `gh-pages` (pending)
+Latest: `main` `f5f86d3` · `gh-pages` `9b4f17e`
 
 ## Done
 - All 230 `/sg/N` interactive (gemmi ITA JSON → `generatedDemo.ts`; catalog all `ready`)
 - Hand overrides: **2** P-1, **14** P21/c, **15** C2/c, **19** P212121, **61** Pbca
 - Foundation: CONTRACT.md, parseTriplet/buildOperators/closure/deriveElements, vitest
 - Pages: `PAGES=1` build + force-push `gh-pages` (no Actions token)
-- **Mobile UX (2026-10-26):** pinch-zoom via `userZoomRef` (FitCamera; OrbitControls zoom stays off); horizontal operator chip strip under toolbar on ≤900px; viewport first, panel details below; `touch-action: none` on canvas
+- **Mobile UX (2026-10-26):** pinch-zoom via `userZoomRef` (FitCamera; OrbitControls zoom stays off); horizontal operator chip strip under toolbar on ≤900px; viewport first, panel details below; `touch-action: none` on canvas · live `f5f86d3` / `9b4f17e`
 
 ## Gaps / next
 - Teaching cells: unique-b β only — no triclinic α/γ, no hex/trigonal γ=120°
