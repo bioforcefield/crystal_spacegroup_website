@@ -73,7 +73,7 @@ function UnitCellWireframe() {
           outlineWidth={0.01}
           outlineColor="#0f172a"
         >
-          0
+          o
         </Text>
       </Billboard>
     </group>
