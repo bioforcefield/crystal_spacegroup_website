@@ -562,9 +562,10 @@ export default function SpaceGroupDiagram2D({
         </defs>
 
         <g className="d2-cell">
+          {/* Unit cell [0,1]² — must use toSvg, not the padded view origin */}
           <rect
-            x={offsetX}
-            y={offsetY}
+            x={toSvg(0, 1).x}
+            y={toSvg(0, 1).y}
             width={cellW}
             height={cellH}
             fill="rgba(15, 23, 42, 0.55)"
@@ -735,8 +736,8 @@ export default function SpaceGroupDiagram2D({
             {proj.axisV} →
           </text>
           <text
-            x={offsetX + cellW + 6}
-            y={offsetY + 12}
+            x={toSvg(1, 1).x + 6}
+            y={toSvg(1, 1).y + 12}
             fill="#64748b"
             fontSize={10}
           >
