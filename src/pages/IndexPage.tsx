@@ -58,8 +58,6 @@ export default function IndexPage() {
     return filterGroups(query, system).filter((g) => g.status !== 'ready').length
   }, [query, system, liveOnly])
 
-  const comingCount = TOTAL_GROUPS - READY_COUNT
-
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, '')
     if (!hash) return
@@ -90,13 +88,11 @@ export default function IndexPage() {
             <div className="hero-stats">
               <div>
                 <strong>{TOTAL_GROUPS}</strong>
-                <span>space groups listed</span>
+                <span>interactive demos</span>
               </div>
               <div>
-                <strong>
-                  {READY_COUNT} · {comingCount}
-                </strong>
-                <span>live · coming soon</span>
+                <strong>{READY_COUNT}</strong>
+                <span>ITA numbers live</span>
               </div>
               <div>
                 <strong>7</strong>
@@ -115,6 +111,9 @@ export default function IndexPage() {
               </Link>
               <Link to="/sg/61" className="btn btn-primary">
                 Try Pbca (61)
+              </Link>
+              <Link to="/sg/19" className="btn btn-primary">
+                Try P212121 (19)
               </Link>
               <a href="#guide" className="btn btn-ghost">
                 How to use
@@ -184,11 +183,13 @@ export default function IndexPage() {
           <div className="section-head">
             <h2>Explore by crystal system</h2>
             <p>
-              Start from the lattice family you care about, then jump into a live
-              demo — currently <Link to="/sg/14">P21/c (14)</Link>,{' '}
+              Start from the lattice family you care about, then open any ITA
+              number 1–230. Featured teaching polish:{' '}
+              <Link to="/sg/14">P21/c (14)</Link>,{' '}
               <Link to="/sg/2">P-1 (2)</Link>,{' '}
-              <Link to="/sg/15">C2/c (15)</Link>, and{' '}
-              <Link to="/sg/61">Pbca (61)</Link>. More groups are on the way.
+              <Link to="/sg/15">C2/c (15)</Link>,{' '}
+              <Link to="/sg/61">Pbca (61)</Link>, and{' '}
+              <Link to="/sg/19">P212121 (19)</Link>.
             </p>
           </div>
           <p className="explore-hint">Click a system to filter the index below.</p>
@@ -226,9 +227,9 @@ export default function IndexPage() {
           <div className="section-head">
             <h2>Space-group index</h2>
             <p>
-              Search by ITA number or Hermann–Mauguin symbol. Highlighted tiles
-              open interactive demos; others are listed for navigation as we add
-              them.
+              Search by ITA number or Hermann–Mauguin symbol. Every tile opens an
+              interactive demo (operators + teaching cell). Featured groups have
+              extra-polished loci.
               {system !== 'all' ? (
                 <span className="filter-chip">
                   {systemInfo(system).name}
@@ -300,7 +301,7 @@ export default function IndexPage() {
             <h2>How to use &amp; legend</h2>
             <p>
               Every interactive demo shares the same controls. Learn them once —
-              they carry over as new space groups are added.
+              they apply across all 230 space groups.
             </p>
           </div>
 
@@ -412,9 +413,9 @@ export default function IndexPage() {
           <div className="section-head">
             <h2>In the CSD · space-group statistics</h2>
             <p>
-              Why prioritize some groups first? In the Cambridge Structural
-              Database, a small set of space groups covers most organic and
-              organometallic structures — including our live demos{' '}
+              All 230 groups are interactive. In the Cambridge Structural
+              Database, a small set covers most organic and organometallic
+              structures — our featured demos include{' '}
               <Link to="/sg/14">P21/c</Link> (rank 1),{' '}
               <Link to="/sg/2">P-1</Link> (rank 2),{' '}
               <Link to="/sg/15">C2/c</Link> (rank 3), and{' '}
@@ -438,6 +439,8 @@ export default function IndexPage() {
           <Link to="/sg/15">15 · C2/c</Link>
           <span className="sep"> · </span>
           <Link to="/sg/61">61 · Pbca</Link>
+          <span className="sep"> · </span>
+          <Link to="/sg/19">19 · P212121</Link>
         </span>
       </footer>
     </div>

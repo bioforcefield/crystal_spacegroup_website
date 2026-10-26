@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { allDemos, getDemo } from '../../registry'
+import { allDemos, allHandDemos, getDemo } from '../../registry'
 import {
   applyOperator,
   cartToFrac,
@@ -13,9 +13,10 @@ import {
   fracNear,
 } from '../deriveElements'
 import { OPERATORS as P21C_OPS } from '../../p21c'
+import { itaGroupCount } from '../../generatedDemo'
 
 describe('registry smoke', () => {
-  it('resolves ready demos by number and slug', () => {
+  it('resolves hand demos by number and slug', () => {
     expect(getDemo(2)?.meta.hm).toBe('P-1')
     expect(getDemo(14)?.meta.hm).toBe('P21/c')
     expect(getDemo(15)?.meta.hm).toBe('C2/c')
@@ -27,18 +28,27 @@ describe('registry smoke', () => {
     expect(getDemo('P21/c')?.meta.number).toBe(14)
     expect(getDemo('c2c')?.meta.number).toBe(15)
     expect(getDemo('pbca')?.meta.number).toBe(61)
-    // Do not map bare p1 → P-1 (reserved for future P1)
-    expect(getDemo('p1')).toBeUndefined()
+  })
+
+  it('resolves P1 as number 1 (not P-1)', () => {
+    expect(getDemo('p1')?.meta.number).toBe(1)
+    expect(getDemo('P1')?.meta.hm).toBe('P1')
+    expect(getDemo(1)?.meta.hm).toBe('P1')
+  })
+
+  it('ITA JSON covers all 230 numbers', () => {
+    expect(itaGroupCount()).toBe(230)
   })
 })
 
-describe('allDemos suite', () => {
+describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
   it('has the four golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
       2, 14, 15, 61,
     ])
+    expect(allHandDemos()).toEqual(demos)
   })
 
   for (const demo of demos) {
@@ -81,6 +91,71 @@ describe('allDemos suite', () => {
           expect(cart.every((v) => Number.isFinite(v))).toBe(true)
         }
       })
+    })
+  }
+})
+
+describe('generated catalog 1–230', () => {
+  it('getDemo(n) defined with operators.length === multiplicity for every n', () => {
+    const mismatches: string[] = []
+    for (let n = 1; n <= 230; n++) {
+      const demo = getDemo(n)
+      if (!demo) {
+        mismatches.push(`${n}: missing`)
+        continue
+      }
+      if (demo.operators.length !== demo.meta.multiplicity) {
+        mismatches.push(
+          `${n} ${demo.meta.hm}: ops=${demo.operators.length} mult=${demo.meta.multiplicity}`,
+        )
+      }
+    }
+    expect(mismatches).toEqual([])
+  })
+
+  it('|det3(R)| ≈ 1 for every operator across all 230', () => {
+    const bad: string[] = []
+    for (let n = 1; n <= 230; n++) {
+      const demo = getDemo(n)!
+      for (const op of demo.operators) {
+        if (Math.abs(Math.abs(det3(op.R)) - 1) > 1e-8) {
+          bad.push(`${n} op ${op.index}`)
+        }
+      }
+    }
+    expect(bad).toEqual([])
+  })
+
+  it('hand overrides win over generated for 2, 14, 15, 61', () => {
+    expect(getDemo(2)).toBe(getDemo('pbar1'))
+    expect(getDemo(14)?.meta.blurb).toMatch(/P21\/c/)
+    // Generated blurbs start with "ITA No."; hand demos have prose blurbs.
+    expect(getDemo(2)!.meta.blurb.startsWith('ITA No.')).toBe(false)
+    expect(getDemo(14)!.meta.blurb.startsWith('ITA No.')).toBe(false)
+    expect(getDemo(15)!.meta.blurb.startsWith('ITA No.')).toBe(false)
+    expect(getDemo(61)!.meta.blurb.startsWith('ITA No.')).toBe(false)
+    expect(getDemo(19)!.meta.blurb.startsWith('ITA No.')).toBe(true)
+  })
+})
+
+/** Stratified samples across systems (not every group — keep CI fast). */
+const CLOSURE_SAMPLES = [1, 19, 33, 62, 75, 143, 168, 195, 225, 230]
+
+describe('generated closure samples', () => {
+  for (const n of CLOSURE_SAMPLES) {
+    it(`ITA ${n} closed + full seed orbit`, () => {
+      const demo = getDemo(n)!
+      expect(demo).toBeDefined()
+      const result = checkClosure(demo.operators)
+      expect(result.ok).toBe(true)
+      expect(result.errors).toEqual([])
+
+      const keys = new Set<string>()
+      for (const op of demo.operators) {
+        const p = applyOperator(op, demo.seed)
+        keys.add(p.map((c) => wrap01(c).toFixed(8)).join(','))
+      }
+      expect(keys.size).toBe(demo.meta.multiplicity)
     })
   }
 })
