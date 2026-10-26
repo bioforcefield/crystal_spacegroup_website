@@ -516,28 +516,33 @@ button {
   color: #e0f2fe;
 }
 
-/* —— Viewport body: 3D + 2D split —— */
+/* —— Viewport body: 3D + 2D side by side —— */
 .viewport-body {
   flex: 1;
   min-height: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
 }
 
 .viewport-body .canvas-wrap {
-  flex: 1 1 58%;
-  min-height: 180px;
+  flex: 1 1 55%;
+  min-width: 0;
+  min-height: 0;
 }
 
 .diagram2d {
-  flex: 0 0 auto;
-  height: 310px;
-  max-height: 42vh;
+  flex: 1 1 45%;
+  width: auto;
+  height: auto;
+  max-height: none;
   display: flex;
   flex-direction: column;
-  border-top: 1px solid var(--panel-border);
+  border-top: none;
+  border-left: 1px solid var(--panel-border);
   background: rgba(8, 12, 22, 0.92);
-  min-height: 240px;
+  min-width: 280px;
+  min-height: 0;
 }
 
 .diagram2d-header {
@@ -587,9 +592,21 @@ button {
   filter: brightness(1.15);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
+  .viewport-body {
+    flex-direction: column;
+  }
+
+  .viewport-body .canvas-wrap {
+    flex: 1 1 55%;
+    min-height: 200px;
+  }
+
   .diagram2d {
-    height: 280px;
-    max-height: none;
+    flex: 0 0 auto;
+    height: 300px;
+    min-width: 0;
+    border-left: none;
+    border-top: 1px solid var(--panel-border);
   }
 }
