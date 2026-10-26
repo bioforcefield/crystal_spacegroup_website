@@ -1,49 +1,38 @@
-# Crystal Space Groups — Session 1 (Pbca demo)
+# Crystal Space Groups
 
-Interactive educational demo for **space group 61 · Pbca**: a rotatable 3D unit cell with the eight general-position images and a clickable operator list.
+Interactive educational website for crystallographic space groups.
 
-## Stack
+## Session 1 demo
 
-- Vite + React + TypeScript
-- three / @react-three/fiber / @react-three/drei
-- Client-only SPA (no backend)
+Space group **61 · Pbca** with:
+
+- 3D orthorhombic unit cell (React Three Fiber)
+- Chiral L-shaped markers (enantiomorph for improper ops)
+- Clickable operators color-coded by class (identity, 2₁ screw, inversion, a/b/c-glide)
+- BASE ↔ IMAGE highlight with connector
 
 ## Run locally
 
 ```bash
-cd /workspace/crystal-space-groups
+cd crystal_spacegroup_website   # or this folder
 npm install
 npm run dev
 ```
 
-Open **http://localhost:5173/**
+Open the URL Vite prints (usually http://localhost:5173/).
 
-## Scripts
+```bash
+npm run build    # production build → dist/
+npm run preview  # serve the build
+```
 
-| Command | Purpose |
-|---|---|
-| `npm run dev` | Dev server on port 5173 |
-| `npm run build` | Typecheck + production build |
-| `npm run preview` | Serve the production build |
+## Stack
 
-## What’s in Session 1
+Vite + React + TypeScript + Three.js (`@react-three/fiber`, `@react-three/drei`)
 
-- Hard-coded Pbca (No. 61) operators and general positions
-- Orthorhombic teaching cell `a=1, b=1.2, c=1.5`
-- Seed point `(0.25, 0.15, 0.30)` → 8 images (mod 1)
-- Click operator row or point → highlight + short ghost animation from identity
-- Reset view button
-- Teaching blurb on a-/b-/c-glides
+## Layout
 
-## Not yet (later sessions)
-
-- All 230 space groups
-- CIF upload / atom overlay
-- Cloud hosting
-
-## Key files
-
-- `src/data/pbca.ts` — operators, meta, fractional math
-- `src/components/UnitCellScene.tsx` — R3F scene
-- `src/components/OperatorPanel.tsx` — operator list + matrix
-- `src/App.tsx` — layout shell
+- `src/data/pbca.ts` — Pbca operators and symmetry classes
+- `src/components/UnitCellScene.tsx` — 3D cell + markers
+- `src/components/OperatorPanel.tsx` — operator list
+- `src/components/ChiralMotif.tsx` — asymmetric motif mesh
