@@ -5,6 +5,8 @@ import { c2cDemo } from './c2c'
 import { p21cDemo } from './p21c'
 import { pbar1Demo } from './pbar1'
 import { p212121Demo } from './p212121'
+import { pna21Demo } from './pna21'
+import { p21Demo } from './p21'
 import { buildGeneratedDemo } from './generatedDemo'
 import { findGroup } from './spaceGroupCatalog'
 import type { SpaceGroupDemo } from './types'
@@ -25,9 +27,11 @@ export function slugifyHm(hm: string): string {
 /** Hand-polished teaching demos — win over generated for these ITA numbers. */
 const HAND_DEMOS: SpaceGroupDemo[] = [
   pbar1Demo,
+  p21Demo,
   p21cDemo,
   c2cDemo,
   p212121Demo,
+  pna21Demo,
   pbcaDemo,
 ]
 
@@ -75,4 +79,4 @@ export function allDemos(): SpaceGroupDemo[] {
   return HAND_DEMOS
 }
 
-export { pbar1Demo, p21cDemo, c2cDemo, p212121Demo, pbcaDemo }
+export { pbar1Demo, p21Demo, p21cDemo, c2cDemo, p212121Demo, pna21Demo, pbcaDemo }

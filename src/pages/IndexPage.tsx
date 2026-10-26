@@ -419,8 +419,10 @@ export default function IndexPage() {
               <Link to="/sg/14">P21/c</Link> (rank 1),{' '}
               <Link to="/sg/2">P-1</Link> (rank 2),{' '}
               <Link to="/sg/15">C2/c</Link> (rank 3),{' '}
-              <Link to="/sg/19">P212121</Link> (rank 4), and{' '}
-              <Link to="/sg/61">Pbca</Link> (rank 6).
+              <Link to="/sg/19">P212121</Link> (rank 4),{' '}
+              <Link to="/sg/4">P21</Link> (rank 5),{' '}
+              <Link to="/sg/61">Pbca</Link> (rank 6), and{' '}
+              <Link to="/sg/33">Pna21</Link> (rank 7).
             </p>
           </div>
           <CsdStatistics />
@@ -439,9 +441,13 @@ export default function IndexPage() {
           <span className="sep"> · </span>
           <Link to="/sg/15">15 · C2/c</Link>
           <span className="sep"> · </span>
-          <Link to="/sg/61">61 · Pbca</Link>
+          <Link to="/sg/4">4 · P21</Link>
           <span className="sep"> · </span>
           <Link to="/sg/19">19 · P212121</Link>
+          <span className="sep"> · </span>
+          <Link to="/sg/33">33 · Pna21</Link>
+          <span className="sep"> · </span>
+          <Link to="/sg/61">61 · Pbca</Link>
         </span>
       </footer>
     </div>

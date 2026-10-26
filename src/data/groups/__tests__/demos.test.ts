@@ -22,6 +22,8 @@ describe('registry smoke', () => {
     expect(getDemo(15)?.meta.hm).toBe('C2/c')
     expect(getDemo(61)?.meta.hm).toBe('Pbca')
     expect(getDemo(19)?.meta.hm).toBe('P212121')
+    expect(getDemo(33)?.meta.hm).toBe('Pna21')
+    expect(getDemo(4)?.meta.hm).toBe('P21')
     expect(getDemo('pbar1')?.meta.number).toBe(2)
     expect(getDemo('P-1')?.meta.number).toBe(2)
     expect(getDemo('p-1')?.meta.number).toBe(2)
@@ -31,6 +33,10 @@ describe('registry smoke', () => {
     expect(getDemo('pbca')?.meta.number).toBe(61)
     expect(getDemo('p212121')?.meta.number).toBe(19)
     expect(getDemo('P212121')?.meta.number).toBe(19)
+    expect(getDemo('pna21')?.meta.number).toBe(33)
+    expect(getDemo('Pna21')?.meta.number).toBe(33)
+    expect(getDemo('p21')?.meta.number).toBe(4)
+    expect(getDemo('P21')?.meta.number).toBe(4)
   })
 
   it('resolves P1 as number 1 (not P-1)', () => {
@@ -47,9 +53,9 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the five golden demos', () => {
+  it('has the seven golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      2, 14, 15, 19, 61,
+      2, 4, 14, 15, 19, 33, 61,
     ])
     expect(allHandDemos()).toEqual(demos)
   })
@@ -129,18 +135,26 @@ describe('generated catalog 1–230', () => {
     expect(bad).toEqual([])
   })
 
-  it('hand overrides win over generated for 2, 14, 15, 19, 61', () => {
+  it('hand overrides win over generated for 2, 4, 14, 15, 19, 33, 61', () => {
     expect(getDemo(2)).toBe(getDemo('pbar1'))
+    expect(getDemo(4)).toBe(getDemo('p21'))
     expect(getDemo(19)).toBe(getDemo('p212121'))
+    expect(getDemo(33)).toBe(getDemo('pna21'))
     expect(getDemo(14)?.meta.blurb).toMatch(/P21\/c/)
     // Generated blurbs start with "ITA No."; hand demos have prose blurbs.
     expect(getDemo(2)!.meta.blurb.startsWith('ITA No.')).toBe(false)
+    expect(getDemo(4)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     expect(getDemo(14)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     expect(getDemo(15)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     expect(getDemo(19)!.meta.blurb.startsWith('ITA No.')).toBe(false)
+    expect(getDemo(33)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     expect(getDemo(61)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     expect(getDemo(19)!.operators.length).toBe(4)
     expect(getDemo(19)!.screwAxes.length).toBe(6)
+    expect(getDemo(33)!.operators.length).toBe(4)
+    expect(getDemo(33)!.glidePlanes.length).toBe(4)
+    expect(getDemo(4)!.operators.length).toBe(2)
+    expect(getDemo(4)!.screwAxes.length).toBe(2)
   })
 })
 
