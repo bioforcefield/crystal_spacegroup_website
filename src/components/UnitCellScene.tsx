@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
@@ -344,6 +344,122 @@ function GhostAnimator({
   )
 }
 
+
+const BOUND_PADDING = 0.35
+const FIT_MARGIN = 1.2
+const USER_ZOOM_MIN = 0.6
+const USER_ZOOM_MAX = 2.5
+const DEFAULT_CAM_DIR = new THREE.Vector3(2.4, 1.9, 2.6).normalize()
+
+type SceneBounds = { center: THREE.Vector3; radius: number }
+
+function computeSceneBounds(
+  visibleCartesians: Vec3[],
+): SceneBounds {
+  const { a, b, c } = CELL
+  const ox = a / 2
+  const oy = b / 2
+  const oz = c / 2
+  const box = new THREE.Box3()
+  // Unit-cell corners in world space (group is centered at -half cell).
+  for (const x of [0, a]) {
+    for (const y of [0, b]) {
+      for (const z of [0, c]) {
+        box.expandByPoint(new THREE.Vector3(x - ox, y - oy, z - oz))
+      }
+    }
+  }
+  for (const p of visibleCartesians) {
+    box.expandByPoint(new THREE.Vector3(p[0] - ox, p[1] - oy, p[2] - oz))
+  }
+  const center = new THREE.Vector3()
+  const size = new THREE.Vector3()
+  box.getCenter(center)
+  box.getSize(size)
+  // Sphere that covers the AABB, plus padding for motifs / labels.
+  const radius = 0.5 * size.length() + BOUND_PADDING
+  return { center, radius: Math.max(radius, 0.5) }
+}
+
+function fitDistanceForSphere(
+  radius: number,
+  fovDeg: number,
+  aspect: number,
+): number {
+  const vFov = (fovDeg * Math.PI) / 180
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(aspect, 1e-6))
+  const half = Math.min(Math.sin(vFov / 2), Math.sin(hFov / 2))
+  return (radius / Math.max(half, 1e-6)) * FIT_MARGIN
+}
+
+/**
+ * Keeps the full unit cell + visible sites framed while orbiting.
+ * Scroll-wheel zoom adjusts a scale factor on the fit distance (not absolute).
+ */
+function FitCamera({
+  bounds,
+  controlsRef,
+  userZoomRef,
+  resetToken,
+}: {
+  bounds: SceneBounds
+  controlsRef: RefObject<OrbitControlsImpl | null>
+  userZoomRef: RefObject<number>
+  resetToken: number
+}) {
+  const { camera, gl } = useThree()
+  const appliedDir = useRef(DEFAULT_CAM_DIR.clone())
+  const resetSeen = useRef(resetToken)
+
+  useEffect(() => {
+    const el = gl.domElement
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const factor = Math.exp(e.deltaY * 0.0015)
+      const z = userZoomRef.current ?? 1
+      userZoomRef.current = Math.min(
+        USER_ZOOM_MAX,
+        Math.max(USER_ZOOM_MIN, z * factor),
+      )
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [gl, userZoomRef])
+
+  // Priority -2: run after drei OrbitControls (-1) so rotate angles stick,
+  // then we only correct distance / target for framing.
+  useFrame(() => {
+    const controls = controlsRef.current
+    if (!controls || !(camera instanceof THREE.PerspectiveCamera)) return
+
+    if (resetSeen.current !== resetToken) {
+      resetSeen.current = resetToken
+      userZoomRef.current = 1
+      appliedDir.current.copy(DEFAULT_CAM_DIR)
+    }
+
+    const { center, radius } = bounds
+    controls.target.copy(center)
+
+    const offset = new THREE.Vector3().subVectors(camera.position, controls.target)
+    if (offset.lengthSq() > 1e-8) {
+      appliedDir.current.copy(offset).normalize()
+    }
+
+    const dist =
+      fitDistanceForSphere(radius, camera.fov, camera.aspect) *
+      (userZoomRef.current ?? 1)
+
+    camera.position.copy(controls.target).addScaledVector(appliedDir.current, dist)
+    // Do not call controls.update() here — OrbitControls already ran this
+    // frame; a second update would double-apply damping. Next frame it will
+    // re-read spherical.radius from camera.position.
+    camera.lookAt(controls.target)
+  }, -2)
+
+  return null
+}
+
 function SceneContent({
   selectedIndex,
   animateToken,
@@ -351,9 +467,13 @@ function SceneContent({
   showAllSites,
   onSelect,
   controlsRef,
+  userZoomRef,
+  resetToken,
 }: SceneProps & {
   onSelect: (index: number) => void
   controlsRef: RefObject<OrbitControlsImpl | null>
+  userZoomRef: RefObject<number>
+  resetToken: number
 }) {
   const placement = useMemo(
     () => placedPositions(selectedIndex, placementMode),
@@ -363,6 +483,20 @@ function SceneContent({
   const selected = points.find((p) => p.index === selectedIndex) ?? points[0]
   const identity = points.find((p) => p.index === 1) ?? points[0]
 
+  const visiblePoints = useMemo(
+    () =>
+      points.filter(
+        (p) =>
+          showAllSites || p.index === 1 || p.index === selectedIndex,
+      ),
+    [points, showAllSites, selectedIndex],
+  )
+
+  const bounds = useMemo(
+    () => computeSceneBounds(visiblePoints.map((p) => p.cartesian)),
+    [visiblePoints],
+  )
+
   return (
     <>
       <color attach="background" args={['#0b1220']} />
@@ -370,19 +504,19 @@ function SceneContent({
       <directionalLight position={[3, 4, 5]} intensity={1.15} />
       <directionalLight position={[-2, -1, 2]} intensity={0.4} />
 
+      <FitCamera
+        bounds={bounds}
+        controlsRef={controlsRef}
+        userZoomRef={userZoomRef}
+        resetToken={resetToken}
+      />
+
       <group position={[-CELL.a / 2, -CELL.b / 2, -CELL.c / 2]}>
         <UnitCellWireframe />
         <SymmetryElements selectedIndex={selectedIndex} />
         <AxisLabels />
         <BaseImageConnector from={baseCartesian} to={imageCartesian} />
-        {points
-          .filter(
-            (p) =>
-              showAllSites ||
-              p.index === 1 ||
-              p.index === selectedIndex,
-          )
-          .map((p) => {
+        {visiblePoints.map((p) => {
           const isBase = p.index === 1
           const isImage = p.index === selectedIndex
           // Hide numeric labels on non-BASE/non-IMAGE when focusing an op.
@@ -414,8 +548,9 @@ function SceneContent({
         makeDefault
         enableDamping
         dampingFactor={0.08}
-        minDistance={1.2}
-        maxDistance={8}
+        enableZoom={false}
+        minDistance={0.4}
+        maxDistance={40}
       />
     </>
   )
@@ -433,11 +568,12 @@ export default function UnitCellScene({
   resetToken: number
 }) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null)
+  const userZoomRef = useRef(1)
 
   useEffect(() => {
+    userZoomRef.current = 1
     const ctrl = controlsRef.current
     if (!ctrl) return
-    ctrl.reset()
     ctrl.target.set(0, 0, 0)
     ctrl.object.position.set(2.4, 1.9, 2.6)
     ctrl.update()
@@ -445,7 +581,7 @@ export default function UnitCellScene({
 
   return (
     <Canvas
-      camera={{ position: [2.4, 1.9, 2.6], fov: 42, near: 0.1, far: 50 }}
+      camera={{ position: [2.4, 1.9, 2.6], fov: 42, near: 0.1, far: 80 }}
       dpr={[1, 2]}
       gl={{ antialias: true }}
     >
@@ -456,6 +592,8 @@ export default function UnitCellScene({
         showAllSites={showAllSites}
         onSelect={onSelectPoint}
         controlsRef={controlsRef}
+        userZoomRef={userZoomRef}
+        resetToken={resetToken}
       />
     </Canvas>
   )
