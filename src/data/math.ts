@@ -88,6 +88,17 @@ export function fracToCart(p: Vec3, cell: CellParams): Vec3 {
   ]
 }
 
+/** Cartesian → fractional (inverse of fracToCart; unique-axis b). */
+export function cartToFrac(p: Vec3, cell: CellParams): Vec3 {
+  const beta = betaRad(cell)
+  const cosB = Math.cos(beta)
+  const sinB = Math.sin(beta)
+  const zFrac = Math.abs(sinB) < 1e-12 ? 0 : p[2] / (cell.c * sinB)
+  const yFrac = p[1] / cell.b
+  const xFrac = (p[0] - zFrac * cell.c * cosB) / cell.a
+  return [xFrac, yFrac, zFrac]
+}
+
 /** Cartesian center of the unit cell (fractional ½,½,½). */
 export function cellCenterCart(cell: CellParams): Vec3 {
   return fracToCart([0.5, 0.5, 0.5], cell)
