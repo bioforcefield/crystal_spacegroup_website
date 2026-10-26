@@ -86,9 +86,9 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the 41 golden demos', () => {
+  it('has the 47 golden demos', () => {
     expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 123, 146, 147, 148, 167, 194, 221, 225, 227, 229, 230,
+      1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 47, 56, 60, 61, 62, 64, 65, 69, 76, 80, 82, 88, 92, 96, 123, 138, 146, 147, 148, 167, 191, 194, 202, 221, 225, 227, 229, 230,
     ])
     expect(allHandDemos()).toEqual(demos)
   })
@@ -169,7 +169,7 @@ describe('generated catalog 1–230', () => {
   })
 
   it('hand overrides win over generated for hand-polished set', () => {
-    const handNums = [1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 56, 60, 61, 62, 64, 76, 80, 82, 88, 92, 96, 123, 146, 147, 148, 167, 194, 221, 225, 227, 229, 230]
+    const handNums = [1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 43, 47, 56, 60, 61, 62, 64, 65, 69, 76, 80, 82, 88, 92, 96, 123, 138, 146, 147, 148, 167, 191, 194, 202, 221, 225, 227, 229, 230]
     for (const n of handNums) {
       expect(getDemo(n)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     }
@@ -235,6 +235,21 @@ describe('generated catalog 1–230', () => {
     // dedicated mirror class (not c-glide piggyback)
     expect(getDemo(10)!.operators.some((o) => o.classId === 'mirror')).toBe(true)
     expect(getDemo(221)!.operators.some((o) => o.classId === 'mirror')).toBe(true)
+    expect(getDemo(47)?.meta.hm).toBe('Pmmm')
+    expect(getDemo(65)?.meta.hm).toBe('Cmmm')
+    expect(getDemo(69)?.meta.hm).toBe('Fmmm')
+    expect(getDemo(191)?.meta.hm).toBe('P6/mmm')
+    expect(getDemo(191)!.cell.gammaDeg).toBe(120)
+    expect(getDemo(191)!.screwAxes.some((a) => a.kind === '6')).toBe(true)
+    expect(getDemo(138)?.meta.hm).toBe('P42/ncm')
+    expect(getDemo(138)!.cell.a).toBe(getDemo(138)!.cell.b)
+    expect(getDemo(138)!.screwAxes.some((a) => a.kind === '42')).toBe(true)
+    expect(getDemo(202)?.meta.hm).toBe('Fm-3')
+    expect(getDemo(202)!.operators.length).toBe(96)
+    expect(getDemo(202)!.operatorFocusIndices?.length).toBeGreaterThan(0)
+    expect(getDemo(47)!.operators.some((o) => o.classId === 'mirror')).toBe(true)
+    expect(getDemo(191)!.operators.some((o) => o.classId === 'mirror')).toBe(true)
+
   })
 })
 

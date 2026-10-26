@@ -106,7 +106,7 @@ function ScrewsLayer({
             ? classColor(demo, 'twofold')
             : kind === '3'
               ? classColor(demo, 'threefold')
-              : kind === '4' || kind === 'bar4'
+              : kind === '4' || kind === '41' || kind === '42' || kind === '43' || kind === 'bar4'
                 ? classColor(demo, 'fourfold')
                 : classColor(demo, 'screw')
         const active = s.spec.opIndex === selectedIndex
@@ -121,13 +121,17 @@ function ScrewsLayer({
                 ? '4'
                 : kind === '41'
                   ? '4₁'
-                  : kind === '43'
-                    ? '4₃'
-                    : kind === '63'
-                      ? '6₃'
-                      : kind === 'bar4'
-                        ? '−4'
-                        : '2₁'
+                  : kind === '42'
+                    ? '4₂'
+                    : kind === '43'
+                      ? '4₃'
+                      : kind === '6'
+                        ? '6'
+                        : kind === '63'
+                          ? '6₃'
+                          : kind === 'bar4'
+                            ? '−4'
+                            : '2₁'
         if (s.mode === 'end-on') {
           const { x, y } = toSvg(s.u, s.v)
           const r = active ? 9 : 7.5
@@ -142,7 +146,7 @@ function ScrewsLayer({
                 stroke={color}
                 strokeWidth={strokeW}
               />
-              {(kind === '21' || kind === '41' || kind === '43' || kind === '63') && (
+              {(kind === '21' || kind === '41' || kind === '42' || kind === '43' || kind === '63') && (
                 <path
                   d={endOnHalfArrow(x, y, r)}
                   fill="none"

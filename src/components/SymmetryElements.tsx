@@ -91,9 +91,11 @@ function ScrewAxisVisual({
       ? classColor(demo, 'twofold')
       : kind === '3'
         ? classColor(demo, 'threefold')
-        : kind === '4' || kind === 'bar4'
+        : kind === '4' || kind === '41' || kind === '42' || kind === '43' || kind === 'bar4'
           ? classColor(demo, 'fourfold')
-          : classColor(demo, 'screw')
+          : kind === '6' || kind === '63'
+            ? classColor(demo, 'screw')
+            : classColor(demo, 'screw')
   const opacity = emphasized ? EMPH_LINE : FAINT
   const lineWidth = emphasized ? 3.2 : 1.2
   const [p0, p1] = cartAlong(demo, axis.origin, axis.direction, 0, 1)
@@ -166,9 +168,9 @@ function ScrewAxisVisual({
   const arcSpan =
     kind === '3'
       ? (2 * Math.PI) / 3
-      : kind === '63'
+      : kind === '6' || kind === '63'
         ? Math.PI / 3
-        : kind === '4' || kind === '41' || kind === '43' || kind === 'bar4'
+        : kind === '4' || kind === '41' || kind === '42' || kind === '43' || kind === 'bar4'
           ? Math.PI / 2
           : Math.PI
   const arcPts: Vec3[] = [0, 0.25, 0.5, 0.75, 1].map((t) => {
@@ -189,13 +191,17 @@ function ScrewAxisVisual({
           ? '4'
           : kind === '41'
             ? '4₁'
-            : kind === '43'
-              ? '4₃'
-              : kind === '63'
-                ? '6₃'
-                : kind === 'bar4'
-                  ? '−4'
-                  : '2₁'
+            : kind === '42'
+              ? '4₂'
+              : kind === '43'
+                ? '4₃'
+                : kind === '6'
+                  ? '6'
+                  : kind === '63'
+                    ? '6₃'
+                    : kind === 'bar4'
+                      ? '−4'
+                      : '2₁'
 
   return (
     <group>
@@ -214,7 +220,7 @@ function ScrewAxisVisual({
             color={color}
             opacity={opacity}
           />
-          {(kind === '21' || kind === '41' || kind === '43' || kind === '63') && (
+          {(kind === '21' || kind === '41' || kind === '42' || kind === '43' || kind === '63') && (
             <ArrowHead
               position={headFar}
               direction={axisUnit}
@@ -241,7 +247,7 @@ function ScrewAxisVisual({
             opacity={opacity}
             scale={0.7}
           />
-          {(kind === '21' || kind === '41' || kind === '43' || kind === '63') && (
+          {(kind === '21' || kind === '41' || kind === '42' || kind === '43' || kind === '63') && (
             <>
               <Line
                 points={[tickFrom, tickTo]}

@@ -3,26 +3,32 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`  
 Plan canvas: https://cursor.com/canvas/store-47b63095-92bb-4ade-8ecd-d65e434f207d/99fd7be7-25b5-4ea5-9402-ecaaffb9adf8  
-Latest: feature `5d348b3` · tip `34b17964e1457771c985f4f5de9453ce1c6e3b92` · `gh-pages` `4308908`
+Latest: feature `FEATURE_SHA` · tip `TIP_SHA` · `gh-pages` `GHPAGES_SHA`
 
-## Done
-- All 230 `/sg/N` interactive (gemmi ITA JSON → `generatedDemo.ts`; catalog all `ready`)
-- Hand overrides (**41**): CSD top-30 + teaching set including **10** P2/m, **76** P41, **80** I41, **123** P4/mmm, **147** P-3, **194** P6₃/mmc, **221** Pm-3m, **225** Fm-3m, **227** Fd-3m, **229** Im-3m, **230** Ia-3d
-- **Mirror class:** dedicated `SymmetryClassId` `mirror` (#facc15) in palette/types; pure mirrors no longer piggyback on `c-glide`; GlidePlaneSpec accepts `mirror`; generator classify uses `mirror`
-- **6₃ screw kind:** `ScrewAxisSpec.kind = '63'` with 3D/2D overlays (P6₃/mmc)
-- **Triclinic α/β/γ** + diagonal glides + cubic focus chips + hex γ=120 + tetra a=b
-- Foundation + vitest (**239** tests)
-- Pages: `PAGES=1` build + force-push `gh-pages`
+## Teaching core — complete
+Major crystal-system exemplars are hand-polished (47 demos):
+- **Triclinic:** P1, P-1 (full α/β/γ)
+- **Monoclinic:** P2/m, P21/m, C2/m, P21/c, C2/c, …
+- **Orthorhombic:** Pmmm, Cmmm, Fmmm, Pbca, Pnma, …
+- **Tetragonal:** P4/mmm, P4₂/ncm, P41, I41, …
+- **Trigonal/hex:** R-3, R-3c, P-3, P6/mmm, P6₃/mmc
+- **Cubic:** Pm-3m, Fm-3, Fm-3m, Fd-3m, Im-3m, Ia-3d
 
-## Gaps / next
-- R-3c third glide locus teaching labels approximate
-- Reset view orbits cell center — optional origin-front reset
-- Mobile toolbar wraps on ~390px; 2D still below 3D
-- Next ROI: more textbook leftovers (P6/mmm, Pmmm, Fmmm, Cmmm, P4₂/ncm, Fm-3, …) / CSD ranks 31+
+Infrastructure: dedicated `mirror` class · 4₁/4₂/4₃/6/6₃/¯4 overlays · diagonal glides · cubic focus chips · hex γ=120 · tetra a=b · triclinic α/β/γ · mobile chips.
+
+## Done (this batch)
+- Hand: **191** P6/mmm, **47** Pmmm, **65** Cmmm, **69** Fmmm, **138** P4₂/ncm, **202** Fm-3
+- Screw kinds **6** and **42** (+ 3D/2D overlays)
+- Hand count **47**; vitest **269**
+
+## Remaining high-value gaps (only)
+- Niche teaching polish (e.g. more 4₂ family, R3c tertiary glide labels)
+- UX: reset-view origin-front; mobile toolbar wrap ~390px; 2D still below 3D
+- Optional CSD ranks 31+ long-tail if demand appears
+- Pure-mirror / glide legend tweaks in older demos still listing both where only one applies
 
 ## Key paths
-- Mirror: `types.ts` · `symmetryPalette.ts` · `buildOperators.ts`
-- New hand: `p2m` · `p4mmm` · `p63mmc` · `pm3m` · `im3m`
+- New: `p6mmm` · `pmmm` · `cmmm` · `fmmm` · `p42ncm` · `fm3`
 - `npm test` · `npm run build:pages`
 
 ## Deploy cadence tip
