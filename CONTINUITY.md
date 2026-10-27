@@ -46,3 +46,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - A `fe383e1` → B `1721725` → C `3bf6cb2` → D `86ad6b7` → E `1201f37`
 - Prior tip before A: `9978524`
 - tests: 390
+- main tip: `4c74616`
+- gh-pages: `8e370a5` (259 files; includes 16 COD cache CIFs)
