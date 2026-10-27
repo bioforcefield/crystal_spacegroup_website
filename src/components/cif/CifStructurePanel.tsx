@@ -1,4 +1,5 @@
 import type { KeyboardEvent } from 'react'
+import AsuDiagram from './AsuDiagram'
 import { Link } from 'react-router-dom'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
@@ -50,6 +51,7 @@ export default function CifStructurePanel({
             )}
           </p>
         )}
+        <AsuDiagram structure={structure} />
         <dl className="meta-grid">
           <div>
             <dt>Space group</dt>

@@ -15,6 +15,8 @@ export interface CifLiterature {
 export interface CifMetadata {
   name?: string
   formula?: string
+  /** SMILES when present in the CIF (rare in COD; useful when deposited). */
+  smiles?: string
   z?: number
   /** Z′ from the CIF tag, or computed as Z / operator count (set by expandStructure). */
   zPrime?: number
@@ -75,6 +77,33 @@ export function extractMetadata(pairs: Map<string, string>, loops: Loop[]): CifM
 
   const meta: CifMetadata = {}
   meta.formula = get('_chemical_formula_sum', '_chemical_formula.sum')
+  meta.smiles = get('_chemical_formula_smiles', '_chemical_formula.smiles')
+  // Descriptor loops (mmCIF-style): pick the SMILES-typed row when present
+  for (const l of loops) {
+    const typeIdx = l.headers.findIndex(
+      (h) =>
+        h === '_pdbx_chem_comp_descriptor.type' ||
+        h === '_chem_comp_descriptor.type' ||
+        /(^|[._])type$/i.test(h) && h.toLowerCase().includes('descriptor'),
+    )
+    const descIdx = l.headers.findIndex(
+      (h) =>
+        h === '_pdbx_chem_comp_descriptor.descriptor' ||
+        h === '_chem_comp_descriptor.descriptor' ||
+        h.endsWith('.descriptor'),
+    )
+    if (typeIdx < 0 || descIdx < 0) continue
+    for (const row of l.rows) {
+      const t = cleanText(row[typeIdx])?.toUpperCase() ?? ''
+      if (!t.includes('SMILES')) continue
+      const s = cleanText(row[descIdx])
+      if (s) {
+        meta.smiles = s
+        break
+      }
+    }
+    if (meta.smiles) break
+  }
   meta.name =
     get('_chemical_name_common', '_chemical_name.common', '_chemical_name_systematic',
       '_chemical_name.systematic', '_chemical_name_mineral', '_struct_title', '_struct.title')
