@@ -19,7 +19,7 @@
  */
 const COD_UPSTREAM = 'https://www.crystallography.net/cod'
 const SEARCH_TIMEOUT_MS = 20_000
-const SEARCH_MAX_BYTES = 2_000_000
+const SEARCH_MAX_BYTES = 4_000_000
 const SEARCH_CAP = 20
 
 export default {
@@ -124,88 +124,127 @@ async function handleSearch(url, method) {
     return jsonResponse({ error: 'Query too long (max 200 characters)' }, 400)
   }
 
-  const upstreamUrl = new URL(`${COD_UPSTREAM}/result.php`)
-  if (kind === 'text') {
-    upstreamUrl.searchParams.set('text', value)
-  } else {
-    // COD REST API uses `smarts` for SMILES/substructure queries (wiki.crystallography.net).
-    // `smile` alone returns empty; we accept smile/smiles in our API for UX.
-    upstreamUrl.searchParams.set('smarts', value)
-  }
-  upstreamUrl.searchParams.set('format', 'json')
+  // 1) ID list first (small) — avoids multi-MB JSON for broad SMILES like c1ccccc1
+  const listUrl = new URL(`${COD_UPSTREAM}/result.php`)
+  if (kind === 'text') listUrl.searchParams.set('text', value)
+  else listUrl.searchParams.set('smarts', value) // COD SMILES/substructure API param
+  listUrl.searchParams.set('format', 'lst')
 
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS)
-  let upstream
-  try {
-    upstream = await fetch(upstreamUrl.toString(), {
-      redirect: 'follow',
-      signal: controller.signal,
-      headers: { accept: 'application/json, text/plain, */*' },
-    })
-  } catch (e) {
-    const aborted = e && e.name === 'AbortError'
+  const listRes = await fetchWithTimeout(listUrl.toString(), SEARCH_TIMEOUT_MS)
+  if (!listRes.ok) {
     return jsonResponse(
-      {
-        error: aborted
-          ? 'COD search timed out'
-          : `COD search failed: ${e && e.message ? e.message : String(e)}`,
-      },
+      { error: `COD search HTTP ${listRes.status}` },
       502,
     )
-  } finally {
-    clearTimeout(timer)
   }
+  const listText = await readTextCapped(listRes, SEARCH_MAX_BYTES)
+  if (listText.error) {
+    return jsonResponse({ error: listText.error }, 502)
+  }
+  const allIds = String(listText.text)
+    .split(/[\s,]+/)
+    .map((s) => s.replace(/\D/g, ''))
+    .filter((id) => /^\d{5,10}$/.test(id))
+  // de-dupe preserving order
+  const seen = new Set()
+  const unique = []
+  for (const id of allIds) {
+    if (seen.has(id)) continue
+    seen.add(id)
+    unique.push(id)
+  }
+  const total = unique.length
+  const pageIds = unique.slice(0, SEARCH_CAP)
 
   if (method === 'HEAD') {
     return new Response(null, {
-      status: upstream.status,
+      status: 200,
       headers: corsHeaders({
         'content-type': 'application/json',
         'cache-control': 'public, max-age=300',
         'x-cod-search': kind,
+        'x-cod-total': String(total),
       }),
     })
   }
 
-  const buf = await upstream.arrayBuffer()
-  if (buf.byteLength > SEARCH_MAX_BYTES) {
-    return jsonResponse(
-      { error: 'COD search response too large; try a more specific query' },
-      502,
-    )
-  }
-
-  const rawText = new TextDecoder().decode(buf)
-  if (!upstream.ok) {
+  if (pageIds.length === 0) {
     return jsonResponse(
       {
-        error: `COD search HTTP ${upstream.status}`,
-        detail: rawText.slice(0, 200),
+        query: { kind, value },
+        total: 0,
+        capped: false,
+        limit: SEARCH_CAP,
+        hits: [],
       },
-      502,
+      200,
+      { 'cache-control': 'public, max-age=300', 'x-cod-search': kind },
     )
   }
 
+  // 2) Hydrate metadata for the page of ids
+  const metaUrl = new URL(`${COD_UPSTREAM}/result.php`)
+  metaUrl.searchParams.set('id', pageIds.join(','))
+  metaUrl.searchParams.set('format', 'json')
+  const metaRes = await fetchWithTimeout(metaUrl.toString(), SEARCH_TIMEOUT_MS)
+  if (!metaRes.ok) {
+    // Still return id-only hits if metadata fails
+    const hits = pageIds.map((id) => ({
+      id,
+      sg: null,
+      sgNumber: null,
+      formula: null,
+      vol: null,
+      name: null,
+    }))
+    return jsonResponse(
+      {
+        query: { kind, value },
+        total,
+        capped: total > SEARCH_CAP,
+        limit: SEARCH_CAP,
+        hits,
+        warning: `Metadata HTTP ${metaRes.status}`,
+      },
+      200,
+      { 'cache-control': 'public, max-age=300', 'x-cod-search': kind },
+    )
+  }
+  const metaText = await readTextCapped(metaRes, SEARCH_MAX_BYTES)
+  if (metaText.error) {
+    return jsonResponse({ error: metaText.error }, 502)
+  }
   let parsed
   try {
-    parsed = JSON.parse(rawText)
+    parsed = JSON.parse(metaText.text)
   } catch {
     return jsonResponse(
-      { error: 'COD search returned non-JSON (TLS or HTML error page?)' },
+      { error: 'COD metadata returned non-JSON' },
       502,
     )
   }
-
   if (!Array.isArray(parsed)) {
     return jsonResponse(
-      { error: 'Unexpected COD search shape (expected JSON array)' },
+      { error: 'Unexpected COD metadata shape' },
       502,
     )
   }
-
-  const total = parsed.length
-  const hits = parsed.slice(0, SEARCH_CAP).map(normalizeHit).filter(Boolean)
+  const byId = new Map()
+  for (const row of parsed) {
+    const hit = normalizeHit(row)
+    if (hit) byId.set(hit.id, hit)
+  }
+  const hits = pageIds.map(
+    (id) =>
+      byId.get(id) || {
+        id,
+        sg: null,
+        sgNumber: null,
+        formula: null,
+        vol: null,
+        name: null,
+      },
+  )
 
   return jsonResponse(
     {
@@ -218,6 +257,37 @@ async function handleSearch(url, method) {
     200,
     { 'cache-control': 'public, max-age=300', 'x-cod-search': kind },
   )
+}
+
+async function fetchWithTimeout(url, ms) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(url, {
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: { accept: 'application/json, text/plain, */*' },
+    })
+  } catch (e) {
+    const aborted = e && e.name === 'AbortError'
+    throw new Error(
+      aborted
+        ? 'COD search timed out'
+        : `COD search failed: ${e && e.message ? e.message : String(e)}`,
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function readTextCapped(res, maxBytes) {
+  const buf = await res.arrayBuffer()
+  if (buf.byteLength > maxBytes) {
+    return {
+      error: 'COD search response too large; try a more specific query',
+    }
+  }
+  return { text: new TextDecoder().decode(buf) }
 }
 
 function normalizeHit(row) {

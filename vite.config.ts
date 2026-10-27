@@ -39,53 +39,90 @@ function codSearchDevProxy(): Plugin {
       res.end(JSON.stringify({ error: 'Provide ?text=… or ?smile=…' }))
       return true
     }
-    const upstream = new URL(COD)
-    if (kind === 'text') upstream.searchParams.set('text', value)
-    else upstream.searchParams.set('smarts', value)
-    upstream.searchParams.set('format', 'json')
+    const listUrl = new URL(COD)
+    if (kind === 'text') listUrl.searchParams.set('text', value)
+    else listUrl.searchParams.set('smarts', value)
+    listUrl.searchParams.set('format', 'lst')
     try {
-      const r = await fetch(upstream.toString(), {
-        headers: { accept: 'application/json' },
+      const listRes = await fetch(listUrl.toString(), {
+        headers: { accept: 'text/plain, application/json' },
       })
-      const raw = await r.text()
-      if (!r.ok) {
+      if (!listRes.ok) {
         res.statusCode = 502
         res.setHeader('content-type', 'application/json')
-        res.end(JSON.stringify({ error: `COD search HTTP ${r.status}` }))
+        res.end(JSON.stringify({ error: `COD search HTTP ${listRes.status}` }))
         return true
       }
-      const parsed = JSON.parse(raw) as unknown[]
-      if (!Array.isArray(parsed)) {
-        res.statusCode = 502
-        res.setHeader('content-type', 'application/json')
-        res.end(JSON.stringify({ error: 'Unexpected COD search shape' }))
-        return true
+      const listText = await listRes.text()
+      const seen = new Set<string>()
+      const unique: string[] = []
+      for (const tok of listText.split(/[\s,]+/)) {
+        const id = tok.replace(/\D/g, '')
+        if (!/^\d{5,10}$/.test(id) || seen.has(id)) continue
+        seen.add(id)
+        unique.push(id)
       }
-      const hits = parsed.slice(0, LIMIT).map((row) => {
-        const o = row as Record<string, unknown>
-        const id = String(o.file ?? '').replace(/\D/g, '')
-        const clean = (v: unknown) => {
-          if (v == null) return null
-          const s = String(v).replace(/^-\s*/, '').replace(/\s*-\s*$/, '').trim()
-          return s || null
+      const total = unique.length
+      const pageIds = unique.slice(0, LIMIT)
+      let hits: Array<Record<string, string | null>> = pageIds.map((id) => ({
+        id,
+        sg: null,
+        sgNumber: null,
+        formula: null,
+        vol: null,
+        name: null,
+      }))
+      if (pageIds.length > 0) {
+        const metaUrl = new URL(COD)
+        metaUrl.searchParams.set('id', pageIds.join(','))
+        metaUrl.searchParams.set('format', 'json')
+        const metaRes = await fetch(metaUrl.toString(), {
+          headers: { accept: 'application/json' },
+        })
+        if (metaRes.ok) {
+          const parsed = (await metaRes.json()) as unknown[]
+          if (Array.isArray(parsed)) {
+            const clean = (v: unknown) => {
+              if (v == null) return null
+              const s = String(v).replace(/^-\s*/, '').replace(/\s*-\s*$/, '').trim()
+              return s || null
+            }
+            const byId = new Map<string, Record<string, string | null>>()
+            for (const row of parsed) {
+              const o = row as Record<string, unknown>
+              const id = String(o.file ?? '').replace(/\D/g, '')
+              if (!/^\d{5,10}$/.test(id)) continue
+              byId.set(id, {
+                id,
+                sg: clean(o.sg),
+                sgNumber: o.sgNumber != null ? String(o.sgNumber) : null,
+                formula: clean(o.formula ?? o.calcformula),
+                vol: o.vol != null && o.vol !== '' ? String(o.vol) : null,
+                name:
+                  clean(o.commonname) ||
+                  clean(o.chemname) ||
+                  clean(o.mineral) ||
+                  null,
+              })
+            }
+            hits = pageIds.map(
+              (id) =>
+                byId.get(id) || {
+                  id,
+                  sg: null,
+                  sgNumber: null,
+                  formula: null,
+                  vol: null,
+                  name: null,
+                },
+            )
+          }
         }
-        return {
-          id,
-          sg: clean(o.sg),
-          sgNumber: o.sgNumber != null ? String(o.sgNumber) : null,
-          formula: clean(o.formula ?? o.calcformula),
-          vol: o.vol != null && o.vol !== '' ? String(o.vol) : null,
-          name:
-            clean(o.commonname) ||
-            clean(o.chemname) ||
-            clean(o.mineral) ||
-            null,
-        }
-      }).filter((h) => /^\d{5,10}$/.test(h.id))
+      }
       const body = JSON.stringify({
         query: { kind, value },
-        total: parsed.length,
-        capped: parsed.length > LIMIT,
+        total,
+        capped: total > LIMIT,
         limit: LIMIT,
         hits,
       })

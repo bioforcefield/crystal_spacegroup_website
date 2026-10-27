@@ -8,7 +8,7 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - Client: `src/data/cif/codSearch.ts`; UI tabs on `CifLoadPanel`
 - Vite: `/cod-search` middleware for local
 - Production: derive search from `VITE_COD_PROXY` (strip `/{id}.cif`) → `https://crystal-cod-proxy.crystal-sg.workers.dev/search`
-- Quirk: COD param is **`smarts`**, not `smile` (empty results if forwarded wrong). Text search is broad keyword metadata.
+- Quirk: COD param is **`smarts`**, not `smile` (empty if forwarded wrong). Worker uses `format=lst` then hydrates ≤20 ids (broad SMILES JSON is multi-MB).
 
 ## Home UX (2026-10-27)
 - CIF spotlight card under hero (`Structures` / `New`) → `/cif`
