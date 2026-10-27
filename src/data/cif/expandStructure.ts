@@ -15,6 +15,7 @@ import { applyOperator, fracToCart } from '../math'
 import { getDemo } from '../registry'
 import { buildOperatorsFromTriplets } from '../groups/buildOperators'
 import type { Operator } from '../types'
+import { findHBonds } from './hbonds'
 import { assembleMolecules } from './molecules'
 import type {
   ExpandedStructure,
@@ -112,7 +113,7 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
     }
   }
 
-  return {
+  const draft = {
     cell: parsed.cell,
     operators,
     operatorSource: source,
@@ -123,6 +124,7 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
     bonds: assembled.bonds,
     moleculeCount: assembled.moleculeCount,
     moleculeOpIndex: assembled.moleculeOpIndex,
+    hbonds: [] as ReturnType<typeof findHBonds>,
     metadata: withZPrime(parsed.metadata, {
       nOps: operators.length,
       spaceGroupNumber: parsed.spaceGroupNumber,
@@ -130,6 +132,15 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
     }),
     warnings,
   }
+  draft.hbonds = findHBonds(draft)
+  if (draft.hbonds.length) {
+    const cross = draft.hbonds.filter((h) => h.crossOp).length
+    warnings.push(
+      `Detected ${draft.hbonds.length} geometric H-bond contact(s)` +
+        (cross ? ` (${cross} cross-operator)` : ''),
+    )
+  }
+  return draft
 }
 
 function nearInteger(v: number, tol = 0.05): boolean {

@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from 'react'
 import CellParamsBadge from './CellParamsBadge'
 import type {
   CifColorMode,
+  CifHBondMode,
   CifPlacementMode,
   CifThermalMode,
   CifVisibility,
@@ -32,6 +33,8 @@ export interface CifViewportProps {
   onColorModeChange: (m: CifColorMode) => void
   thermalMode: CifThermalMode
   onThermalModeChange: (m: CifThermalMode) => void
+  hbondMode: CifHBondMode
+  onHBondModeChange: (m: CifHBondMode) => void
 }
 
 export default function CifViewport({
@@ -53,6 +56,8 @@ export default function CifViewport({
   onColorModeChange,
   thermalMode,
   onThermalModeChange,
+  hbondMode,
+  onHBondModeChange,
 }: CifViewportProps) {
   const [viewOpen, setViewOpen] = useState(false)
 
@@ -301,6 +306,38 @@ export default function CifViewport({
                 Ellipsoid
               </button>
             </div>
+
+            <div className="segmented" role="group" aria-label="H-bond contacts">
+              <button
+                type="button"
+                className={hbondMode === 'off' ? 'seg active' : 'seg'}
+                onClick={() => onHBondModeChange('off')}
+                aria-pressed={hbondMode === 'off'}
+                title="Hide H-bond contacts"
+              >
+                No H-bonds
+              </button>
+              <button
+                type="button"
+                className={hbondMode === 'links' ? 'seg active' : 'seg'}
+                onClick={() => onHBondModeChange('links')}
+                aria-pressed={hbondMode === 'links'}
+                disabled={!structure?.hbonds?.length}
+                title="Dashed H···A contacts (pink = cross-operator)"
+              >
+                H-bonds{structure?.hbonds?.length ? ` · ${structure.hbonds.length}` : ''}
+              </button>
+              <button
+                type="button"
+                className={hbondMode === 'partners' ? 'seg active' : 'seg'}
+                onClick={() => onHBondModeChange('partners')}
+                aria-pressed={hbondMode === 'partners'}
+                disabled={!structure?.hbonds?.length}
+                title="Show H-bonds and dim molecules not partnered with the AU"
+              >
+                Partners
+              </button>
+            </div>
             <button
               type="button"
               className="btn"
@@ -414,6 +451,38 @@ export default function CifViewport({
                     : ' · off'
                   : ''}
               </button>
+
+            <div className="segmented" role="group" aria-label="H-bond contacts">
+              <button
+                type="button"
+                className={hbondMode === 'off' ? 'seg active' : 'seg'}
+                onClick={() => onHBondModeChange('off')}
+                aria-pressed={hbondMode === 'off'}
+                title="Hide H-bond contacts"
+              >
+                No H-bonds
+              </button>
+              <button
+                type="button"
+                className={hbondMode === 'links' ? 'seg active' : 'seg'}
+                onClick={() => onHBondModeChange('links')}
+                aria-pressed={hbondMode === 'links'}
+                disabled={!structure?.hbonds?.length}
+                title="Dashed H···A contacts (pink = cross-operator)"
+              >
+                H-bonds{structure?.hbonds?.length ? ` · ${structure.hbonds.length}` : ''}
+              </button>
+              <button
+                type="button"
+                className={hbondMode === 'partners' ? 'seg active' : 'seg'}
+                onClick={() => onHBondModeChange('partners')}
+                aria-pressed={hbondMode === 'partners'}
+                disabled={!structure?.hbonds?.length}
+                title="Show H-bonds and dim molecules not partnered with the AU"
+              >
+                Partners
+              </button>
+            </div>
               <button
                 type="button"
                 className="btn"
@@ -475,6 +544,7 @@ export default function CifViewport({
                 }
                 colorMode={colorMode}
                 thermalMode={thermalMode}
+            hbondMode={hbondMode}
               />
             </Suspense>
           ) : (

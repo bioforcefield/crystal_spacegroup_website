@@ -74,6 +74,21 @@ export interface SymmetryBond {
   moleculeId?: number
 }
 
+/** Geometric intermolecular H-bond / short contact (see hbonds.ts). */
+export interface HBondContact {
+  donor: number
+  hydrogen: number
+  acceptor: number
+  donorOp: number
+  acceptorOp: number
+  donorMolecule: number
+  acceptorMolecule: number
+  distHA: number
+  distDA: number
+  angleDeg: number
+  crossOp: boolean
+}
+
 export interface ExpandedStructure {
   cell: CellParams
   operators: Operator[]
@@ -91,6 +106,8 @@ export interface ExpandedStructure {
   moleculeCount: number
   /** moleculeId → opIndex. */
   moleculeOpIndex: number[]
+  /** Intermolecular H-bond / short contacts (may be empty). */
+  hbonds: HBondContact[]
   metadata: CifMetadata
   warnings: string[]
 }

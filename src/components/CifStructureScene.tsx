@@ -20,9 +20,14 @@ import SymmetryElements from './SymmetryElements'
 import CellParamsBadge from './cif/CellParamsBadge'
 import type {
   CifColorMode,
+  CifHBondMode,
   CifThermalMode,
   CifVisibility,
 } from './cif/cifViewTypes'
+import {
+  asymmetricMoleculeIds,
+  hbondPartnerMolecules,
+} from '../data/cif/hbonds'
 import {
   ellipsoidAxes,
   residueColor,
@@ -53,6 +58,7 @@ interface Props {
   showSymmetryElements?: boolean
   colorMode?: CifColorMode
   thermalMode?: CifThermalMode
+  hbondMode?: CifHBondMode
 }
 
 function CellWire({ cell }: { cell: CellParams }) {
@@ -152,6 +158,7 @@ function SceneBody({
   showSymmetryElements = false,
   colorMode = 'operator',
   thermalMode = 'off',
+  hbondMode = 'off',
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const center = cellCenterCart(structure.cell)
 
@@ -229,6 +236,22 @@ function SceneBody({
     ctrl.update()
   }, [resetToken, boundsRadius, controlsRef])
 
+
+  const partnerMols = useMemo(() => {
+    if (hbondMode !== 'partners' || !structure.hbonds?.length) return null
+    const auMols = asymmetricMoleculeIds(structure.atoms)
+    const set = new Set<number>()
+    for (const mid of auMols) {
+      for (const m of hbondPartnerMolecules(structure.hbonds, mid)) set.add(m)
+    }
+    return set
+  }, [hbondMode, structure])
+
+  const hbondLines = useMemo(() => {
+    if (hbondMode === 'off' || !structure.hbonds?.length) return []
+    return structure.hbonds
+  }, [hbondMode, structure])
+
   return (
     <>
       <color attach="background" args={['#0b1220']} />
@@ -271,18 +294,49 @@ function SceneBody({
           )
         })}
 
+
+        {hbondLines.map((hb, i) => {
+          const a = placement.positions[hb.hydrogen]!
+          const b = placement.positions[hb.acceptor]!
+          const partnerOk =
+            partnerMols == null ||
+            partnerMols.has(hb.donorMolecule) ||
+            partnerMols.has(hb.acceptorMolecule)
+          if (!partnerOk && hbondMode === 'partners') return null
+          // Only draw if both endpoints currently visible
+          if (!visibleIndices.includes(hb.hydrogen) || !visibleIndices.includes(hb.acceptor)) {
+            // still draw cross-op links when molecules mode shows both ops somewhat — check opacity path
+          }
+          return (
+            <Line
+              key={`hb-${i}-${hb.hydrogen}-${hb.acceptor}`}
+              points={[a, b]}
+              color={hb.crossOp ? '#f472b6' : '#94a3b8'}
+              lineWidth={1.6}
+              transparent
+              opacity={0.85}
+              dashed
+              dashSize={0.12}
+              gapSize={0.08}
+            />
+          )
+        })}
+
         {visibleIndices.map((ai) => {
           const a = structure.atoms[ai]!
           const isSel = a.opIndex === selectedOp
           const isBase = a.opIndex === 1
           const molFocus =
             selectedMolecule == null || a.moleculeId === selectedMolecule
+          const partnerFocus =
+            partnerMols == null || partnerMols.has(a.moleculeId)
           const emphasized =
             (isSel ||
               isBase ||
               visibility === 'molecules' ||
               visibility !== 'all') &&
-            molFocus
+            molFocus &&
+            partnerFocus
           const strong =
             (isSel || (visibility === 'selected' && isBase)) && molFocus
           const opTint = operatorColor(

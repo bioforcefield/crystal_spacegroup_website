@@ -11,6 +11,7 @@ import CifStructurePanel from '../components/cif/CifStructurePanel'
 import CifViewport from '../components/cif/CifViewport'
 import type {
   CifColorMode,
+  CifHBondMode,
   CifPlacementMode,
   CifThermalMode,
   CifVisibility,
@@ -25,6 +26,7 @@ import {
   CsdManualError,
   fetchRemoteCif,
   NotFoundError,
+  sourceBadgeLabel,
 } from '../data/cif/fetchRemoteCif'
 import { parseCif } from '../data/cif/parseCif'
 import {
@@ -46,6 +48,7 @@ export default function CifExplorerPage() {
   const [showSymmetryElements, setShowSymmetryElements] = useState(true)
   const [colorMode, setColorMode] = useState<CifColorMode>('operator')
   const [thermalMode, setThermalMode] = useState<CifThermalMode>('off')
+  const [hbondMode, setHBondMode] = useState<CifHBondMode>('off')
   const [resetToken, setResetToken] = useState(0)
   const [busy, setBusy] = useState(false)
   const [codeInput, setCodeInput] = useState('1100303')
@@ -54,11 +57,15 @@ export default function CifExplorerPage() {
   const [remoteHint, setRemoteHint] = useState<string | null>(null)
   const [remoteLink, setRemoteLink] = useState<string | null>(null)
 
-  const loadText = useCallback((text: string, name: string) => {
+  const loadText = useCallback((
+    text: string,
+    name: string,
+    remote?: { hint?: string | null; link?: string | null },
+  ) => {
     setBusy(true)
     setError(null)
-    setRemoteHint(null)
-    setRemoteLink(null)
+    setRemoteHint(remote?.hint ?? null)
+    setRemoteLink(remote?.link ?? null)
     try {
       const parsed = parseCif(text)
       const expanded = expandStructure(parsed)
@@ -129,7 +136,14 @@ export default function CifExplorerPage() {
         return
       }
       const remote = await fetchRemoteCif(parsed.code.id)
-      loadText(remote.text, remote.label)
+      loadText(
+        remote.text,
+        `${remote.label} · ${sourceBadgeLabel(remote.source)}`,
+        {
+          hint: `${remote.sourceNote} Source: ${sourceBadgeLabel(remote.source)}.`,
+          link: `https://www.crystallography.net/cod/${parsed.code.id}.cif`,
+        },
+      )
     } catch (e) {
       if (e instanceof CsdManualError) {
         setRemoteLink(e.accessUrl)
@@ -139,7 +153,7 @@ export default function CifExplorerPage() {
       } else if (e instanceof CorsBlockedError) {
         setRemoteLink(e.codUrl)
         setRemoteHint(
-          `COD ${e.id} is public, but the browser blocked a direct fetch (no CORS on crystallography.net). Use a cached teaching COD chip, paste/upload the CIF, configure VITE_COD_PROXY for arbitrary ids, or use local vite /cod-proxy.`,
+          `Fail · COD ${e.id}: browser blocked crystallography.net (no CORS). Use a cached teaching chip, paste/upload the CIF, or deploy the included Cloudflare Worker (scripts/cod-cors-worker.js) and rebuild with VITE_COD_PROXY.`,
         )
         setPasteOpen(true)
         setError(e.message)
@@ -309,6 +323,8 @@ export default function CifExplorerPage() {
         onColorModeChange={setColorMode}
         thermalMode={thermalMode}
         onThermalModeChange={setThermalMode}
+        hbondMode={hbondMode}
+        onHBondModeChange={setHBondMode}
       />
     </div>
   )
