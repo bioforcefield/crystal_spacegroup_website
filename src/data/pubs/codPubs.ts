@@ -17,6 +17,7 @@ export const PUB_TAG_ORDER: readonly PubTag[] = [
   'mof',
   'ml',
   'csp',
+  'forcefield',
 ] as const
 
 /** Short chip / list label (may differ from the internal tag id). */
@@ -31,6 +32,7 @@ export const PUB_TAG_LABELS: Record<PubTag, string> = {
   mof: 'mof',
   ml: 'machine learning',
   csp: 'CSP',
+  forcefield: 'force field',
 }
 
 export const PUB_TAG_BLURBS: Record<PubTag, string> = {
@@ -44,6 +46,7 @@ export const PUB_TAG_BLURBS: Record<PubTag, string> = {
   mof: 'Framework / MOF-like entries when present in the curated set.',
   ml: 'Machine learning / neural models applied to crystals (title or curated cues).',
   csp: 'Crystal structure prediction (CSP) methods and benchmarks.',
+  forcefield: 'Molecular / crystal force fields, potentials, and parameterization.',
 }
 
 export const COD_PUBS: readonly CodPubEntry[] = [

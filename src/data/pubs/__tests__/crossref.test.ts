@@ -156,7 +156,7 @@ describe('date / author / hint parsers', () => {
     expect(formatAuthorsShort([], 3)).toBe('')
   })
 
-  it('hintTagsFromTitle detects MOF / hydrate / drug / ml / csp / cocrystal', () => {
+  it('hintTagsFromTitle detects MOF / hydrate / drug / ml / csp / cocrystal / force field', () => {
     expect(hintTagsFromTitle('A new MOF for gas storage')).toContain('mof')
     expect(hintTagsFromTitle('Crystal structure of a hydrate salt')).toEqual(
       expect.arrayContaining(['hydrate', 'salt']),
@@ -173,6 +173,9 @@ describe('date / author / hint parsers', () => {
       hintTagsFromTitle('Advances in crystal structure prediction (CSP)'),
     ).toEqual(expect.arrayContaining(['csp']))
     expect(
+      hintTagsFromTitle('A machine learning force field for molecular crystals'),
+    ).toEqual(expect.arrayContaining(['ml', 'forcefield']))
+    expect(
       hintTagsFromTitle('Machine learning property structure prediction methods'),
     ).not.toContain('csp')
     expect(hintTagsFromTitle('A pharmaceutical co-crystal of urea')).toContain(
@@ -184,6 +187,7 @@ describe('date / author / hint parsers', () => {
     expect(crossrefQueryForHintTags(['hydrate'])).toBe('hydrate')
     expect(crossrefQueryForHintTags(['salt'])).toBe('salt')
     expect(crossrefQueryForHintTags(['cocrystal'])).toBe('cocrystal')
+    expect(crossrefQueryForHintTags(['forcefield'])).toBe('"force field"')
     expect(crossrefQueryForHintTags(['ml', 'csp'])).toContain('machine learning')
     expect(crossrefQueryForHintTags(['ml', 'csp'])).toContain(
       'crystal structure prediction',

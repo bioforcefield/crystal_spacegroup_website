@@ -14,6 +14,7 @@
  * - ml: machine learning / neural / GNN cues in name/title
  * - csp: crystal structure prediction / CSP cues in name/title
  * - cocrystal: cocrystal / co-crystal cues (distinct from salt)
+ * - forcefield: force field / forcefield / interatomic potential cues
  * - organic vs inorganic: C+H (or light-atom-only) molecular formulas → organic;
  *   otherwise inorganic (elements, oxides, minerals without organics)
  */
@@ -96,6 +97,13 @@ export function suggestTags(input: {
   }
   if (/\b(cocrystals?|co-crystals?|co crystals?)\b/.test(blob)) {
     tags.push('cocrystal')
+  }
+  if (
+    /force fields?|forcefields?|force-fields?|interatomic potential|\bmmff\b|\bcharmm\b|\bamber\b/.test(
+      blob,
+    )
+  ) {
+    tags.push('forcefield')
   }
 
   const hasC = elems.has('C')

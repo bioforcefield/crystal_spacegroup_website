@@ -323,6 +323,13 @@ export function hintTagsFromTitle(title: string | null | undefined): PubTag[] {
   if (/crystal structure prediction|\bcsp\b/.test(t)) {
     tags.push('csp')
   }
+  if (
+    /force fields?|forcefields?|force-fields?|interatomic potential|\bmmff\b|\bcharmm\b|\bamber\b/.test(
+      t,
+    )
+  ) {
+    tags.push('forcefield')
+  }
   const seen = new Set<PubTag>()
   return tags.filter((x) => (seen.has(x) ? false : (seen.add(x), true)))
 }
@@ -341,6 +348,7 @@ export const TOPIC_HINT_TAGS: readonly PubTag[] = [
   'mineral',
   'ml',
   'csp',
+  'forcefield',
 ] as const
 
 const HINT_CROSSREF_QUERY: Partial<Record<PubTag, string>> = {
@@ -352,6 +360,7 @@ const HINT_CROSSREF_QUERY: Partial<Record<PubTag, string>> = {
   mineral: 'mineral',
   ml: '"machine learning"',
   csp: '"crystal structure prediction"',
+  forcefield: '"force field"',
 }
 
 export function isTopicHintTag(tag: PubTag): boolean {

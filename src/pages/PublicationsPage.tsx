@@ -425,7 +425,7 @@ function RecentTitlesPanel() {
     >
       <p className="pubs-note">
         Live Crossref metadata for crystallography journals (ISSN filters).
-        Topic chips (hydrate, CSP, cocrystal, machine learning, …) run a Crossref search
+        Topic chips (hydrate, CSP, cocrystal, force field, machine learning, …) run a Crossref search
         ranked by relevance — not a filter of the newest-first page. Card chips
         ending in “?” are still <em>title keyword hints</em>, not COD curation.
         Organic / inorganic live on the Curated COD tab. Open DOI goes to the

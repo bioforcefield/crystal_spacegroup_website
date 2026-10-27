@@ -10,6 +10,7 @@ export type PubTag =
   | 'ml'
   | 'csp'
   | 'cocrystal'
+  | 'forcefield'
 
 export interface CodPubEntry {
   /** COD numeric id */

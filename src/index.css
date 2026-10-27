@@ -3444,6 +3444,7 @@ button.linkish {
 .pubs-tag-mof { --tag-c: #fb923c; }
 .pubs-tag-ml { --tag-c: #e879f9; }
 .pubs-tag-csp { --tag-c: #2dd4bf; }
+.pubs-tag-forcefield { --tag-c: #a3e635; }
 
 .pubs-chip.pubs-tag.active,
 .pubs-mini-tag {
