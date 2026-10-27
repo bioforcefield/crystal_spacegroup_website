@@ -3,7 +3,12 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Done (this batch) — CIF Near / Cell placement
+## Done (latest) — CIF structure-panel metadata
+- `src/data/cif/metadata.ts`: name (common/systematic/mineral/_struct.title, formula fallback), Z/Z′ (CIF tag, else Z/ops computed), resolution (`_refine_ls_d_res_high`/`_reflns_d_resolution_high`, else λ/2sinθmax), literature (title, authors, journal/vol/year/pages, DOI link).
+- Shown in `/cif` Structure panel; missing rows omitted; long titles line-clamped.
+- Tests 362. main `3f7a247`, gh-pages `8480b05`.
+
+## Done (earlier) — CIF Near / Cell placement
 
 ### CIF `/cif` — Nearest images + In cell (mirror SG demos)
 - Same semantics as `/sg/{n}` Motif placement:
