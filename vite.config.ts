@@ -24,6 +24,23 @@ const pages = process.env.PAGES === '1'
 export default defineConfig({
   base: pages ? '/crystal_spacegroup_website/' : '/',
   plugins: [react(), spaFallback404()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/three') || id.includes('node_modules/three-stdlib')) {
+            return 'three'
+          }
+          if (
+            id.includes('node_modules/@react-three') ||
+            id.includes('node_modules/maath')
+          ) {
+            return 'r3f'
+          }
+        },
+      },
+    },
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
