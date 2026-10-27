@@ -3445,6 +3445,13 @@ button.linkish {
 .pubs-tag-ml { --tag-c: #e879f9; }
 .pubs-tag-csp { --tag-c: #2dd4bf; }
 .pubs-tag-forcefield { --tag-c: #a3e635; }
+.pubs-tag-freeenergy { --tag-c: #38bdf8; }
+.pubs-tag-solubility { --tag-c: #818cf8; }
+.pubs-tag-stability { --tag-c: #c084fc; }
+.pubs-tag-morphology { --tag-c: #f472b6; }
+.pubs-tag-kinetics { --tag-c: #fb7185; }
+.pubs-tag-nucleation { --tag-c: #facc15; }
+.pubs-tag-industrial { --tag-c: #94a3b8; }
 
 .pubs-chip.pubs-tag.active,
 .pubs-mini-tag {

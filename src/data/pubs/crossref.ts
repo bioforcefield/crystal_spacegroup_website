@@ -330,6 +330,27 @@ export function hintTagsFromTitle(title: string | null | undefined): PubTag[] {
   ) {
     tags.push('forcefield')
   }
+  if (/free energ(?:y|ies)|free-energ/.test(t)) {
+    tags.push('freeenergy')
+  }
+  if (/solubilit(?:y|ies)|dissolution/.test(t)) {
+    tags.push('solubility')
+  }
+  if (/\bstabilit(?:y|ies)\b|metastable|thermodynamic stability/.test(t)) {
+    tags.push('stability')
+  }
+  if (/morpholog(?:y|ies)|crystal habit|\bfacet\b/.test(t)) {
+    tags.push('morphology')
+  }
+  if (/\bkinetics?\b|growth rate|crystallization rate/.test(t)) {
+    tags.push('kinetics')
+  }
+  if (/nucleation|nucleat(?:e|ed|ing)/.test(t)) {
+    tags.push('nucleation')
+  }
+  if (/industrial crystalli[sz]ation|process crystalli[sz]ation|continuous crystalli[sz]ation/.test(t)) {
+    tags.push('industrial')
+  }
   const seen = new Set<PubTag>()
   return tags.filter((x) => (seen.has(x) ? false : (seen.add(x), true)))
 }
@@ -349,6 +370,13 @@ export const TOPIC_HINT_TAGS: readonly PubTag[] = [
   'ml',
   'csp',
   'forcefield',
+  'freeenergy',
+  'solubility',
+  'stability',
+  'morphology',
+  'kinetics',
+  'nucleation',
+  'industrial',
 ] as const
 
 const HINT_CROSSREF_QUERY: Partial<Record<PubTag, string>> = {
@@ -361,6 +389,13 @@ const HINT_CROSSREF_QUERY: Partial<Record<PubTag, string>> = {
   ml: '"machine learning"',
   csp: '"crystal structure prediction"',
   forcefield: '"force field"',
+  freeenergy: '"free energy"',
+  solubility: 'solubility',
+  stability: 'stability',
+  morphology: 'morphology',
+  kinetics: 'kinetics',
+  nucleation: 'nucleation',
+  industrial: '"industrial crystallization"',
 }
 
 export function isTopicHintTag(tag: PubTag): boolean {

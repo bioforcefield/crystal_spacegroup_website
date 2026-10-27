@@ -15,6 +15,13 @@
  * - csp: crystal structure prediction / CSP cues in name/title
  * - cocrystal: cocrystal / co-crystal cues (distinct from salt)
  * - forcefield: force field / forcefield / interatomic potential cues
+ * - freeenergy: free energy
+ * - solubility: solubility
+ * - stability: stability
+ * - morphology: morphology
+ * - kinetics: kinetics
+ * - nucleation: nucleation
+ * - industrial: industrial crystallization
  * - organic vs inorganic: C+H (or light-atom-only) molecular formulas → organic;
  *   otherwise inorganic (elements, oxides, minerals without organics)
  */
@@ -104,6 +111,27 @@ export function suggestTags(input: {
     )
   ) {
     tags.push('forcefield')
+  }
+  if (/free energ(?:y|ies)|free-energ/.test(blob)) {
+    tags.push('freeenergy')
+  }
+  if (/solubilit(?:y|ies)|dissolution/.test(blob)) {
+    tags.push('solubility')
+  }
+  if (/\bstabilit(?:y|ies)\b|metastable|thermodynamic stability/.test(blob)) {
+    tags.push('stability')
+  }
+  if (/morpholog(?:y|ies)|crystal habit|\bfacet\b/.test(blob)) {
+    tags.push('morphology')
+  }
+  if (/\bkinetics?\b|growth rate|crystallization rate/.test(blob)) {
+    tags.push('kinetics')
+  }
+  if (/nucleation|nucleat(?:e|ed|ing)/.test(blob)) {
+    tags.push('nucleation')
+  }
+  if (/industrial crystalli[sz]ation|process crystalli[sz]ation|continuous crystalli[sz]ation/.test(blob)) {
+    tags.push('industrial')
   }
 
   const hasC = elems.has('C')

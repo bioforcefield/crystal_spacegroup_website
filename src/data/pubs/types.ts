@@ -11,6 +11,13 @@ export type PubTag =
   | 'csp'
   | 'cocrystal'
   | 'forcefield'
+  | 'freeenergy'
+  | 'solubility'
+  | 'stability'
+  | 'morphology'
+  | 'kinetics'
+  | 'nucleation'
+  | 'industrial'
 
 export interface CodPubEntry {
   /** COD numeric id */

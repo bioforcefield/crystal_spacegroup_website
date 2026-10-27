@@ -18,6 +18,13 @@ export const PUB_TAG_ORDER: readonly PubTag[] = [
   'ml',
   'csp',
   'forcefield',
+  'freeenergy',
+  'solubility',
+  'stability',
+  'morphology',
+  'kinetics',
+  'nucleation',
+  'industrial',
 ] as const
 
 /** Short chip / list label (may differ from the internal tag id). */
@@ -33,6 +40,13 @@ export const PUB_TAG_LABELS: Record<PubTag, string> = {
   ml: 'machine learning',
   csp: 'CSP',
   forcefield: 'force field',
+  freeenergy: 'free energy',
+  solubility: 'solubility',
+  stability: 'stability',
+  morphology: 'morphology',
+  kinetics: 'kinetics',
+  nucleation: 'nucleation',
+  industrial: 'industrial crystallization',
 }
 
 export const PUB_TAG_BLURBS: Record<PubTag, string> = {
@@ -47,6 +61,13 @@ export const PUB_TAG_BLURBS: Record<PubTag, string> = {
   ml: 'Machine learning / neural models applied to crystals (title or curated cues).',
   csp: 'Crystal structure prediction (CSP) methods and benchmarks.',
   forcefield: 'Molecular / crystal force fields, potentials, and parameterization.',
+  freeenergy: 'Free-energy methods, landscapes, and thermodynamic driving forces.',
+  solubility: 'Solubility, dissolution, and solution thermodynamics of crystals.',
+  stability: 'Polymorph / phase / lattice stability and relative energetics.',
+  morphology: 'Crystal habit, morphology prediction, and facet growth.',
+  kinetics: 'Growth / transformation kinetics and rate phenomena.',
+  nucleation: 'Nucleation, primary/secondary nucleation, and induction.',
+  industrial: 'Process / industrial crystallization, scale-up, and manufacturing.',
 }
 
 export const COD_PUBS: readonly CodPubEntry[] = [

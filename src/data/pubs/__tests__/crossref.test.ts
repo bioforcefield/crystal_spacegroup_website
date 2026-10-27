@@ -175,6 +175,18 @@ describe('date / author / hint parsers', () => {
     expect(
       hintTagsFromTitle('A machine learning force field for molecular crystals'),
     ).toEqual(expect.arrayContaining(['ml', 'forcefield']))
+
+    expect(hintTagsFromTitle('Polymorph free energy ranking')).toContain('freeenergy')
+    expect(hintTagsFromTitle('Aqueous solubility of a salt')).toContain('solubility')
+    expect(hintTagsFromTitle('Relative stability of forms I and II')).toContain('stability')
+    expect(hintTagsFromTitle('Crystal morphology prediction')).toContain('morphology')
+    expect(hintTagsFromTitle('Growth kinetics of a hydrate')).toEqual(
+      expect.arrayContaining(['kinetics', 'hydrate']),
+    )
+    expect(hintTagsFromTitle('Primary nucleation in solution')).toContain('nucleation')
+    expect(
+      hintTagsFromTitle('Industrial crystallization of an API'),
+    ).toEqual(expect.arrayContaining(['industrial', 'drug']))
     expect(
       hintTagsFromTitle('Machine learning property structure prediction methods'),
     ).not.toContain('csp')
@@ -188,6 +200,12 @@ describe('date / author / hint parsers', () => {
     expect(crossrefQueryForHintTags(['salt'])).toBe('salt')
     expect(crossrefQueryForHintTags(['cocrystal'])).toBe('cocrystal')
     expect(crossrefQueryForHintTags(['forcefield'])).toBe('"force field"')
+
+    expect(crossrefQueryForHintTags(['freeenergy'])).toBe('"free energy"')
+    expect(crossrefQueryForHintTags(['nucleation'])).toBe('nucleation')
+    expect(crossrefQueryForHintTags(['industrial'])).toBe(
+      '"industrial crystallization"',
+    )
     expect(crossrefQueryForHintTags(['ml', 'csp'])).toContain('machine learning')
     expect(crossrefQueryForHintTags(['ml', 'csp'])).toContain(
       'crystal structure prediction',
