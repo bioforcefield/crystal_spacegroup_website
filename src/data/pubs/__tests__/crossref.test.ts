@@ -160,7 +160,17 @@ describe('parseCrossrefWork / response', () => {
     type: 'journal-article',
   }
 
-  it('parses a work', () => {
+  it('drops issue masthead titles', () => {
+    expect(
+      parseCrossrefWork({
+        DOI: '10.1021/cgv025i001_1883486',
+        title: ['Issue Publication Information'],
+        published: { 'date-parts': [[2025]] },
+      }),
+    ).toBeNull()
+  })
+
+    it('parses a work', () => {
     const w = parseCrossrefWork(sampleItem)
     expect(w).toMatchObject({
       doi: '10.1021/acs.cgd.4c00904',

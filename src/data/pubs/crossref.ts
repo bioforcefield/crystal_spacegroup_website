@@ -313,6 +313,10 @@ export function parseCrossrefWork(item: unknown): CrossrefWork | null {
     ? String(titles[0] ?? '').trim()
     : String(titles ?? '').trim()
   if (!title) return null
+  // Crossref often tags issue front-matter as journal-article.
+  if (/^(issue\s+(publication\s+information|editorial\s+masthead)|masthead|table of contents)\b/i.test(title)) {
+    return null
+  }
   const containers = o['container-title']
   const journal = Array.isArray(containers)
     ? String(containers[0] ?? '').trim() || null
