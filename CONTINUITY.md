@@ -35,3 +35,8 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - Production COD CORS needs `VITE_COD_PROXY`
 - Hand vs generated demo polish gap (~57 hand / 173 generated)
 - Some exotic d-glide / off-origin loci may still be geometryLimited
+
+## SHAs
+- main tip: 
+- gh-pages:  (243 files)
+- tests: 376
