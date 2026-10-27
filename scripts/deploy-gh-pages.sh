@@ -9,6 +9,7 @@ TMP="$(mktemp -d)"
 cleanup() { rm -rf "$TMP"; }
 trap cleanup EXIT
 cp -a dist/. "$TMP/"
+touch "$TMP/.nojekyll"
 # Sanity: refuse if node_modules sneaks in
 if [[ -e "$TMP/node_modules" ]]; then
   echo "Refusing deploy: node_modules present in staging dir" >&2

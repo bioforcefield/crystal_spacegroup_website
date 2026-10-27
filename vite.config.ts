@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
-import { copyFileSync, existsSync } from 'node:fs'
+import { copyFileSync, existsSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 /** After build, duplicate index.html as 404.html for GitHub Pages SPA refreshes. */
@@ -12,6 +12,7 @@ function spaFallback404() {
       const index = resolve(dist, 'index.html')
       if (existsSync(index)) {
         copyFileSync(index, resolve(dist, '404.html'))
+        writeFileSync(resolve(dist, '.nojekyll'), '')
       }
     },
   }
