@@ -69,7 +69,11 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 - **Intact molecules**: min-image bonding + unwrap so copies are not chopped by the cell
 - **Symmetry operators**: ITA xyz list, color-matched to 3D copies; Molecules / All / BASE+IMAGE / AU
 - **Lattice**: a/b/c labels (Å) on the box + α/β/γ badge
-- **COD load**: enter a numeric id → tries bundled cache (`public/samples/cod/`), optional `VITE_COD_PROXY`, Vite `/cod-proxy` (dev/preview), then `https://www.crystallography.net/cod/{id}.cif`. Direct COD often lacks CORS on GitHub Pages — UI then offers open-link + paste/upload. Optional Cloudflare Worker: `scripts/cod-cors-worker.js`.
+- **COD load**: enter a numeric id → tries bundled cache (`public/samples/cod/` + teaching chips; 16 curated CIFs), optional `VITE_COD_PROXY`, Vite `/cod-proxy` (dev/preview), then direct `crystallography.net`. Direct COD lacks CORS on GitHub Pages for arbitrary ids — use a chip, paste/upload, or deploy `scripts/cod-cors-worker.js` (see below).
+- **COD proxy (optional, for arbitrary ids on Pages)**:
+  1. `npx wrangler deploy -c scripts/wrangler.cod-proxy.toml` (Cloudflare account)
+  2. Rebuild: `VITE_COD_PROXY="https://YOUR_WORKER.workers.dev/{id}.cif" npm run build:pages`
+  3. Refresh cache list: `scripts/fetch-cod-samples.sh` then rebuild manifest labels if needed.
 - **CSD**: no free anonymous CIF API; UI links to [CCDC Access Structures](https://www.ccdc.cam.ac.uk/structures/) for download, then upload/paste. We do not scrape CSD.
 
 ## Stack

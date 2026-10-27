@@ -1,8 +1,11 @@
 /**
  * Optional Cloudflare Worker: same-origin-friendly COD CIF proxy with CORS.
  *
- * Deploy (Cloudflare dashboard or wrangler), then build the site with:
+ * Deploy (Cloudflare dashboard or wrangler):
+ *   npx wrangler deploy -c scripts/wrangler.cod-proxy.toml
+ * Then build the site with:
  *   VITE_COD_PROXY="https://YOUR_WORKER.workers.dev/{id}.cif" npm run build:pages
+ * Without a proxy, GitHub Pages still serves curated ids from public/samples/cod/.
  *
  * Request paths accepted:
  *   /1100303.cif

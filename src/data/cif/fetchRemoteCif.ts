@@ -21,7 +21,7 @@ export class CorsBlockedError extends Error {
   readonly id: string
   constructor(id: string, codUrl: string, cause?: unknown) {
     super(
-      `Browser blocked fetching COD ${id} (CORS). Open the CIF link, then paste or upload the file.`,
+      `Browser blocked fetching COD ${id} (CORS). Try a teaching COD chip below (same-origin cache), paste/upload the CIF, or configure VITE_COD_PROXY (see README · scripts/cod-cors-worker.js).`,
     )
     this.name = 'CorsBlockedError'
     this.codUrl = codUrl
@@ -102,6 +102,13 @@ function envProxyUrl(id: string): string | null {
   const prefix = raw.endsWith('/') ? raw : `${raw}/`
   return `${prefix}${id}.cif`
 }
+
+/** True when the production build was configured with VITE_COD_PROXY. */
+export function hasConfiguredCodProxy(): boolean {
+  const raw = (import.meta.env.VITE_COD_PROXY as string | undefined)?.trim()
+  return Boolean(raw)
+}
+
 
 /** Dev-server same-origin proxy path (vite.config.ts). */
 export function codDevProxyUrl(id: string): string {

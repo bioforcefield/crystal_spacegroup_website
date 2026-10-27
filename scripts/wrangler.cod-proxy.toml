@@ -1,0 +1,8 @@
+# Optional Cloudflare Worker deploy for arbitrary COD ids on GitHub Pages.
+# From repo root:
+#   npx wrangler deploy -c scripts/wrangler.cod-proxy.toml
+# Then rebuild Pages with:
+#   VITE_COD_PROXY="https://crystal-cod-proxy.<your-subdomain>.workers.dev/{id}.cif" npm run build:pages
+name = "crystal-cod-proxy"
+main = "cod-cors-worker.js"
+compatibility_date = "2024-09-01"

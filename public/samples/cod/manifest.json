@@ -1,0 +1,117 @@
+{
+  "note": "Same-origin COD CIF cache for GitHub Pages (no CORS). Refresh via scripts/fetch-cod-samples.sh",
+  "samples": [
+    {
+      "id": "1100303",
+      "label": "C26 H52 Li2 N6",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "C26 H52 Li2 N6"
+    },
+    {
+      "id": "1507774",
+      "label": "C22 H43 Ag O2",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "C22 H43 Ag O2"
+    },
+    {
+      "id": "9008565",
+      "label": "Silicon",
+      "hm": "F d -3 m :1",
+      "ita": 227,
+      "formula": "Si"
+    },
+    {
+      "id": "9008462",
+      "label": "Argon",
+      "hm": "F m -3 m",
+      "ita": 225,
+      "formula": "Ar"
+    },
+    {
+      "id": "9000001",
+      "label": "Pb S",
+      "hm": "F m -3 m",
+      "ita": 225,
+      "formula": "Pb S"
+    },
+    {
+      "id": "1010962",
+      "label": "Calcium carbonate",
+      "hm": "R -3 c RS",
+      "ita": 167,
+      "formula": "C Ca O3"
+    },
+    {
+      "id": "1507756",
+      "label": "Barium titanate",
+      "hm": "P 4 m m",
+      "ita": 99,
+      "formula": "Ba O3 Ti"
+    },
+    {
+      "id": "1000061",
+      "label": "Aluminium hydroxide",
+      "hm": "P 1 21/a 1",
+      "ita": 14,
+      "formula": "Al H3 O3"
+    },
+    {
+      "id": "2101983",
+      "label": "C52 H66 N4 O6",
+      "hm": "P 1 21/c 1",
+      "ita": 14,
+      "formula": "C52 H66 N4 O6"
+    },
+    {
+      "id": "2002258",
+      "label": "Strontium copper oxide",
+      "hm": "C m c m",
+      "ita": 63,
+      "formula": "Cu O2 Sr"
+    },
+    {
+      "id": "1512506",
+      "label": "Ga",
+      "hm": "C m c a",
+      "ita": 64,
+      "formula": "Ga"
+    },
+    {
+      "id": "1010954",
+      "label": "Silicon oxide",
+      "hm": "F 41 3 2",
+      "ita": 210,
+      "formula": "O2 Si"
+    },
+    {
+      "id": "1532834",
+      "label": "Li (Cr0.167 Li0.277 Mn0.556) O2",
+      "hm": "R -3 m :H",
+      "ita": 166,
+      "formula": "Cr0.167 Li1.277 Mn0.556 O2"
+    },
+    {
+      "id": "2101852",
+      "label": "O2 Ru",
+      "hm": "P 42/m n m",
+      "ita": null,
+      "formula": "O2 Ru"
+    },
+    {
+      "id": "2104741",
+      "label": "As Fe S",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "As Fe S"
+    },
+    {
+      "id": "9007681",
+      "label": "C4 H3 Na5 O12",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "C4 H3 Na5 O12"
+    }
+  ]
+}

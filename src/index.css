@@ -2348,6 +2348,49 @@ a.csd-bar-row.ready:hover {
   }
 }
 
+.cif-cod-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.55rem 0 0.35rem;
+}
+.cif-cod-chip {
+  border: 1px solid color-mix(in srgb, var(--border, #334155) 80%, transparent);
+  background: color-mix(in srgb, #0f172a 70%, #1e293b);
+  color: #e2e8f0;
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.cif-cod-chip:hover:not(:disabled) {
+  border-color: #38bdf8;
+  color: #f8fafc;
+}
+.cif-cod-chip:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+.cif-cod-more {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+.cif-cod-more summary {
+  cursor: pointer;
+  user-select: none;
+}
+.cif-cod-more .cif-cod-chips {
+  margin-top: 0.4rem;
+}
+@media (max-width: 900px) {
+  .cif-cod-chip {
+    padding: 0.38rem 0.7rem;
+    font-size: 0.8rem;
+  }
+}
+
 .cif-code-row {
   display: flex;
   flex-wrap: wrap;

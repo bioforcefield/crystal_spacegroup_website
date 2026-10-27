@@ -99,8 +99,8 @@ export default function CifExplorerPage() {
     }
   }, [loadText])
 
-  const loadByCode = useCallback(async () => {
-    const parsed = parseStructureCode(codeInput)
+  const loadByCode = useCallback(async (override?: string) => {
+    const parsed = parseStructureCode(override ?? codeInput)
     if (!parsed.ok) {
       setError(parsed.error)
       setRemoteHint(null)
@@ -135,7 +135,7 @@ export default function CifExplorerPage() {
       } else if (e instanceof CorsBlockedError) {
         setRemoteLink(e.codUrl)
         setRemoteHint(
-          `COD ${e.id} is public, but the browser blocked a direct fetch (no CORS on crystallography.net). Open the CIF, copy all, paste below — or upload the saved file. Local vite/preview can use /cod-proxy.`,
+          `COD ${e.id} is public, but the browser blocked a direct fetch (no CORS on crystallography.net). Use a cached teaching COD chip, paste/upload the CIF, configure VITE_COD_PROXY for arbitrary ids, or use local vite /cod-proxy.`,
         )
         setPasteOpen(true)
         setError(e.message)
@@ -242,6 +242,10 @@ export default function CifExplorerPage() {
           codeInput={codeInput}
           onCodeInputChange={setCodeInput}
           onLoadByCode={() => void loadByCode()}
+          onLoadCodId={(id) => {
+            setCodeInput(id)
+            void loadByCode(id)
+          }}
           onFile={onFile}
           onLoadSample={() => void loadSample()}
           pasteOpen={pasteOpen}
