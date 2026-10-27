@@ -70,10 +70,11 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 - **Symmetry operators**: ITA xyz list, color-matched to 3D copies; Molecules / All / BASE+IMAGE / AU
 - **Lattice**: a/b/c labels (Å) on the box + α/β/γ badge
 - **COD load**: enter a numeric id → tries bundled same-origin cache (`public/samples/cod/` + teaching chips; **55** curated CIFs), optional `VITE_COD_PROXY`, Vite `/cod-proxy` (dev/preview), then direct `crystallography.net`. Direct COD lacks CORS on GitHub Pages for arbitrary ids — use a chip, paste/upload, or deploy the CORS worker (below).
-- **COD proxy (optional, for arbitrary ids on Pages)**:
+- **COD name / SMILES search**: load panel tabs **Name** and **SMILES** call the same worker at `GET /search?text=…` or `GET /search?smile=…` (SMILES forwarded upstream as COD `smarts`). Hits (id, space group, formula, volume, name) → existing CIF fetch path. Local vite/preview: `/cod-search`. Optional override: `VITE_COD_SEARCH`. No SMARTS editor; we do not scrape CSD.
+- **COD proxy (optional, for arbitrary ids + search on Pages)**:
   1. Copy Actions templates when your push token has **`workflow` scope**: see `scripts/github-workflows/README.md` (files may already live under `.github/workflows/` once enabled).
   2. Manual worker: `npx wrangler deploy -c scripts/wrangler.cod-proxy.toml` (needs Cloudflare account). Repo secrets for Actions: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
-  3. Rebuild Pages: `VITE_COD_PROXY="https://YOUR_WORKER.workers.dev/{id}.cif" npm run build:pages` then `scripts/deploy-gh-pages.sh` (must keep `.nojekyll`).
+  3. Rebuild Pages: `VITE_COD_PROXY="https://YOUR_WORKER.workers.dev/{id}.cif" npm run build:pages` then `scripts/deploy-gh-pages.sh` (must keep `.nojekyll`). Search base is derived by stripping `/{id}.cif`.
   4. Refresh teaching cache: `bash scripts/fetch-cod-samples.sh` (or Actions → **Refresh COD cache**).
 - **CSD**: no free anonymous CIF API; UI links to [CCDC Access Structures](https://www.ccdc.cam.ac.uk/structures/) for download, then upload/paste. We do not scrape CSD.
 

@@ -1,4 +1,4 @@
-# Optional Cloudflare Worker deploy for arbitrary COD ids on GitHub Pages.
+# Optional Cloudflare Worker: COD CIF downloads + /search (name/SMILES) for GitHub Pages.
 # From repo root:
 #   npx wrangler deploy -c scripts/wrangler.cod-proxy.toml
 # Then rebuild Pages with:

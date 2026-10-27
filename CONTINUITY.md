@@ -2,8 +2,13 @@
 
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
-Tip: `main` **6b3658d**, `gh-pages` **5be4984** (VITE_COD_PROXY live). Tests: **535**. Home: CIF spotlight + animated hero cell.
-Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on large sample trees.
+
+## COD name / SMILES search (2026-10-27)
+- Worker: `GET /search?text=` + `GET /search?smile=` (maps to COD `smarts`) in `scripts/cod-cors-worker.js`
+- Client: `src/data/cif/codSearch.ts`; UI tabs on `CifLoadPanel`
+- Vite: `/cod-search` middleware for local
+- Production: derive search from `VITE_COD_PROXY` (strip `/{id}.cif`) → `https://crystal-cod-proxy.crystal-sg.workers.dev/search`
+- Quirk: COD param is **`smarts`**, not `smile` (empty results if forwarded wrong). Text search is broad keyword metadata.
 
 ## Home UX (2026-10-27)
 - CIF spotlight card under hero (`Structures` / `New`) → `/cif`
