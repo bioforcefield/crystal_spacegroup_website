@@ -3,23 +3,19 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-Tip: `main` **07bfa8e**, `gh-pages` **07e3810**. Pubs review fixes applied.
+## Publications /pubs — review follow-ups (2026-10-27)
+- Added **cocrystal** PubTag (Curated + Recent topic chip); salt stays salt (not remapped)
+- Recent status: **relevance-ranked** when topic/search query active; newest-first otherwise
+- Softened Crossref totals copy (“top matches” / bag-of-words) when querying
+- Curated: hide tag chips with count 0; suggestTags now tags ml / csp / cocrystal
+- Quoted Crossref topic queries for ML and CSP
+- Worker: 400 if `cursor` + date `sort` (use offset)
+- Fixed mismatched curated cards: Ice Ih, Gypsum, NaCl, Quartz → correct COD ids
+- ACS blurb notes Inorganic Chemistry is broad / not crystal-only
 
-## Publications /pubs — Crossref recent titles (2026-10-27)
-- Tabs: **Recent titles** (live Crossref metadata) | **Curated COD**
-- Client: `src/data/pubs/crossref.ts` — ISSN presets; **offset** pagination; `sort=published` only when no query; topic chips → relevance
-- Topic chips (`TOPIC_HINT_TAGS`): hydrate, MOF, drug, salt, mineral, ML, CSP — organic/inorganic are Curated-only
-- Worker: `GET /crossref?…` → `api.crossref.org/works` with polite UA
-- Vite `/crossref` middleware for local/preview
-- No PDFs, no ACS HTML scrape, no CSD scrape
-
-## COD name / SMILES search (2026-10-27)
+## COD name / SMILES search
 - Worker: `GET /search?text=` + `GET /search?smile=` (+ optional `year=`)
-- Client: `src/data/cif/codSearch.ts`; UI tabs on `CifLoadPanel`
 - Production proxy: `https://crystal-cod-proxy.crystal-sg.workers.dev`
-
-## Home UX (2026-10-27)
-- CIF spotlight + pubs spotlight; animated HeroCellMotif (reduced-motion safe)
 
 ## Cloudflare COD proxy
 - Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif (+ `/search`, `/crossref`)
@@ -29,8 +25,8 @@ Tip: `main` **07bfa8e**, `gh-pages` **07e3810**. Pubs review fixes applied.
 ## Key paths
 - Pubs: `src/data/pubs/`, `src/pages/PublicationsPage.tsx`
 - COD: `scripts/cod-cors-worker.js`, `public/samples/cod/`
-- `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
+- `npm test` · `VITE_COD_PROXY=… npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main: `07bfa8e`
-- gh-pages: `07e3810` (VITE_COD_PROXY baked)
+- main: (pending commit)
+- gh-pages: (pending deploy)

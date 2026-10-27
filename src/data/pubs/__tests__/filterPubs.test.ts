@@ -135,4 +135,25 @@ describe('suggestTags heuristics', () => {
     expect(t).toContain('mineral')
     expect(t).toContain('salt')
   })
+
+  it('tags cocrystal / ml / csp from title keywords', () => {
+    expect(
+      suggestTags({
+        formula: 'C11 H14 N2 O5',
+        title: 'Controlling polymorphism in molecular cocrystals',
+      }),
+    ).toEqual(expect.arrayContaining(['cocrystal', 'organic']))
+    expect(
+      suggestTags({
+        formula: 'C6 H6',
+        title: 'Machine learning for crystal property prediction',
+      }),
+    ).toContain('ml')
+    expect(
+      suggestTags({
+        formula: 'C6 H6',
+        title: 'Advances in crystal structure prediction (CSP)',
+      }),
+    ).toContain('csp')
+  })
 })

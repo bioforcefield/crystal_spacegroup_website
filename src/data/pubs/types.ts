@@ -9,6 +9,7 @@ export type PubTag =
   | 'mof'
   | 'ml'
   | 'csp'
+  | 'cocrystal'
 
 export interface CodPubEntry {
   /** COD numeric id */

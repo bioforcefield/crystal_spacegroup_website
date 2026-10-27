@@ -195,7 +195,7 @@ function CuratedCodPanel() {
             role="group"
             aria-labelledby="pubs-tags-label"
           >
-            {PUB_TAG_ORDER.map((t) => (
+            {PUB_TAG_ORDER.filter((t) => (tagCounts[t] ?? 0) > 0).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -409,6 +409,11 @@ function RecentTitlesPanel() {
   // Topic chips all drive Crossref — never AND title heuristics on the result
   // set (that was the empty hydrate/CSP trap).
   const visible = works
+  const topicOrQueryActive =
+    hintFilter.length > 0 || Boolean(debouncedQuery.trim())
+  const rankingNote = topicOrQueryActive
+    ? 'relevance-ranked (not newest-first)'
+    : 'newest-first'
 
   const presetInfo = CROSSREF_PRESETS.find((p) => p.id === preset)
 
@@ -420,7 +425,7 @@ function RecentTitlesPanel() {
     >
       <p className="pubs-note">
         Live Crossref metadata for crystallography journals (ISSN filters).
-        Topic chips (hydrate, CSP, machine learning, …) run a Crossref search
+        Topic chips (hydrate, CSP, cocrystal, machine learning, …) run a Crossref search
         ranked by relevance — not a filter of the newest-first page. Card chips
         ending in “?” are still <em>title keyword hints</em>, not COD curation.
         Organic / inorganic live on the Curated COD tab. Open DOI goes to the
@@ -536,11 +541,13 @@ function RecentTitlesPanel() {
             ? 'Loading Crossref titles…'
             : error
               ? `Error: ${error}`
-              : `Showing ${visible.length} of ${works.length} loaded · ~${total.toLocaleString()} match Crossref filters${
-                  hintFilter.length
-                    ? ` · hints: ${hintFilter.map((x) => PUB_TAG_LABELS[x]).join(', ')}`
-                    : ''
-                }.`}
+              : topicOrQueryActive
+                ? `Showing ${visible.length} top matches loaded · Crossref reports ~${total.toLocaleString()} bag-of-words hits · ${rankingNote}${
+                    hintFilter.length
+                      ? ` · topics: ${hintFilter.map((x) => PUB_TAG_LABELS[x]).join(', ')}`
+                      : ''
+                  }.`
+                : `Showing ${visible.length} of ${works.length} loaded · ~${total.toLocaleString()} match filters · ${rankingNote}.`}
         </p>
       </section>
 

@@ -13,6 +13,7 @@
  * - mof: MOF / framework / zeolite keywords (or curated MOF ids)
  * - ml: machine learning / neural / GNN cues in name/title
  * - csp: crystal structure prediction / CSP cues in name/title
+ * - cocrystal: cocrystal / co-crystal cues (distinct from salt)
  * - organic vs inorganic: C+H (or light-atom-only) molecular formulas → organic;
  *   otherwise inorganic (elements, oxides, minerals without organics)
  */
@@ -82,6 +83,19 @@ export function suggestTags(input: {
   }
   if (/\b(mof|metal-organic|framework|zeolite)\b/.test(blob)) {
     tags.push('mof')
+  }
+  if (
+    /machine learning|deep learning|neural network|graph neural|\bgnn\b|artificial intelligence/.test(
+      blob,
+    )
+  ) {
+    tags.push('ml')
+  }
+  if (/crystal structure prediction|\bcsp\b/.test(blob)) {
+    tags.push('csp')
+  }
+  if (/\b(cocrystals?|co-crystals?|co crystals?)\b/.test(blob)) {
+    tags.push('cocrystal')
   }
 
   const hasC = elems.has('C')

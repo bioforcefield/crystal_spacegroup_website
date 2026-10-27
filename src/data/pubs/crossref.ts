@@ -47,7 +47,7 @@ export const CROSSREF_PRESETS: readonly CrossrefPresetInfo[] = [
   {
     id: 'acs',
     label: 'ACS',
-    blurb: 'Crystal Growth & Design + Inorganic Chemistry',
+    blurb: 'Crystal Growth & Design + Inorganic Chemistry (IC is broad chemistry, not crystal-only)',
     issns: [
       ...CROSSREF_ISSNS.crystalGrowthDesign,
       ...CROSSREF_ISSNS.inorganicChemistry,
@@ -287,8 +287,11 @@ export function hintTagsFromTitle(title: string | null | undefined): PubTag[] {
   ) {
     tags.push('hydrate')
   }
-  if (/\b(salt|cocrystal|co-crystal|chloride|sulfate|phosphate)\b/.test(t)) {
+  if (/\b(salt|chloride|sulfate|phosphate)\b/.test(t)) {
     tags.push('salt')
+  }
+  if (/\b(cocrystals?|co-crystals?|co crystals?)\b/.test(t)) {
+    tags.push('cocrystal')
   }
   if (
     /\b(drug|prodrug|pharma|medicinal|ibuprofen|aspirin|paliperidone|api\b|active pharmaceutical)\b/.test(
@@ -334,6 +337,7 @@ export const TOPIC_HINT_TAGS: readonly PubTag[] = [
   'mof',
   'drug',
   'salt',
+  'cocrystal',
   'mineral',
   'ml',
   'csp',
@@ -344,9 +348,10 @@ const HINT_CROSSREF_QUERY: Partial<Record<PubTag, string>> = {
   mof: 'MOF',
   drug: 'pharmaceutical',
   salt: 'salt',
+  cocrystal: 'cocrystal',
   mineral: 'mineral',
-  ml: 'machine learning',
-  csp: 'crystal structure prediction',
+  ml: '"machine learning"',
+  csp: '"crystal structure prediction"',
 }
 
 export function isTopicHintTag(tag: PubTag): boolean {

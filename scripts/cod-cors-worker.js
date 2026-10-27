@@ -295,11 +295,43 @@ async function handleCrossref(url, method) {
     return jsonResponse(
       {
         error:
-          'Provide Crossref works params, e.g. ?filter=issn:1528-7483,from-pub-date:2024-01-01&rows=20&cursor=*',
+          'Provide Crossref works params, e.g. ?filter=issn:1528-7483,from-pub-date:2024-01-01&rows=20&offset=0',
       },
       400,
     )
   }
+
+  // Crossref rejects cursor paging with date sorts (published, issued, …).
+  const cursor = upstream.searchParams.get('cursor')
+  const sort = (upstream.searchParams.get('sort') || '').toLowerCase()
+  const dateSorts = new Set([
+    'published',
+    'published-print',
+    'published-online',
+    'issued',
+    'created',
+    'deposited',
+    'indexed',
+  ])
+  if (cursor != null && cursor !== '' && dateSorts.has(sort)) {
+    return jsonResponse(
+      {
+        status: 'failed',
+        'message-type': 'validation-failure',
+        error:
+          `sort=${sort} is incompatible with cursor pagination. Use offset=0,20,… instead of cursor (or drop sort for relevance + cursor).`,
+        message: [
+          {
+            type: 'sort-criteria-incompatible-with-cursor',
+            value: 'sort',
+            message: `Sorting by [${sort}] is not compatible with deep cursor paging; use offset pagination.`,
+          },
+        ],
+      },
+      400,
+    )
+  }
+
   // Cap rows
   const rowsRaw = upstream.searchParams.get('rows') || '20'
   const rows = Math.min(Math.max(parseInt(rowsRaw, 10) || 20, 1), 50)

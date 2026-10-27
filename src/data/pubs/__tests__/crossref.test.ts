@@ -156,15 +156,16 @@ describe('date / author / hint parsers', () => {
     expect(formatAuthorsShort([], 3)).toBe('')
   })
 
-  it('hintTagsFromTitle detects MOF / hydrate / drug / ml / csp', () => {
+  it('hintTagsFromTitle detects MOF / hydrate / drug / ml / csp / cocrystal', () => {
     expect(hintTagsFromTitle('A new MOF for gas storage')).toContain('mof')
     expect(hintTagsFromTitle('Crystal structure of a hydrate salt')).toEqual(
       expect.arrayContaining(['hydrate', 'salt']),
     )
     expect(hintTagsFromTitle('Sodium chloride dihydrate')).toContain('hydrate')
     expect(hintTagsFromTitle('Ibuprofen cocrystal study')).toEqual(
-      expect.arrayContaining(['drug', 'organic', 'salt']),
+      expect.arrayContaining(['drug', 'organic', 'cocrystal']),
     )
+    expect(hintTagsFromTitle('Ibuprofen cocrystal study')).not.toContain('salt')
     expect(
       hintTagsFromTitle('Machine learning for crystal property prediction'),
     ).toContain('ml')
@@ -174,14 +175,22 @@ describe('date / author / hint parsers', () => {
     expect(
       hintTagsFromTitle('Machine learning property structure prediction methods'),
     ).not.toContain('csp')
+    expect(hintTagsFromTitle('A pharmaceutical co-crystal of urea')).toContain(
+      'cocrystal',
+    )
   })
 
   it('crossrefQueryForHintTags adds topic queries for sparse chips', () => {
     expect(crossrefQueryForHintTags(['hydrate'])).toBe('hydrate')
     expect(crossrefQueryForHintTags(['salt'])).toBe('salt')
+    expect(crossrefQueryForHintTags(['cocrystal'])).toBe('cocrystal')
     expect(crossrefQueryForHintTags(['ml', 'csp'])).toContain('machine learning')
     expect(crossrefQueryForHintTags(['ml', 'csp'])).toContain(
       'crystal structure prediction',
+    )
+    expect(crossrefQueryForHintTags(['ml'])).toBe('"machine learning"')
+    expect(crossrefQueryForHintTags(['csp'])).toBe(
+      '"crystal structure prediction"',
     )
     expect(crossrefQueryForHintTags(['organic'])).toBeUndefined()
   })
