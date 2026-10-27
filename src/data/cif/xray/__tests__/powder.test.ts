@@ -97,3 +97,16 @@ describe('computePowderPattern', () => {
     expect(Math.max(...env.y)).toBeCloseTo(100, 0)
   })
 })
+
+  it('calcite rhombohedral RS does not apply hexagonal R extinctions', () => {
+    const expanded = expandStructure(parseCif(read('cod/1010962.cif')))
+    expect(expanded.spaceGroupName ?? '').toMatch(/RS/i)
+    const pat = computePowderFromStructure(expanded, {
+      wavelengthA: 1.5406,
+      twoThetaMin: 5,
+      twoThetaMax: 70,
+    })
+    expect(pat.centering).toBe('P')
+    expect(pat.peaks.length).toBeGreaterThan(12)
+  })
+

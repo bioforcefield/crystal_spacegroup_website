@@ -401,7 +401,9 @@ function BfdhPredictSection() {
           </li>
           <li>
             Harker corrections here cover <strong>lattice centering</strong>{' '}
-            (P/A/B/C/I/F/R). Screw and glide extinctions are not applied.
+            (P/A/B/C/I/F/R). R lattices on <em>rhombohedral</em> axes (CIF{' '}
+            <code>RS</code> / <code>:R</code>) are treated as primitive; hexagonal
+            R still uses −h+k+l = 3n. Screw and glide extinctions are not applied.
           </li>
           <li>
             The outline is a <strong>2D ab-plane slice</strong> of ranked forms,

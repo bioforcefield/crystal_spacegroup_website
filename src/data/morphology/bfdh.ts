@@ -7,6 +7,7 @@
 import type { CellParams } from '../types'
 import {
   centeringFromHm,
+  effectiveCentering,
   harkerOrder,
   type LatticeCentering,
 } from './centering'
@@ -98,7 +99,8 @@ export function rankBfdh(
   const maxIndex = opts.maxIndex ?? 2
   const topN = opts.topN ?? 12
   const centering =
-    opts.centering ?? centeringFromHm(opts.hm ?? null)
+    opts.centering ??
+    effectiveCentering(opts.hm ?? null, cell)
 
   type Raw = {
     h: number
@@ -149,10 +151,13 @@ export function rankBfdh(
 
   const faces2d = bfdhFaces2D(cell, faces)
 
+  const rawCentering = centeringFromHm(opts.hm ?? null)
   const note =
-    centering === 'P'
-      ? 'BFDH ranks faces by d_hkl (primitive lattice — no Harker multiply). Geometric heuristic only.'
-      : `BFDH with ${centering}-centering Harker correction (lowest allowed multiple). Geometric heuristic — not attachment energy.`
+    rawCentering === 'R' && centering === 'P'
+      ? 'BFDH on rhombohedral axes (R setting treated as primitive — no hexagonal −h+k+l=3n filter). Geometric heuristic only.'
+      : centering === 'P'
+        ? 'BFDH ranks faces by d_hkl (primitive lattice — no Harker multiply). Geometric heuristic only.'
+        : `BFDH with ${centering}-centering Harker correction (lowest allowed multiple). Geometric heuristic — not attachment energy.`
 
   return { centering, faces, faces2d, note }
 }

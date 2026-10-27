@@ -81,10 +81,10 @@ function SiteChrome({
             <NavLink to="/pubs" className="nav-demo">
               Pubs
             </NavLink>
-            <NavLink to="/morphology" className="nav-demo nav-demo-hide-xs">
+            <NavLink to="/morphology" className="nav-demo">
               Morph
             </NavLink>
-            <NavLink to="/kinetics" className="nav-demo nav-demo-hide-xs">
+            <NavLink to="/kinetics" className="nav-demo">
               Kinetics
             </NavLink>
             <NavLink to="/sg/14" className="nav-demo nav-demo-hide-xs">

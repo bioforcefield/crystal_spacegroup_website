@@ -36,6 +36,30 @@ const BOX = { x0: 44, y0: 14, x1: 312, y1: 168 }
 const VB_W = 336
 const VB_H = 200
 
+/** Letter multiset for a loose chemistry compatibility check (teaching UX). */
+function formulaLetterKey(s: string): string {
+  return [
+    ...s
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, ''),
+  ]
+    .sort()
+    .join('')
+}
+
+function chemistriesCompatible(
+  formula: string | undefined,
+  chemistry: string,
+): boolean {
+  if (!formula?.trim()) return true
+  const a = formulaLetterKey(formula)
+  const b = formulaLetterKey(chemistry)
+  if (!a || !b) return true
+  return a === b
+}
+
 function formatR(v: number | undefined): string | null {
   if (v == null || !Number.isFinite(v)) return null
   if (v >= 1) return v.toFixed(2)
@@ -329,6 +353,10 @@ export default function CifXrayPanel({
     ? POLYMORPH_PAIRS.find((p) => p.id === activePairId) ?? null
     : null
 
+  const pairChemistryMismatch =
+    !!activePair &&
+    !chemistriesCompatible(structure.metadata?.formula, activePair.chemistry)
+
   const hasMeta =
     xray &&
     (xray.wavelengthA != null ||
@@ -377,6 +405,8 @@ export default function CifXrayPanel({
           <li>
             Screw/glide extinctions beyond lattice centering are not fully
             enforced (they emerge only when the full operator list is present).
+            R lattices on rhombohedral axes (CIF <code>RS</code> / <code>:R</code>)
+            are treated as primitive; hexagonal R still uses −h+k+l = 3n.
           </li>
           <li>
             Polymorph overlay is <strong>calculated vs calculated</strong>. Real
@@ -779,6 +809,14 @@ export default function CifXrayPanel({
             {activePair.formA.hm ? `, ${activePair.formA.hm}` : ''}). Form B:{' '}
             {activePair.formB.label} (COD {activePair.formB.codId}
             {activePair.formB.hm ? `, ${activePair.formB.hm}` : ''}).
+          </p>
+        )}
+        {pairChemistryMismatch && activePair && (
+          <p className="teach-error" role="status">
+            Map Form A formula ({structure.metadata?.formula ?? 'unknown'}) does
+            not match this pair&apos;s chemistry ({activePair.chemistry}). Overlay
+            still works, but for a true polymorph fingerprint click{' '}
+            <strong>Load pair into map</strong>.
           </p>
         )}
 

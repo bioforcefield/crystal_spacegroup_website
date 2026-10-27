@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { rankBfdh, formLabel, canonicalHkl, uniqueFormRates, applyFormRates } from '../bfdh'
 import {
   centeringFromHm,
+  effectiveCentering,
   isAllowedByCentering,
+  isRhombohedralSetting,
   harkerOrder,
 } from '../centering'
 import { dHkl, planeNormalAb } from '../dHkl'
@@ -52,6 +54,24 @@ describe('centering / Harker', () => {
     expect(harkerOrder('P', 1, 0, 0)).toBe(1)
     expect(harkerOrder('I', 1, 1, 0)).toBe(1)
     expect(harkerOrder('I', 1, 0, 0)).toBe(2)
+  })
+
+  it('treats R … RS as primitive for extinctions', () => {
+    expect(isRhombohedralSetting('R -3 c RS')).toBe(true)
+    expect(isRhombohedralSetting('R-3c:R')).toBe(true)
+    expect(isRhombohedralSetting('R -3 c :H')).toBe(false)
+    expect(effectiveCentering('R -3 c RS')).toBe('P')
+    expect(effectiveCentering('R -3 c :H')).toBe('R')
+    expect(
+      effectiveCentering('R -3 c', {
+        a: 6.36,
+        b: 6.36,
+        c: 6.36,
+        alphaDeg: 46.1,
+        betaDeg: 46.1,
+        gammaDeg: 46.1,
+      }),
+    ).toBe('P')
   })
 })
 

@@ -5,7 +5,7 @@
 
 import { dHkl } from '../../morphology/dHkl'
 import {
-  centeringFromHm,
+  effectiveCentering,
   isAllowedByCentering,
   type LatticeCentering,
 } from '../../morphology/centering'
@@ -161,7 +161,7 @@ export function computePowderPattern(
     }
   }
 
-  const centering = centeringFromHm(hmName)
+  const centering = effectiveCentering(hmName, cell)
   const maxH = opts.maxH ?? pickMaxH(cell, wavelengthA, twoThetaMax, used.length)
 
   type Raw = {
