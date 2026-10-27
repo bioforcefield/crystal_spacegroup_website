@@ -3,6 +3,8 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+Tip: `main` **a05866d**, `gh-pages` **f5e6e8a** (COD name/SMILES search + proxy). Tests: **547**.
+
 ## COD name / SMILES search (2026-10-27)
 - Worker: `GET /search?text=` + `GET /search?smile=` (maps to COD `smarts`) in `scripts/cod-cors-worker.js`
 - Client: `src/data/cif/codSearch.ts`; UI tabs on `CifLoadPanel`
