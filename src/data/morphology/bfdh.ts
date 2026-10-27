@@ -4,18 +4,24 @@
  * Not attachment-energy or kinetic morphology.
  */
 
-import type { CellParams } from '../types'
+import type { CellParams, Operator } from '../types'
 import {
   centeringFromHm,
-  effectiveCentering,
-  harkerOrder,
+  isAllowedByCentering,
   type LatticeCentering,
 } from './centering'
+import {
+  harkerOrderGate,
+  isAllowedByOperators,
+  reflectionGate,
+  type ExtinctionMode,
+  type ReflectionGate,
+} from './extinctions'
 import { dHkl, planeNormalAb } from './dHkl'
 import type { FaceSpec } from './wulff2d'
 
 export type BfdhFace = {
-  /** Canonical form label, e.g. "{100}" */
+  /** Canonical form label, e.g. "{100}" or "{10,0,0}" */
   form: string
   h: number
   k: number
@@ -33,6 +39,7 @@ export type BfdhFace = {
 
 export type BfdhResult = {
   centering: LatticeCentering
+  extinctionMode: ExtinctionMode
   faces: BfdhFace[]
   /** 2D Wulff face specs from ab-plane (hk0) slice of the ranking */
   faces2d: FaceSpec[]
@@ -77,16 +84,39 @@ export function canonicalHkl(
 
 export function formLabel(h: number, k: number, l: number): string {
   const [hh, kk, ll] = canonicalHkl(h, k, l)
+  // Commas when any |index| ≥ 10 so multi-digit forms stay unambiguous.
+  if (Math.abs(hh) >= 10 || Math.abs(kk) >= 10 || Math.abs(ll) >= 10) {
+    return `{${hh},${kk},${ll}}`
+  }
   return `{${hh}${kk}${ll}}`
 }
 
 export type RankBfdhOptions = {
-  /** Max |h|,|k|,|l| to enumerate (default 2) */
+  /** Max |h|,|k|,|l| to enumerate (default 3; labels stay safe past 9) */
   maxIndex?: number
   /** How many unique forms to keep (default 12) */
   topN?: number
   hm?: string | null
   centering?: LatticeCentering
+  /** CIF / SG operators — enable screw/glide Harker when present */
+  operators?: readonly Operator[] | null
+}
+
+function buildGate(opts: RankBfdhOptions, cell: CellParams): ReflectionGate {
+  const base = reflectionGate(opts.hm ?? null, cell, opts.operators)
+  if (opts.centering == null) return base
+  const centering = opts.centering
+  return {
+    centering,
+    mode: base.mode,
+    allowed(h, k, l) {
+      if (!isAllowedByCentering(centering, h, k, l)) return false
+      if (base.mode === 'centering+operators') {
+        return isAllowedByOperators(opts.operators, h, k, l)
+      }
+      return true
+    },
+  }
 }
 
 /**
@@ -96,11 +126,10 @@ export function rankBfdh(
   cell: CellParams,
   opts: RankBfdhOptions = {},
 ): BfdhResult {
-  const maxIndex = opts.maxIndex ?? 2
+  const maxIndex = opts.maxIndex ?? 3
   const topN = opts.topN ?? 12
-  const centering =
-    opts.centering ??
-    effectiveCentering(opts.hm ?? null, cell)
+  const gate = buildGate(opts, cell)
+  const centering = gate.centering
 
   type Raw = {
     h: number
@@ -119,7 +148,7 @@ export function rankBfdh(
         if (h === 0 && k === 0 && l === 0) continue
         const [ch, ck, cl] = canonicalHkl(h, k, l)
         const form = formLabel(ch, ck, cl)
-        const n = harkerOrder(centering, ch, ck, cl)
+        const n = harkerOrderGate(gate, ch, ck, cl)
         if (n == null) continue
         const dRaw = dHkl(cell, ch, ck, cl)
         const dDh = dHkl(cell, n * ch, n * ck, n * cl)
@@ -152,14 +181,20 @@ export function rankBfdh(
   const faces2d = bfdhFaces2D(cell, faces)
 
   const rawCentering = centeringFromHm(opts.hm ?? null)
-  const note =
-    rawCentering === 'R' && centering === 'P'
-      ? 'BFDH on rhombohedral axes (R setting treated as primitive — no hexagonal −h+k+l=3n filter). Geometric heuristic only.'
-      : centering === 'P'
-        ? 'BFDH ranks faces by d_hkl (primitive lattice — no Harker multiply). Geometric heuristic only.'
-        : `BFDH with ${centering}-centering Harker correction (lowest allowed multiple). Geometric heuristic — not attachment energy.`
+  let note: string
+  if (rawCentering === 'R' && centering === 'P') {
+    note =
+      'BFDH on rhombohedral axes (R setting treated as primitive — no hexagonal −h+k+l=3n filter). Geometric heuristic only.'
+  } else if (gate.mode === 'centering+operators') {
+    note = `BFDH with ${centering}-centering + screw/glide conditions from symmetry operators. Geometric heuristic — not attachment energy.`
+  } else if (centering === 'P') {
+    note =
+      'BFDH ranks faces by d_hkl (primitive lattice — no Harker multiply; screw/glide not applied without operators). Geometric heuristic only.'
+  } else {
+    note = `BFDH with ${centering}-centering Harker correction (lowest allowed multiple; screw/glide not applied without operators). Geometric heuristic — not attachment energy.`
+  }
 
-  return { centering, faces, faces2d, note }
+  return { centering, extinctionMode: gate.mode, faces, faces2d, note }
 }
 
 /**
@@ -182,7 +217,6 @@ export function bfdhFaces2D(
   for (const f of source.slice(0, 8)) {
     const h = f.h
     const k = f.k
-    // Sign variants in the ab plane for a closed outline
     const variants: [number, number][] = [
       [h, k],
       [-h, -k],
@@ -210,7 +244,6 @@ export function bfdhFaces2D(
     }
   }
 
-  // Need ≥3 half-planes; pad with weak diagonals if sparse
   if (out.length < 3) {
     const s = Math.SQRT1_2
     const padR = (ranked[0]?.relativeR ?? 1) * 1.4
@@ -245,8 +278,6 @@ export function uniqueFormRates(
 
 /**
  * Rebuild face specs with per-form rate overrides and optional form enable flags.
- * Disabled forms are dropped; rates ≤ 0 fall back to a tiny epsilon so the
- * half-plane math stays defined when a slider is dragged to the floor.
  */
 export function applyFormRates(
   faces: FaceSpec[],

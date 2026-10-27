@@ -5,6 +5,7 @@ import {
   useState,
   type ChangeEvent,
 } from 'react'
+import { useDebouncedValue } from '../../hooks/useDebouncedValue'
 import { expandStructure } from '../../data/cif/expandStructure'
 import {
   CorsBlockedError,
@@ -31,6 +32,7 @@ import {
   computePowderFromStructure,
   type PowderPeak,
 } from '../../data/cif/xray/powder'
+import CifPolymorphCompare from './CifPolymorphCompare'
 
 const BOX = { x0: 44, y0: 14, x1: 312, y1: 168 }
 const VB_W = 336
@@ -131,11 +133,17 @@ export default function CifXrayPanel({
     return p?.angstrom ?? 1.5406
   }, [preset, customLambda])
 
-  const opts = useMemo(() => {
+  const optsLive = useMemo(() => {
     const lo = Math.min(tMin, tMax)
     const hi = Math.max(tMin, tMax)
     return { wavelengthA, twoThetaMin: lo, twoThetaMax: hi }
   }, [wavelengthA, tMin, tMax])
+
+  // Debounce powder + envelope so slider drags don't recompute every frame.
+  const opts = useDebouncedValue(optsLive, 80)
+  const fwhmDebounced = useDebouncedValue(fwhm, 80)
+  const tMinD = useDebouncedValue(tMin, 80)
+  const tMaxD = useDebouncedValue(tMax, 80)
 
   const patternA = useMemo(
     () => computePowderFromStructure(structure, opts),
@@ -148,49 +156,49 @@ export default function CifXrayPanel({
   )
 
   const envelopeA = useMemo(() => {
-    const lo = Math.min(tMin, tMax)
-    const hi = Math.max(tMin, tMax)
+    const lo = Math.min(tMinD, tMaxD)
+    const hi = Math.max(tMinD, tMaxD)
     return lorentzEnvelope(
       patternA.peaks.map((p) => ({ twoTheta: p.twoTheta, intensity: p.intensity })),
       lo,
       hi,
-      fwhm,
+      fwhmDebounced,
       360,
     )
-  }, [patternA.peaks, tMin, tMax, fwhm])
+  }, [patternA.peaks, tMinD, tMaxD, fwhmDebounced])
 
   const envelopeB = useMemo(() => {
     if (!patternB) return null
-    const lo = Math.min(tMin, tMax)
-    const hi = Math.max(tMin, tMax)
+    const lo = Math.min(tMinD, tMaxD)
+    const hi = Math.max(tMinD, tMaxD)
     return lorentzEnvelope(
       patternB.peaks.map((p) => ({ twoTheta: p.twoTheta, intensity: p.intensity })),
       lo,
       hi,
-      fwhm,
+      fwhmDebounced,
       360,
     )
-  }, [patternB, tMin, tMax, fwhm])
+  }, [patternB, tMinD, tMaxD, fwhmDebounced])
 
   const polyA = useMemo(() => {
     if (!envelopeA.x.length) return ''
     return envelopePolyline(envelopeA.x, envelopeA.y, BOX, {
-      xmin: Math.min(tMin, tMax),
-      xmax: Math.max(tMin, tMax),
+      xmin: Math.min(tMinD, tMaxD),
+      xmax: Math.max(tMinD, tMaxD),
       ymin: 0,
       ymax: 105,
     })
-  }, [envelopeA, tMin, tMax])
+  }, [envelopeA, tMinD, tMaxD])
 
   const polyB = useMemo(() => {
     if (!envelopeB?.x.length) return ''
     return envelopePolyline(envelopeB.x, envelopeB.y, BOX, {
-      xmin: Math.min(tMin, tMax),
-      xmax: Math.max(tMin, tMax),
+      xmin: Math.min(tMinD, tMaxD),
+      xmax: Math.max(tMinD, tMaxD),
       ymin: 0,
       ymax: 105,
     })
-  }, [envelopeB, tMin, tMax])
+  }, [envelopeB, tMinD, tMaxD])
 
   const shiftRows = useMemo(() => {
     if (!patternB) return []
@@ -367,8 +375,10 @@ export default function CifXrayPanel({
       xray.wRFactorRef != null ||
       xray.gof != null)
 
-  const lo = Math.min(tMin, tMax)
-  const hi = Math.max(tMin, tMax)
+  const loLive = Math.min(tMin, tMax)
+  const hiLive = Math.max(tMin, tMax)
+  const lo = Math.min(tMinD, tMaxD)
+  const hi = Math.max(tMinD, tMaxD)
   const dx = hi - lo || 1
 
   const labelA = formLabel(structure, 'Form A')
@@ -403,8 +413,8 @@ export default function CifXrayPanel({
           <li>Atomic form factors are compact Cromer–Mann-style approximations.</li>
           <li>No preferred orientation, absorption, or background model.</li>
           <li>
-            Screw/glide extinctions beyond lattice centering are not fully
-            enforced (they emerge only when the full operator list is present).
+            Screw/glide reflection conditions are applied when CIF/SG operators
+            are present; otherwise centering-only (and F≈0 from expanded sites).
             R lattices on rhombohedral axes (CIF <code>RS</code> / <code>:R</code>)
             are treated as primitive; hexagonal R still uses −h+k+l = 3n.
           </li>
@@ -525,7 +535,7 @@ export default function CifXrayPanel({
         </label>
 
         <label className="teach-slider-label" htmlFor={`${uid}-tmin`}>
-          2θ min = {lo.toFixed(0)}°
+          2θ min = {loLive.toFixed(0)}°
           <input
             id={`${uid}-tmin`}
             type="range"
@@ -538,7 +548,7 @@ export default function CifXrayPanel({
         </label>
 
         <label className="teach-slider-label" htmlFor={`${uid}-tmax`}>
-          2θ max = {hi.toFixed(0)}°
+          2θ max = {hiLive.toFixed(0)}°
           <input
             id={`${uid}-tmax`}
             type="range"
@@ -770,259 +780,33 @@ export default function CifXrayPanel({
         </ul>
       )}
 
-      {/* —— Compare · polymorph —— */}
-      <div className="cif-xray-compare" aria-labelledby="cif-xray-compare-heading">
-        <h3 id="cif-xray-compare-heading" className="teach-subhead">
-          Compare · polymorph
-        </h3>
-        <p className="hint">
-          Form A is the structure in the 3D map. Chips set <strong>Form B</strong>{' '}
-          as an overlay only (they do not replace the map). Use{' '}
-          <strong>Load pair</strong> to fetch Form A into the map and Form B as
-          the overlay. Shared λ / 2θ / FWHM controls apply to both.
-        </p>
-
-        <div
-          className="cif-xray-pair-chips"
-          role="group"
-          aria-label="Curated polymorph pairs"
-        >
-          {POLYMORPH_PAIRS.map((pair) => (
-            <button
-              key={pair.id}
-              type="button"
-              className={`seg${activePairId === pair.id ? ' active' : ''}`}
-              aria-pressed={activePairId === pair.id}
-              disabled={busyB}
-              title={`${pair.note} Sets Form B = ${pair.formB.label} (COD ${pair.formB.codId}).`}
-              onClick={() => setPairAsB(pair)}
-            >
-              {pair.short}
-            </button>
-          ))}
-        </div>
-
-        {activePair && (
-          <p className="hint cif-xray-pair-note">
-            <strong>{activePair.chemistry}.</strong> {activePair.note} Form A
-            target: {activePair.formA.label} (COD {activePair.formA.codId}
-            {activePair.formA.hm ? `, ${activePair.formA.hm}` : ''}). Form B:{' '}
-            {activePair.formB.label} (COD {activePair.formB.codId}
-            {activePair.formB.hm ? `, ${activePair.formB.hm}` : ''}).
-          </p>
-        )}
-        {pairChemistryMismatch && activePair && (
-          <p className="teach-error" role="status">
-            Map Form A formula ({structure.metadata?.formula ?? 'unknown'}) does
-            not match this pair&apos;s chemistry ({activePair.chemistry}). Overlay
-            still works, but for a true polymorph fingerprint click{' '}
-            <strong>Load pair into map</strong>.
-          </p>
-        )}
-
-        <div className="cif-xray-compare-actions">
-          {activePair && onLoadCodId && (
-            <button
-              type="button"
-              className="seg"
-              disabled={busyB}
-              onClick={() => loadPairIntoMap(activePair)}
-              title={`Load ${activePair.formA.label} into the 3D map and keep ${activePair.formB.label} as Form B`}
-            >
-              Load pair into map
-            </button>
-          )}
-          {formB?.codId && onLoadCodId && (
-            <button
-              type="button"
-              className="seg"
-              disabled={busyB}
-              onClick={() => onLoadCodId(formB.codId!)}
-              title="Replace the 3D map with Form B (overlay stays until cleared)"
-            >
-              Open B in map
-            </button>
-          )}
-          {formB && (
-            <button type="button" className="seg" onClick={clearFormB}>
-              Clear Form B
-            </button>
-          )}
-        </div>
-
-        <div className="cif-xray-b-load">
-          <label className="teach-slider-label" htmlFor={`${uid}-codb`}>
-            Form B COD id
-          </label>
-          <div className="cif-xray-b-row">
-            <input
-              id={`${uid}-codb`}
-              type="text"
-              inputMode="numeric"
-              className="cif-code-input"
-              value={codBInput}
-              placeholder="e.g. 9011577"
-              disabled={busyB}
-              onChange={(e) => setCodBInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  void loadFormBCod(codBInput, null)
-                }
-              }}
-            />
-            <button
-              type="button"
-              className="seg"
-              disabled={busyB}
-              onClick={() => void loadFormBCod(codBInput, null)}
-            >
-              {busyB ? 'Loading…' : 'Set Form B'}
-            </button>
-          </div>
-          <div className="cif-xray-b-row">
-            <label className="cif-file-label btn btn-ghost">
-              Upload CIF as B
-              <input
-                type="file"
-                accept=".cif,.mcif,chemical/x-cif,text/plain"
-                onChange={(e) => void onFileB(e)}
-                disabled={busyB}
-              />
-            </label>
-            <button
-              type="button"
-              className="seg"
-              disabled={busyB}
-              aria-expanded={pasteBOpen}
-              onClick={() => setPasteBOpen((o) => !o)}
-            >
-              {pasteBOpen ? 'Hide paste' : 'Paste CIF as B'}
-            </button>
-          </div>
-          {pasteBOpen && (
-            <div className="cif-paste cif-xray-paste-b">
-              <textarea
-                aria-label="Paste Form B CIF"
-                rows={5}
-                value={pasteBText}
-                disabled={busyB}
-                onChange={(e) => setPasteBText(e.target.value)}
-                placeholder="Paste a second CIF here…"
-                spellCheck={false}
-              />
-              <button
-                type="button"
-                className="seg"
-                disabled={busyB}
-                onClick={loadPasteB}
-              >
-                Use paste as Form B
-              </button>
-            </div>
-          )}
-          {formB && (
-            <p className="hint">
-              Form B loaded: {formB.label}
-              {formB.codId ? ` · COD ${formB.codId}` : ''}
-              {formB.structure.metadata?.formula
-                ? ` · ${formB.structure.metadata.formula}`
-                : ''}
-              {formB.structure.spaceGroupName
-                ? ` · ${formB.structure.spaceGroupName}`
-                : ''}
-              . {formB.sourceNote}
-            </p>
-          )}
-          {errorB && (
-            <p className="cif-error" role="alert">
-              {errorB}
-            </p>
-          )}
-        </div>
-
-        {formB && patternB && (
-          <>
-            <h4 className="teach-subhead">Strongest peaks · A vs B</h4>
-            <div className="cif-xray-ab-tables">
-              <div className="cif-xray-table-scroll">
-                <table>
-                  <caption className="sr-only">Form A strongest peaks</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">A hkl</th>
-                      <th scope="col">2θ</th>
-                      <th scope="col">I</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topsA.map((p) => (
-                      <tr key={`ta-${p.hkl}-${p.twoTheta.toFixed(2)}`}>
-                        <td className="mono">{p.hkl}</td>
-                        <td>{p.twoTheta.toFixed(2)}</td>
-                        <td>{p.intensity.toFixed(0)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="cif-xray-table-scroll">
-                <table>
-                  <caption className="sr-only">Form B strongest peaks</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">B hkl</th>
-                      <th scope="col">2θ</th>
-                      <th scope="col">I</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topsB.map((p) => (
-                      <tr key={`tb-${p.hkl}-${p.twoTheta.toFixed(2)}`}>
-                        <td className="mono">{p.hkl}</td>
-                        <td>{p.twoTheta.toFixed(2)}</td>
-                        <td>{p.intensity.toFixed(0)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <details className="cif-xray-table">
-              <summary>Peak shift highlight (A tops → nearest B)</summary>
-              <div className="cif-xray-table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th scope="col">A hkl</th>
-                      <th scope="col">A 2θ</th>
-                      <th scope="col">B hkl</th>
-                      <th scope="col">B 2θ</th>
-                      <th scope="col">Δ2θ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {shiftRows.map((row) => (
-                      <tr key={`sh-${row.a.hkl}-${row.a.twoTheta.toFixed(2)}`}>
-                        <td className="mono">{row.a.hkl}</td>
-                        <td>{row.a.twoTheta.toFixed(2)}</td>
-                        <td className="mono">{row.b?.hkl ?? '—'}</td>
-                        <td>{row.b ? row.b.twoTheta.toFixed(2) : '—'}</td>
-                        <td>
-                          {row.deltaTwoTheta != null
-                            ? `${row.deltaTwoTheta >= 0 ? '+' : ''}${row.deltaTwoTheta.toFixed(2)}°`
-                            : 'no match ≤2.5°'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </details>
-          </>
-        )}
-      </div>
+      <CifPolymorphCompare
+        uid={uid}
+        structure={structure}
+        formB={formB}
+        patternBPeaks={patternB?.peaks ?? null}
+        topsA={topsA}
+        topsB={topsB}
+        shiftRows={shiftRows}
+        busyB={busyB}
+        errorB={errorB}
+        codBInput={codBInput}
+        setCodBInput={setCodBInput}
+        pasteBOpen={pasteBOpen}
+        setPasteBOpen={setPasteBOpen}
+        pasteBText={pasteBText}
+        setPasteBText={setPasteBText}
+        activePairId={activePairId}
+        activePair={activePair}
+        pairChemistryMismatch={pairChemistryMismatch}
+        onLoadCodId={onLoadCodId}
+        setPairAsB={setPairAsB}
+        loadPairIntoMap={loadPairIntoMap}
+        loadFormBCod={loadFormBCod}
+        loadPasteB={loadPasteB}
+        onFileB={onFileB}
+        clearFormB={clearFormB}
+      />
 
       {patternA.peaks.length > 0 && (
         <details className="cif-xray-table">

@@ -58,6 +58,7 @@ describe('computePowderPattern', () => {
     })
     expect(pat.siteCount).toBeGreaterThan(0)
     expect(pat.peaks.length).toBeGreaterThan(3)
+    expect(pat.extinctionMode).toMatch(/centering/)
     expect(pat.peaks[0]!.twoTheta).toBeGreaterThanOrEqual(5)
     const maxI = Math.max(...pat.peaks.map((p) => p.intensity))
     expect(maxI).toBeCloseTo(100, 0)

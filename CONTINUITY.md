@@ -3,15 +3,13 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Review fixes (2026-10-27 evening)
-- **P0:** R lattices in rhombohedral axes (`RS` / `:R`, or rhombohedral cell metric) no longer apply hexagonal −h+k+l=3n extinctions — affects calcite COD 1010962 powder + BFDH (`effectiveCentering` in `morphology/centering.ts`, wired into powder + BFDH).
-- **P1:** Morph/Kinetics stay visible on narrow demo chrome (removed `nav-demo-hide-xs`); polymorph chip warns when map Form A chemistry ≠ pair chemistry; disclaimers mention R:H vs R:R.
-
-## CIF map — X-ray ↔ polymorph compare
-- `/cif` X-ray powder + Compare · polymorph (curated pairs, Form B overlay, Load pair)
-
-## BFDH / morphology / kinetics
-- `/morphology`, `/kinetics` teaching pages; interactive BFDH rates + disclaimers; phone CSS stack
+## Review leftovers addressed (P1 later + P2)
+- Peak-shift: same-hkl preferred; nearest-2θ labeled in UI
+- Powder sliders debounced (~80 ms)
+- MorphologyBfdhSection + CifPolymorphCompare extracted; optional 3D Wulff habit
+- Screw/glide extinctions from operators (`extinctions.ts`) when CIF/SG ops present
+- Expanded Cromer–Mann form-factor table; merge-label cleanup; safe `{h,k,l}` labels
+- Kinetics amber disclaimer; polymorph chips default to Load pair into map
 
 ## Cloudflare COD proxy
 - Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif
@@ -19,7 +17,3 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 
 ## Key paths
 - `npm test` · deploy script above
-
-## SHAs
-- main: `1797360`
-- gh-pages: `28fd7da` (VITE_COD_PROXY baked)

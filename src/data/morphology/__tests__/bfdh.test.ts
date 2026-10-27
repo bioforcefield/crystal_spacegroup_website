@@ -78,6 +78,7 @@ describe('centering / Harker', () => {
 describe('rankBfdh', () => {
   it('ranks {100} first for primitive cubic', () => {
     const r = rankBfdh(cubic, { hm: 'P m -3 m', maxIndex: 2 })
+    expect(r.extinctionMode).toBe('centering-only')
     expect(r.centering).toBe('P')
     expect(r.faces[0]!.form).toBe('{100}')
     expect(r.faces[0]!.harkerN).toBe(1)
@@ -150,5 +151,14 @@ describe('uniqueFormRates / applyFormRates', () => {
     expect(out.filter((f) => f.label === '{010}').every((f) => f.rate === 3)).toBe(
       true,
     )
+  })
+})
+
+describe('formLabel multi-digit', () => {
+  it('uses commas when any |index| ≥ 10 after reduction', () => {
+    expect(formLabel(10, 1, 0)).toBe('{10,1,0}')
+    expect(formLabel(1, 0, 0)).toBe('{100}')
+    // gcd reduces (10,0,0) → (100)
+    expect(formLabel(10, 0, 0)).toBe('{100}')
   })
 })

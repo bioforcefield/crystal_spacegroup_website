@@ -4,12 +4,8 @@
  */
 
 import { dHkl } from '../../morphology/dHkl'
-import {
-  effectiveCentering,
-  isAllowedByCentering,
-  type LatticeCentering,
-} from '../../morphology/centering'
-import type { CellParams } from '../../types'
+import { reflectionGate, type ExtinctionMode } from '../../morphology/extinctions'
+import type { CellParams, Operator } from '../../types'
 import type { CifAtomSite, ExpandedStructure } from '../types'
 import { formFactor } from './formFactors'
 import { lorentzPolarization, twoThetaDeg } from './bragg'
@@ -24,7 +20,7 @@ export interface PowderPeak {
   h: number
   k: number
   l: number
-  /** Miller label, e.g. "1 0 −1". */
+  /** Miller label, e.g. "1 0 −1" or "10 0 0" when |index|≥10. */
   hkl: string
   d: number
   twoTheta: number
@@ -38,7 +34,8 @@ export interface PowderPeak {
 export interface PowderPattern {
   peaks: PowderPeak[]
   wavelengthA: number
-  centering: LatticeCentering
+  centering: import('../../morphology/centering').LatticeCentering
+  extinctionMode: ExtinctionMode
   siteCount: number
   maxH: number
   warnings: string[]
@@ -53,12 +50,15 @@ export interface ComputePowderOptions {
   maxH?: number
   /** Merge window in degrees 2θ. */
   mergeTolDeg?: number
+  /** Symmetry operators for screw/glide conditions (optional). */
+  operators?: readonly Operator[] | null
 }
 
 const MAX_SITES = 1200
 const MAX_REFLECTIONS = 8000
 
-function formatHkl(h: number, k: number, l: number): string {
+/** Safe Miller label — spaces; works for |h|≥10. */
+export function formatHkl(h: number, k: number, l: number): string {
   const f = (n: number) => (n < 0 ? `−${Math.abs(n)}` : String(n))
   return `${f(h)} ${f(k)} ${f(l)}`
 }
@@ -90,7 +90,6 @@ export function sitesFromAsymmetric(atoms: CifAtomSite[]): PowderSite[] {
 }
 
 function pickMaxH(cell: CellParams, wavelengthA: number, twoThetaMax: number, siteCount: number): number {
-  // Rough: need d_min ≈ λ / (2 sinθmax); max index ~ cell / d_min
   const tmax = Math.min(89, twoThetaMax / 2)
   const sin = Math.sin((tmax * Math.PI) / 180)
   const dMin = sin > 1e-6 ? wavelengthA / (2 * sin) : wavelengthA / 2
@@ -109,7 +108,6 @@ function structureFactor2(
   l: number,
   d: number,
 ): number {
-  // s = sinθ/λ = 1/(2d)
   const s = 1 / (2 * d)
   let re = 0
   let im = 0
@@ -123,10 +121,14 @@ function structureFactor2(
   return re * re + im * im
 }
 
+function indexSum(h: number, k: number, l: number): number {
+  return Math.abs(h) + Math.abs(k) + Math.abs(l)
+}
+
 /**
  * Compute a relative powder pattern for teaching.
  * Uses full-cell sites when provided so lattice extinctions emerge from F≈0;
- * also skips centering-forbidden indices for speed when HM is known.
+ * also skips centering / operator-forbidden indices for speed when known.
  */
 export function computePowderPattern(
   cell: CellParams,
@@ -154,6 +156,7 @@ export function computePowderPattern(
       peaks: [],
       wavelengthA,
       centering: 'P',
+      extinctionMode: 'centering-only',
       siteCount: 0,
       maxH: 0,
       warnings: ['No atomic sites — cannot simulate a powder pattern.'],
@@ -161,7 +164,12 @@ export function computePowderPattern(
     }
   }
 
-  const centering = effectiveCentering(hmName, cell)
+  const gate = reflectionGate(hmName, cell, opts.operators)
+  if (gate.mode === 'centering-only') {
+    warnings.push(
+      'Screw/glide extinctions: centering-only (no operator list) — conditions beyond lattice centering are not enforced here.',
+    )
+  }
   const maxH = opts.maxH ?? pickMaxH(cell, wavelengthA, twoThetaMax, used.length)
 
   type Raw = {
@@ -180,7 +188,7 @@ export function computePowderPattern(
     for (let k = -maxH; k <= maxH; k++) {
       for (let l = -maxH; l <= maxH; l++) {
         if (h === 0 && k === 0 && l === 0) continue
-        if (!isAllowedByCentering(centering, h, k, l)) continue
+        if (!gate.allowed(h, k, l)) continue
         counted++
         if (counted > MAX_REFLECTIONS) {
           truncated = true
@@ -205,23 +213,31 @@ export function computePowderPattern(
 
   raw.sort((a, b) => a.twoTheta - b.twoTheta)
 
-  // Merge nearby 2θ into powder lines; keep strongest hkl as label
+  // Merge nearby 2θ into powder lines; keep strongest contributor's hkl as label,
+  // tie-break toward lower |h|+|k|+|l|.
   const merged: PowderPeak[] = []
   for (const r of raw) {
     const last = merged[merged.length - 1]
     if (last && Math.abs(last.twoTheta - r.twoTheta) <= mergeTol) {
-      const wI = last.intensity + r.I
-      const wD = (last.d * last.intensity + r.d * r.I) / (wI || 1)
-      const wT = (last.twoTheta * last.intensity + r.twoTheta * r.I) / (wI || 1)
+      const prevI = last.intensity
+      const wI = prevI + r.I
+      const wD = (last.d * prevI + r.d * r.I) / (wI || 1)
+      const wT = (last.twoTheta * prevI + r.twoTheta * r.I) / (wI || 1)
+      const preferNewLabel =
+        r.I > prevI + 1e-12 ||
+        (Math.abs(r.I - prevI) <= 1e-12 &&
+          indexSum(r.h, r.k, r.l) < indexSum(last.h, last.k, last.l))
+      if (preferNewLabel) {
+        last.h = r.h
+        last.k = r.k
+        last.l = r.l
+        last.hkl = formatHkl(r.h, r.k, r.l)
+      }
       last.intensity = wI
       last.f2 += r.f2
       last.multiplicity += 1
       last.d = wD
       last.twoTheta = wT
-      if (r.I > last.f2 * 0.01 && Math.abs(r.h) + Math.abs(r.k) + Math.abs(r.l) <
-          Math.abs(last.h) + Math.abs(last.k) + Math.abs(last.l)) {
-        // prefer lower-index label when intensities comparable — skip; keep first
-      }
     } else {
       merged.push({
         h: r.h,
@@ -242,7 +258,6 @@ export function computePowderPattern(
     for (const p of merged) p.intensity = (p.intensity / maxI) * 100
   }
 
-  // Drop tiny sticks
   const peaks = merged.filter((p) => p.intensity >= 0.15)
   peaks.sort((a, b) => a.twoTheta - b.twoTheta)
 
@@ -253,7 +268,8 @@ export function computePowderPattern(
   return {
     peaks,
     wavelengthA,
-    centering,
+    centering: gate.centering,
+    extinctionMode: gate.mode,
     siteCount: used.length,
     maxH,
     warnings,
@@ -270,6 +286,9 @@ export function computePowderFromStructure(
     structure.cell,
     sites,
     structure.spaceGroupName,
-    opts,
+    {
+      ...opts,
+      operators: opts.operators ?? structure.operators,
+    },
   )
 }

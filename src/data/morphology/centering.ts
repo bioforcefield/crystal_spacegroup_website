@@ -1,6 +1,6 @@
 /**
  * Lattice centering + Donnay–Harker reflection conditions (lattice only).
- * Screw/glide extinctions beyond centering are not fully modelled.
+ * Screw/glide conditions live in extinctions.ts when operators are supplied.
  *
  * R lattices: hexagonal axes use −h+k+l=3n; rhombohedral axes (RS / :R)
  * are primitive — treat as P for extinctions.

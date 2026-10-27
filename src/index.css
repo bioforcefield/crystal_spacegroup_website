@@ -4399,3 +4399,25 @@ button.linkish {
     align-items: stretch;
   }
 }
+
+
+/* Morphology · 3D BFDH habit */
+.teach-wulff3d {
+  width: 100%;
+  max-width: 100%;
+  margin-top: 0.5rem;
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in oklab, canvas 92%, #0f172a);
+  border: 1px solid color-mix(in oklab, canvastext 12%, transparent);
+}
+.teach-wulff3d canvas {
+  display: block;
+  width: 100% !important;
+  touch-action: none;
+}
+@media (max-width: 640px) {
+  .teach-wulff3d canvas {
+    height: 220px !important;
+  }
+}

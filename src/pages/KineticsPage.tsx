@@ -239,6 +239,29 @@ export default function KineticsPage() {
         </p>
       </header>
 
+      <aside
+        className="teach-callout teach-callout-warn"
+        role="note"
+        aria-label="Kinetics disclaimer"
+      >
+        <p className="teach-callout-title">Disclaimer</p>
+        <ul>
+          <li>
+            Teaching schematics only — classical nucleation and textbook growth
+            rate shapes, not calibrated to a compound, solvent, or crystallizer.
+          </li>
+          <li>
+            Absolute rates, induction times, and sizes are arbitrary units for
+            exploring curve shape vs supersaturation σ and interfacial energy.
+          </li>
+          <li>
+            Real industrial kinetics need experiment / population balance /
+            CFD; do not use these plots for process design.
+          </li>
+        </ul>
+      </aside>
+
+
       <section className="teach-section" aria-labelledby="kin-ideas">
         <h2 id="kin-ideas">Ideas in brief</h2>
         <ul className="teach-bullets">
