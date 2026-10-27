@@ -3,39 +3,29 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Done (latest) — CIF structure-panel metadata
-- `src/data/cif/metadata.ts`: name (common/systematic/mineral/_struct.title, formula fallback), Z/Z′ (CIF tag, else Z/ops computed), resolution (`_refine_ls_d_res_high`/`_reflns_d_resolution_high`, else λ/2sinθmax), literature (title, authors, journal/vol/year/pages, DOI link).
-- Shown in `/cif` Structure panel; missing rows omitted; long titles line-clamped.
-- Tests 362. main `3f7a247`, gh-pages `8480b05`.
-
-## Done (earlier) — CIF Near / Cell placement
-
-### CIF `/cif` — Nearest images + In cell (mirror SG demos)
-- Same semantics as `/sg/{n}` Motif placement:
-  - **Near** (`nearest`, default): intact molecules keep relative geometry; each molecule is lattice-translated so its centroid sits near the selected symmetry element (may leave the cell). Uses `distToElement` from `nearestImages.ts`.
-  - **Cell** (`wrapped`): every atom at wrapped `[0,1)³` cartesian; bonds that stretch across faces after wrap are hidden.
-- Toolbar segmented control with full labels “Nearest images” / “In cell” and phone short labels **Near** / **Cell** (same `label-full`/`label-short` as SG demos).
-- Visibility chips (Molecules / All / BASE+IMAGE / AU) unchanged; Molecules remains default visibility.
-- Module: `src/data/cif/placement.ts` + tests; wired through `CifStructureScene` / `CifExplorerPage`.
-
-Tests: **359** green.
+## Done (latest) — Review #2 High fix: CIF ops before ITA demo
+- **Bug:** `resolveOperators` preferred ITA teaching-demo operators whenever an SG number was known, even when the CIF already listed `_symmetry_equiv_pos_as_xyz`. Wrong for non-standard settings / alternate origins (common in CSD/COD) — packing would not match the AU.
+- **Fix:** CIF symops win; ITA demo only when the CIF omits a symmetry loop (with warning). `operatorSource` on `ExpandedStructure`. `elementsDemoForStructure` keeps Near/overlays on the **same** operators (deriveElements for CIF source; hand loci for demo source).
+- Z′ computed for `nOps >= 1` (P1: Z′ = Z).
+- Tests 367. See review report in agent handoff for Med/Low backlog.
 
 ## Prior (same day)
-- CIF phone layout: lattice strip below canvas, wrapped toolbar.
-- Symmetry-element overlays on CIF cell via `demoWithCifCell`.
-- Intact molecules, operator list, origin marker, COD/CSD load-by-code.
+- CIF metadata panel (name, Z′, resolution, literature)
+- Near/Cell placement, phone lattice strip, symmetry overlays, COD/CSD load
 
-## Remaining gaps
-- Body-diagonal loci still geometryLimited (no invented loci).
-- CIF: no ellipsoids; Cartesian-only unsupported; no cross-op H-bond dimers.
-- Production COD arbitrary-id stream needs `VITE_COD_PROXY` worker or paste (bundled 1100303 works same-origin).
-- Near placement uses per-molecule centroid→element (not full BASE/IMAGE pair search like motif seeds); good enough for CIF density.
+## Remaining gaps (from review #2)
+- Body-diagonal loci still geometryLimited
+- −6 classified under `threefold` classId (label says −6)
+- Z′ = Z/ops pitfalls on special positions / incomplete CIF op lists
+- No cross-op H-bond dimers; no ellipsoids; Cartesian-only unsupported
+- Production COD CORS needs `VITE_COD_PROXY`
+- Oversized pages (`CifExplorerPage` ~770, `SpaceGroupDiagram2D` ~810); SymmetryElements chunk ~1MB
+- Hand vs generated demo polish gap (~57 hand / 173 generated)
 
 ## Key paths
-- CIF: `src/data/cif/*` (incl. `placement.ts`), `CifExplorerPage.tsx`, `CifStructureScene.tsx`
-- SG placement reference: `src/data/nearestImages.ts`, `SpaceGroupPage.tsx`
+- CIF: `src/data/cif/*` (esp. `expandStructure.ts`, `demoWithCifCell.ts`), `CifExplorerPage.tsx`
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main tip: `7fa17bf`
-- gh-pages: `9d85af0` (239 files)
+- main tip: (pending commit)
+- gh-pages: (pending deploy)

@@ -1,6 +1,14 @@
 /**
  * Expand asymmetric-unit atoms by space-group operators and assemble
  * intact molecules (min-image bonds + unwrap) colored by operator.
+ *
+ * Operator source priority (scientific):
+ *  1. CIF-listed symops — always match the AU fractional setting/origin
+ *  2. ITA teaching demo — only when the CIF omits a symmetry loop
+ *  3. Identity — last resort
+ *
+ * Preferring the ITA demo when a CIF already lists ops is wrong for
+ * non-standard settings / alternate origins (common in CSD/COD).
  */
 
 import { applyOperator, fracToCart } from '../math'
@@ -14,22 +22,24 @@ import type {
   SymmetryCopyAtom,
 } from './types'
 
+export type OperatorSource = 'cif' | 'demo' | 'identity'
+
 /**
- * Resolve the operator list: prefer site teaching demo (ITA JSON) when the
- * space-group number is known; else CIF-listed ops; else identity only.
+ * Resolve the operator list. CIF symops win when present so expansion
+ * matches the deposited fractional coordinates.
  */
 export function resolveOperators(parsed: ParsedCif): {
   operators: Operator[]
-  source: 'demo' | 'cif' | 'identity'
+  source: OperatorSource
 } {
+  if (parsed.cifOperators.length) {
+    return { operators: parsed.cifOperators, source: 'cif' }
+  }
   if (parsed.spaceGroupNumber != null) {
     const demo = getDemo(parsed.spaceGroupNumber)
     if (demo?.operators?.length) {
       return { operators: demo.operators, source: 'demo' }
     }
-  }
-  if (parsed.cifOperators.length) {
-    return { operators: parsed.cifOperators, source: 'cif' }
   }
   return {
     operators: buildOperatorsFromTriplets(['x,y,z']),
@@ -45,9 +55,13 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
     warnings.push(
       'No space-group number or symmetry operators found — showing asymmetric unit only',
     )
-  } else if (source === 'cif') {
+  } else if (source === 'demo') {
     warnings.push(
-      'Using symmetry operators listed in the CIF (could not resolve ITA number)',
+      'CIF had no symmetry loop — using ITA standard-setting operators for the space-group number (verify origin/setting match)',
+    )
+  } else if (source === 'cif' && parsed.spaceGroupNumber == null) {
+    warnings.push(
+      'Using symmetry operators listed in the CIF (space-group number unknown)',
     )
   }
 
@@ -97,6 +111,7 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
   return {
     cell: parsed.cell,
     operators,
+    operatorSource: source,
     spaceGroupNumber: parsed.spaceGroupNumber,
     spaceGroupName: parsed.spaceGroupName,
     asymmetric: parsed.atoms,
@@ -111,9 +126,12 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
 
 function withZPrime(meta: ParsedCif['metadata'] | undefined, nOps: number) {
   const m = { ...(meta ?? {}) }
-  if (m.zPrime == null && m.z != null && nOps > 1) {
+  if (m.zPrime == null && m.z != null && nOps >= 1) {
     const zp = m.z / nOps
-    if (zp > 0) { m.zPrime = Math.round(zp * 1000) / 1000; m.zPrimeSource = 'computed' as const }
+    if (zp > 0) {
+      m.zPrime = Math.round(zp * 1000) / 1000
+      m.zPrimeSource = 'computed' as const
+    }
   }
   return m
 }

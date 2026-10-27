@@ -59,6 +59,8 @@ export interface SymmetryBond {
 export interface ExpandedStructure {
   cell: CellParams
   operators: Operator[]
+  /** Where operators came from — CIF list must win when present (matches AU setting). */
+  operatorSource: 'cif' | 'demo' | 'identity'
   spaceGroupNumber: number | null
   spaceGroupName: string | null
   /** Asymmetric-unit atoms (input). */

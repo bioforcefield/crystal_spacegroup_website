@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { countDemoElements, demoWithCifCell } from '../demoWithCifCell'
+import { countDemoElements, demoWithCifCell, elementsDemoForStructure } from '../demoWithCifCell'
+import { expandStructure } from '../expandStructure'
+import { parseCif } from '../parseCif'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { getDemo } from '../../registry'
 import type { CellParams } from '../../types'
 
@@ -48,5 +52,44 @@ describe('demoWithCifCell', () => {
     expect(scaled!.cell.a).toBe(5.46)
     // May be geometryLimited (body diagonals) but still has some loci
     expect(countDemoElements(scaled!)).toBeGreaterThan(0)
+  })
+})
+
+describe('elementsDemoForStructure', () => {
+  it('uses CIF-derived loci when operatorSource is cif', () => {
+    const sample = readFileSync(
+      resolve(__dirname, '../../../../public/samples/acetic_p21c.cif'),
+      'utf8',
+    )
+    const structure = expandStructure(parseCif(sample))
+    expect(structure.operatorSource).toBe('cif')
+    const demo = elementsDemoForStructure(structure)!
+    expect(demo.operators).toBe(structure.operators)
+    expect(demo.cell).toEqual(structure.cell)
+    expect(countDemoElements(demo)).toBeGreaterThan(0)
+  })
+
+  it('uses teaching demo loci when operatorSource is demo', () => {
+    const text = `
+data_X
+_cell_length_a 5.5
+_cell_length_b 8.2
+_cell_length_c 7.1
+_cell_angle_beta 110
+_symmetry_Int_Tables_number 14
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.22 0.31 0.18
+`
+    const structure = expandStructure(parseCif(text))
+    expect(structure.operatorSource).toBe('demo')
+    const demo = elementsDemoForStructure(structure)!
+    const teaching = getDemo(14)!
+    expect(demo.screwAxes.length).toBe(teaching.screwAxes.length)
+    expect(demo.cell.a).toBeCloseTo(5.5, 5)
   })
 })

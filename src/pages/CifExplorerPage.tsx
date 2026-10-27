@@ -13,7 +13,7 @@ import CifStructureScene, {
 } from '../components/CifStructureScene'
 import {
   countDemoElements,
-  demoWithCifCell,
+  elementsDemoForStructure,
 } from '../data/cif/demoWithCifCell'
 import { expandStructure } from '../data/cif/expandStructure'
 import {
@@ -179,10 +179,10 @@ export default function CifExplorerPage() {
     return m
   }, [structure])
 
-  /** Teaching SG demo with CIF cell metric — loci in real a,b,c,α,β,γ. */
+  /** Element overlays + Near targets — same operators as the expanded structure. */
   const elementDemo = useMemo(() => {
-    if (!structure?.spaceGroupNumber) return null
-    return demoWithCifCell(structure.spaceGroupNumber, structure.cell) ?? null
+    if (!structure) return null
+    return elementsDemoForStructure(structure) ?? null
   }, [structure])
 
   const elementCount = elementDemo ? countDemoElements(elementDemo) : 0
@@ -463,9 +463,14 @@ export default function CifExplorerPage() {
             <section className="ops cif-ops">
               <h2>Symmetry operators</h2>
               <p className="hint">
-                Each row is one ITA operator (xyz). The swatch matches the 3D
-                molecule copy. Select a row to highlight that image; Op 1 is the
-                asymmetric unit (BASE).
+                Each row is one symmetry operator (xyz
+                {structure.operatorSource === 'cif'
+                  ? ', from the CIF'
+                  : structure.operatorSource === 'demo'
+                    ? ', ITA standard setting'
+                    : ''}
+                ). The swatch matches the 3D molecule copy. Select a row to
+                highlight that image; Op 1 is the asymmetric unit (BASE).
               </p>
               <ul
                 className="op-list"
@@ -584,7 +589,7 @@ export default function CifExplorerPage() {
               Ball ≈ element · tint ≈ operator · bonds keep each molecule intact
               (min-image unwrap)
               {canShowElements && showSymmetryElements
-                ? ' · overlays: screws / glides / inversions / mirrors (ITA loci on this cell)'
+                ? ' · overlays: screws / glides / inversions / mirrors (loci on this cell)'
                 : ''}
             </div>
             {elementDemo && showSymmetryElements && canShowElements && (
@@ -752,7 +757,11 @@ export default function CifExplorerPage() {
 
         <footer className="viewport-footer">
           CIF explorer · intact molecules (covalent + min-image unwrap) ·
-          operators from ITA when the space group number is known
+          {structure?.operatorSource === 'cif'
+            ? 'operators from the CIF symmetry loop'
+            : structure?.operatorSource === 'demo'
+              ? 'operators from ITA (CIF had no symmetry loop)'
+              : 'operators'}
           {structure?.spaceGroupNumber != null
             ? ` · teaching demo: /sg/${structure.spaceGroupNumber}`
             : ''}

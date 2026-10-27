@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { expandStructure } from '../expandStructure'
+import { expandStructure, resolveOperators } from '../expandStructure'
 import { parseCif, tokenizeCif } from '../parseCif'
 
 const SAMPLE = readFileSync(
@@ -108,5 +108,71 @@ describe('CIF metadata', () => {
     expect(m.zPrime).toBe(2)
     expect(m.resolutionA).toBeCloseTo(0.78)
     expect(m.name).toBe('Foo')
+  })
+})
+
+describe('resolveOperators preference', () => {
+  it('prefers CIF-listed operators over ITA demo when both present', () => {
+    // SG 14 known, but CIF only lists identity — must NOT expand with ITA×4
+    const text = `
+data_X
+_cell_length_a 5
+_cell_length_b 8
+_cell_length_c 7
+_cell_angle_beta 110
+_symmetry_Int_Tables_number 14
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.2 0.3 0.1
+`
+    const parsed = parseCif(text)
+    expect(parsed.spaceGroupNumber).toBe(14)
+    expect(parsed.cifOperators.length).toBe(1)
+    const { operators, source } = resolveOperators(parsed)
+    expect(source).toBe('cif')
+    expect(operators.length).toBe(1)
+    const expanded = expandStructure(parsed)
+    expect(expanded.operatorSource).toBe('cif')
+    expect(expanded.operators.length).toBe(1)
+    expect(expanded.atoms.length).toBe(1)
+  })
+
+  it('falls back to ITA demo when CIF has SG number but no symmetry loop', () => {
+    const text = `
+data_X
+_cell_length_a 5
+_cell_length_b 8
+_cell_length_c 7
+_cell_angle_beta 110
+_symmetry_Int_Tables_number 14
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.2 0.3 0.1
+`
+    const parsed = parseCif(text)
+    expect(parsed.cifOperators.length).toBe(0)
+    const { operators, source } = resolveOperators(parsed)
+    expect(source).toBe('demo')
+    expect(operators.length).toBe(4)
+    const expanded = expandStructure(parsed)
+    expect(expanded.operatorSource).toBe('demo')
+    expect(expanded.warnings.some((w) => /no symmetry loop/i.test(w))).toBe(true)
+  })
+
+  it('acetic sample uses CIF operators (source=cif)', () => {
+    const expanded = expandStructure(parseCif(SAMPLE))
+    expect(expanded.operatorSource).toBe('cif')
+    expect(expanded.operators.length).toBe(4)
   })
 })
