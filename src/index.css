@@ -91,6 +91,72 @@ button {
   font-size: 0.92rem;
 }
 
+.ref-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.45rem;
+  margin: -0.35rem 0 0.75rem;
+  font-size: 0.78rem;
+}
+
+.ucl-diagram-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ucl-diagram-link:hover {
+  text-decoration: underline;
+}
+
+.ref-sep {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.ref-credit {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.ita-diagram {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: #fff;
+  max-width: 100%;
+}
+
+.ita-diagram img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.ita-diagram figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin-top: 0.4rem;
+  font-size: 0.68rem;
+  color: #334155;
+}
+
+.ita-caption {
+  font-weight: 600;
+}
+
+.ita-credit {
+  color: #64748b;
+}
+
 .meta-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

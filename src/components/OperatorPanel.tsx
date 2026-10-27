@@ -7,6 +7,16 @@ import {
   placedPositions,
   type PlacementMode,
 } from '../data/nearestImages'
+import {
+  UCL_DIAGRAM_CREDIT,
+  UCL_DIAGRAM_LINK_LABEL,
+  uclSpaceGroupDiagramUrl,
+} from '../data/uclDiagram'
+import {
+  ITA_DIAGRAM_CAPTION,
+  ITA_DIAGRAM_CREDIT,
+  itaDiagramUrl,
+} from '../data/itaDiagram'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -70,6 +80,8 @@ export default function OperatorPanel({
   const baseLabel =
     placementMode === 'nearest' ? 'BASE (nearest)' : 'BASE (in cell)'
   const { meta } = demo
+  const uclUrl = uclSpaceGroupDiagramUrl(meta.number)
+  const itaUrl = itaDiagramUrl(meta.number)
   const alpha = demo.cell.alphaDeg
   const beta = demo.cell.betaDeg
   const gamma = demo.cell.gammaDeg
@@ -85,6 +97,41 @@ export default function OperatorPanel({
           {meta.number} · {meta.hm}
         </h1>
         <p className="blurb">{meta.blurb}</p>
+        <div className="ref-links">
+          <a
+            className="ucl-diagram-link"
+            href={uclUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={UCL_DIAGRAM_CREDIT}
+          >
+            {UCL_DIAGRAM_LINK_LABEL} ↗
+          </a>
+          <span className="ref-sep" aria-hidden>
+            ·
+          </span>
+          <span className="ref-credit" title={UCL_DIAGRAM_CREDIT}>
+            Birkbeck / UCL
+          </span>
+        </div>
+        {itaUrl && (
+          <figure className="ita-diagram">
+            <img
+              src={itaUrl}
+              alt={`International Tables Vol. A diagram for space group ${meta.number} (${meta.hm})`}
+              loading="lazy"
+              decoding="async"
+              width={280}
+              height={280}
+            />
+            <figcaption>
+              <span className="ita-caption">{ITA_DIAGRAM_CAPTION}</span>
+              <span className="ita-credit" title={ITA_DIAGRAM_CREDIT}>
+                © IUCr · Vol. A
+              </span>
+            </figcaption>
+          </figure>
+        )}
         <dl className="meta-grid">
           <div>
             <dt>System</dt>
