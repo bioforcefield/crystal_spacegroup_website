@@ -47,6 +47,16 @@ import { ibar4Demo } from './ibar4'
 import { cmcaDemo } from './cmca'
 import { p41212Demo } from './p41212'
 import { p43212Demo } from './p43212'
+import { p42nDemo } from './p42n'
+import { fdddDemo } from './fddd'
+import { p63mDemo } from './p63m'
+import { p421cDemo } from './p421c'
+import { pnnaDemo } from './pnna'
+import { aba2Demo } from './aba2'
+import { r3cDemo } from './r3c'
+import { cmcmDemo } from './cmcm'
+import { pbcmDemo } from './pbcm'
+import { pa3Demo } from './pa3'
 import { buildGeneratedDemo } from './generatedDemo'
 import { findGroup } from './spaceGroupCatalog'
 import type { SpaceGroupDemo } from './types'
@@ -113,6 +123,16 @@ const HAND_DEMOS: SpaceGroupDemo[] = [
   p6mmmDemo,
   p42ncmDemo,
   fm3Demo,
+  p42nDemo,
+  fdddDemo,
+  p63mDemo,
+  p421cDemo,
+  pnnaDemo,
+  aba2Demo,
+  r3cDemo,
+  cmcmDemo,
+  pbcmDemo,
+  pa3Demo,
 ]
 
 const handByNumber = new Map(HAND_DEMOS.map((d) => [d.meta.number, d]))
@@ -207,4 +227,14 @@ export {
   p6mmmDemo,
   p42ncmDemo,
   fm3Demo,
+  p42nDemo,
+  fdddDemo,
+  p63mDemo,
+  p421cDemo,
+  pnnaDemo,
+  aba2Demo,
+  r3cDemo,
+  cmcmDemo,
+  pbcmDemo,
+  pa3Demo,
 }

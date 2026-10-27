@@ -48,8 +48,8 @@ export const CSD_SUMMARY: CsdStatisticsSummary = {
 }
 
 /**
- * Top 30 by frequency in the CSD (1 Jan 2026).
- * Counts and % match the official PDF; ranks 23–30 publish “<0.3”.
+ * Top 42 by frequency in the CSD (1 Jan 2026).
+ * Counts and % match the official PDF; ranks 23+ publish “<0.3”.
  */
 export const CSD_TOP_FREQUENCY: CsdFrequencyRow[] = [
   { rank: 1, number: 14, hm: 'P21/c', count: 482_555, percent: 33.8 },
@@ -136,6 +136,102 @@ export const CSD_TOP_FREQUENCY: CsdFrequencyRow[] = [
     hm: 'Cmca',
     count: 1_839,
     percent: 0.129,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 31,
+    number: 86,
+    hm: 'P42/n',
+    count: 1_740,
+    percent: 0.122,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 32,
+    number: 147,
+    hm: 'P-3',
+    count: 1_672,
+    percent: 0.117,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 33,
+    number: 70,
+    hm: 'Fddd',
+    count: 1_669,
+    percent: 0.117,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 34,
+    number: 176,
+    hm: 'P63/m',
+    count: 1_606,
+    percent: 0.113,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 35,
+    number: 114,
+    hm: 'P-421c',
+    count: 1_577,
+    percent: 0.110,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 36,
+    number: 52,
+    hm: 'Pnna',
+    count: 1_559,
+    percent: 0.109,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 37,
+    number: 225,
+    hm: 'Fm-3m',
+    count: 1_520,
+    percent: 0.106,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 38,
+    number: 41,
+    hm: 'Aba2',
+    count: 1_513,
+    percent: 0.106,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 39,
+    number: 161,
+    hm: 'R3c',
+    count: 1_410,
+    percent: 0.099,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 40,
+    number: 63,
+    hm: 'Cmcm',
+    count: 1_379,
+    percent: 0.097,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 41,
+    number: 57,
+    hm: 'Pbcm',
+    count: 1_373,
+    percent: 0.096,
+    percentLabel: '<0.3',
+  },
+  {
+    rank: 42,
+    number: 205,
+    hm: 'Pa-3',
+    count: 1_282,
+    percent: 0.090,
     percentLabel: '<0.3',
   },
 ]

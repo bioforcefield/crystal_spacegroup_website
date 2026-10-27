@@ -28,7 +28,7 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
-  'c-glide': { id: 'c-glide', label: 'c-glide', color: '#fb923c' },
+  'c-glide': { id: 'c-glide', label: 'c-glide ‖ c (vertical)', color: '#fb923c' },
   'n-glide': { id: 'n-glide', label: 'n-glide', color: '#2dd4bf' },
   'd-glide': { id: 'd-glide', label: 'd-glide', color: '#f9a8d4' },
 }
@@ -97,8 +97,12 @@ export const OPERATORS: Operator[] = RAW.map((op) => {
     }
   if (i === 8 || i === 9)
     return { ...op, label: '−3 ‖ c', classId: 'threefold' as SymmetryClassId }
-  if (i === 10 || i === 11 || i === 12)
-    return { ...op, label: 'c-glide', classId: 'c-glide' as SymmetryClassId }
+  if (i === 10)
+    return { ...op, label: 'c-glide · x=−y', classId: 'c-glide' as SymmetryClassId }
+  if (i === 11)
+    return { ...op, label: 'c-glide · y=2x', classId: 'c-glide' as SymmetryClassId }
+  if (i === 12)
+    return { ...op, label: 'c-glide · x=2y', classId: 'c-glide' as SymmetryClassId }
   if (op.classId === 'identity' && op.t.some((c) => Math.abs(c) > 1e-6)) {
     return { ...op, label: 'R-centring', classId: 'identity' }
   }
@@ -106,6 +110,13 @@ export const OPERATORS: Operator[] = RAW.map((op) => {
     return { ...op, label: '2-fold ⊥ c (R)', classId: 'twofold' }
   }
   if (op.classId === 'c-glide') {
+    // R images of ops 10/11/12 (T1: 22–24, T2: 34–36)
+    if (i === 22 || i === 34)
+      return { ...op, label: 'c-glide · x+y=1 (R)', classId: 'c-glide' }
+    if (i === 23 || i === 35)
+      return { ...op, label: 'c-glide · y=2x−1 (R)', classId: 'c-glide' }
+    if (i === 24 || i === 36)
+      return { ...op, label: 'c-glide · x=2y−1 (R)', classId: 'c-glide' }
     return { ...op, label: 'c-glide (R)', classId: 'c-glide' }
   }
   if (op.classId === 'inversion') {
@@ -128,7 +139,7 @@ export const META: SpaceGroupMeta = {
   lattice: 'Rhombohedral (hexagonal axes)',
   multiplicity: 36,
   blurb:
-    'R-3c (~0.2% of CSD) extends R-3 with c-glides and 2-folds ⊥ c (point group −3m). Hexagonal setting: 3 / −3 ‖ c, inversion, vertical c-glides, plus R-centring — thirty-six general positions. Teaching cell a = b, γ = 120°. Vertical c-glides drawn via diagonal corner patches (x = −y family).',
+    'R-3c (~0.2% of CSD, rank 24) extends R-3 with c-glides and 2-folds ⊥ c (point group −3m). Hexagonal setting: 3 / −3 ‖ c, inversion, vertical c-glides, plus R-centring — thirty-six general positions. Teaching cell a = b, γ = 120°. Primary vertical c-glides (x=−y, y=2x, x=2y) plus approximate R-translated tertiary strips.',
 }
 
 /** 3 ‖ c at (0,0,z) and R-related; 2 ⊥ c along [110]-family. */
@@ -184,7 +195,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
       [0, 0, 1],
     ],
     glide: [0, 0, 0.5],
-    label: 'c-glide',
+    label: 'c-glide · x=−y',
     classId: 'c-glide',
     opIndex: 10,
     primary: true,
@@ -198,7 +209,7 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
       [0, 0, 1],
     ],
     glide: [0, 0, 0.5],
-    label: 'c-glide',
+    label: 'c-glide · y=2x',
     classId: 'c-glide',
     opIndex: 11,
     primary: true,
@@ -212,11 +223,54 @@ const GLIDE_PLANES: GlidePlaneSpec[] = [
       [0, 0, 1],
     ],
     glide: [0, 0, 0.5],
-    label: 'c-glide',
+    label: 'c-glide · x=2y',
     classId: 'c-glide',
     opIndex: 12,
     primary: true,
     locus: 'plane x = 2y · glide (0, 0, ½)',
+  },
+  // Tertiary / R-related images (T1 = ⅔,⅓ shift in ab; approximate teaching strips)
+  {
+    corners: [
+      [2 / 3, 1 / 3, 0],
+      [5 / 3, -2 / 3, 0],
+      [5 / 3, -2 / 3, 1],
+      [2 / 3, 1 / 3, 1],
+    ],
+    glide: [0, 0, 0.5],
+    label: 'c-glide · x+y=1 (R)',
+    classId: 'c-glide',
+    opIndex: 22,
+    primary: false,
+    locus: 'plane x + y = 1 (R-related, approx) · glide (0, 0, ½)',
+  },
+  {
+    corners: [
+      [2 / 3, 1 / 3, 0],
+      [5 / 3, 7 / 3, 0],
+      [5 / 3, 7 / 3, 1],
+      [2 / 3, 1 / 3, 1],
+    ],
+    glide: [0, 0, 0.5],
+    label: 'c-glide · y=2x−1 (R)',
+    classId: 'c-glide',
+    opIndex: 23,
+    primary: false,
+    locus: 'plane y = 2x − 1 (R-related, approx) · glide (0, 0, ½)',
+  },
+  {
+    corners: [
+      [2 / 3, 1 / 3, 0],
+      [-4 / 3, -2 / 3, 0],
+      [-4 / 3, -2 / 3, 1],
+      [2 / 3, 1 / 3, 1],
+    ],
+    glide: [0, 0, 0.5],
+    label: 'c-glide · x=2y−1 (R)',
+    classId: 'c-glide',
+    opIndex: 24,
+    primary: false,
+    locus: 'plane x = 2y − 1 (R-related, approx) · glide (0, 0, ½)',
   },
 ]
 
@@ -226,7 +280,15 @@ export function elementLocusForOp(opIndex: number): string | null {
   if (opIndex >= 4 && opIndex <= 6) return '2-fold axis ⊥ c'
   if (opIndex === 7) return 'inversion at (0, 0, 0)'
   if (opIndex === 8 || opIndex === 9) return '−3 axis at (0, 0, z)'
-  if (opIndex >= 10 && opIndex <= 12) return 'c-glide (vertical; glide ‖ c)'
+  if (opIndex === 10) return 'c-glide · plane x = −y · glide (0, 0, ½)'
+  if (opIndex === 11) return 'c-glide · plane y = 2x · glide (0, 0, ½)'
+  if (opIndex === 12) return 'c-glide · plane x = 2y · glide (0, 0, ½)'
+  if (opIndex === 22 || opIndex === 34)
+    return 'c-glide (R) · plane x + y = 1 (approx) · glide ‖ c'
+  if (opIndex === 23 || opIndex === 35)
+    return 'c-glide (R) · plane y = 2x − 1 (approx) · glide ‖ c'
+  if (opIndex === 24 || opIndex === 36)
+    return 'c-glide (R) · plane x = 2y − 1 (approx) · glide ‖ c'
   if (opIndex === 13 || opIndex === 25) return 'R-centring translation'
   const op = OPERATORS.find((o) => o.index === opIndex)
   return op?.label ?? null
