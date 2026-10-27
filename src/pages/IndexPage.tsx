@@ -118,6 +118,15 @@ export default function IndexPage() {
               >
                 UCL diagrams ↗
               </a>
+              <a
+                className="btn btn-ghost"
+                href="https://github.com/bioforcefield/crystal_spacegroup_website/discussions"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Share ideas and suggestions on GitHub Discussions"
+              >
+                Suggest ideas ↗
+              </a>
             </div>
           </div>
           <HeroCellMotif />
@@ -399,6 +408,16 @@ export default function IndexPage() {
         <div>
           <strong>Crystal Space Groups</strong>
           <span className="muted"> · interactive teaching diagrams</span>
+          <div className="footer-feedback">
+            <a
+              href="https://github.com/bioforcefield/crystal_spacegroup_website/discussions"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Suggest an improvement
+            </a>
+            <span className="muted"> — ideas &amp; discussion on GitHub</span>
+          </div>
         </div>
         <span className="footer-demos">
           <Link to="/sg/14">14 · P21/c</Link>
