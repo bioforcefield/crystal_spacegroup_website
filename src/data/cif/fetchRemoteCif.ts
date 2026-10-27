@@ -52,10 +52,16 @@ export class CsdManualError extends Error {
   }
 }
 
+/** Where the CIF bytes came from — shown in the load UI. */
+export type CifFetchSource = 'cache' | 'proxy' | 'cod' | 'paste' | 'upload'
+
 export interface FetchRemoteResult {
   text: string
-  source: 'cache' | 'proxy' | 'cod' | 'paste'
+  source: CifFetchSource
+  /** Short human label for the structure line. */
   label: string
+  /** Longer note for the load panel (cache vs proxy vs direct). */
+  sourceNote: string
   code: StructureCode
 }
 
@@ -109,10 +115,24 @@ export function hasConfiguredCodProxy(): boolean {
   return Boolean(raw)
 }
 
-
 /** Dev-server same-origin proxy path (vite.config.ts). */
 export function codDevProxyUrl(id: string): string {
   return `/cod-proxy/${id}.cif`
+}
+
+export function sourceBadgeLabel(source: CifFetchSource): string {
+  switch (source) {
+    case 'cache':
+      return 'same-origin cache'
+    case 'proxy':
+      return 'COD proxy'
+    case 'cod':
+      return 'crystallography.net'
+    case 'paste':
+      return 'pasted CIF'
+    case 'upload':
+      return 'uploaded file'
+  }
 }
 
 export async function fetchCodCif(
@@ -129,7 +149,8 @@ export async function fetchCodCif(
       return {
         text: cached.text,
         source: 'cache',
-        label: `COD ${id} (cached sample)`,
+        label: `COD ${id}`,
+        sourceNote: `Loaded from same-origin teaching cache (public/samples/cod/${id}.cif).`,
         code,
       }
     }
@@ -140,7 +161,13 @@ export async function fetchCodCif(
   if (proxy) {
     const r = await tryFetch(proxy, fetchImpl)
     if (r.ok) {
-      return { text: r.text, source: 'proxy', label: `COD ${id}`, code }
+      return {
+        text: r.text,
+        source: 'proxy',
+        label: `COD ${id}`,
+        sourceNote: 'Loaded via configured COD CORS proxy (VITE_COD_PROXY).',
+        code,
+      }
     }
     if (r.status === 404) throw new NotFoundError(`COD ${id}`)
   }
@@ -149,7 +176,13 @@ export async function fetchCodCif(
   {
     const r = await tryFetch(codDevProxyUrl(id), fetchImpl)
     if (r.ok) {
-      return { text: r.text, source: 'proxy', label: `COD ${id}`, code }
+      return {
+        text: r.text,
+        source: 'proxy',
+        label: `COD ${id}`,
+        sourceNote: 'Loaded via local Vite /cod-proxy (dev/preview only).',
+        code,
+      }
     }
   }
 
@@ -157,7 +190,13 @@ export async function fetchCodCif(
   {
     const r = await tryFetch(direct, fetchImpl)
     if (r.ok) {
-      return { text: r.text, source: 'cod', label: `COD ${id}`, code }
+      return {
+        text: r.text,
+        source: 'cod',
+        label: `COD ${id}`,
+        sourceNote: 'Loaded directly from crystallography.net (CORS allowed in this environment).',
+        code,
+      }
     }
     if (r.status === 404) throw new NotFoundError(`COD ${id}`)
     if (r.cors || r.status === undefined) {

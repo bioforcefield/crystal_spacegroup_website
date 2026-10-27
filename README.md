@@ -7,7 +7,7 @@ Live: https://bioforcefield.github.io/crystal_spacegroup_website/
 ## Features
 
 - **230 demos** (`/sg/{1–230}`) built from gemmi ITA general positions
-- **57 hand-polished** teaching demos (CSD top groups + textbook core) with curated loci and blurbs
+- **71 hand-polished** teaching demos (CSD top groups + textbook core) with curated loci and blurbs
 - Color-coded operators (identity, screws, inversions, mirrors, a/b/c/n/d-glides, n-folds)
 - BASE → IMAGE highlight with nearest-image or in-cell placement
 - Geometric element overlays where axis-aligned loci can be derived; honest “operators / limited geometry” note otherwise
@@ -71,7 +71,7 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 - **Lattice**: a/b/c labels (Å) on the box + α/β/γ badge
 - **COD load**: enter a numeric id → tries bundled cache (`public/samples/cod/` + teaching chips; 16 curated CIFs), optional `VITE_COD_PROXY`, Vite `/cod-proxy` (dev/preview), then direct `crystallography.net`. Direct COD lacks CORS on GitHub Pages for arbitrary ids — use a chip, paste/upload, or deploy `scripts/cod-cors-worker.js` (see below).
 - **COD proxy (optional, for arbitrary ids on Pages)**:
-  1. `npx wrangler deploy -c scripts/wrangler.cod-proxy.toml` (Cloudflare account)
+  1. `npx wrangler deploy -c scripts/wrangler.cod-proxy.toml` (Cloudflare account). Optional Actions templates: `scripts/github-workflows/`.
   2. Rebuild: `VITE_COD_PROXY="https://YOUR_WORKER.workers.dev/{id}.cif" npm run build:pages`
   3. Refresh cache list: `scripts/fetch-cod-samples.sh` then rebuild manifest labels if needed.
 - **CSD**: no free anonymous CIF API; UI links to [CCDC Access Structures](https://www.ccdc.cam.ac.uk/structures/) for download, then upload/paste. We do not scrape CSD.

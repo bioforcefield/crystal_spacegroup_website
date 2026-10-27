@@ -135,18 +135,19 @@ export default function CifLoadPanel({
       )}
 
       <p className="hint">
-        <strong>COD</strong>: chips above load instantly from this site&apos;s
-        cache (works on GitHub Pages). Other numeric ids stream when{' '}
+        <strong>COD</strong>: chips load from this site&apos;s same-origin cache
+        ({extras.length || '…'} curated CIFs — works on GitHub Pages). Status after
+        Load shows <em>cache</em> / <em>proxy</em> / <em>fail</em>. Arbitrary ids
+        stream when{' '}
         {proxyReady ? (
-          <span>a COD proxy is configured for this build</span>
+          <span>a COD proxy is configured for this build ✓</span>
         ) : (
           <span>
-            <code>VITE_COD_PROXY</code> is set at build time (Cloudflare Worker:{' '}
-            <code>scripts/cod-cors-worker.js</code>)
+            you deploy <code>scripts/cod-cors-worker.js</code> and rebuild with{' '}
+            <code>VITE_COD_PROXY</code>
           </span>
         )}
-        ; otherwise open the CIF and paste. Local <code>vite</code> / preview
-        use <code>/cod-proxy</code>.
+        . Local <code>vite</code> / preview use <code>/cod-proxy</code>.
         <br />
         <strong>CSD</strong> (e.g. ACETAC01): no free anonymous API — download
         via{' '}

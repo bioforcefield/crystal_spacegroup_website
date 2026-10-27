@@ -1,0 +1,24 @@
+# Copy into .github/workflows/ to enable (requires GitHub token with workflow scope).
+# Deploy the COD CORS Cloudflare Worker when CF secrets are configured.
+# Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+# Optional repo variable / secret: VITE_COD_PROXY (used by pages-build workflow if present)
+name: Deploy COD CORS proxy
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/cod-cors-worker.js'
+      - 'scripts/wrangler.cod-proxy.toml'
+      - '.github/workflows/deploy-cod-proxy.yml'
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy -c scripts/wrangler.cod-proxy.toml
