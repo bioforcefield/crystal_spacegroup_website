@@ -26,5 +26,5 @@ Tests: **350** green.
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main tip: _(fill after push)_
-- gh-pages: _(fill after deploy)_
+- main tip: `5478cd5`
+- gh-pages: `ba33397` (239 files)
