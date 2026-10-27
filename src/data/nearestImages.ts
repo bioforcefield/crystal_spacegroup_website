@@ -20,20 +20,17 @@ import type {
   Vec3,
 } from './types'
 import { pbcaDemo } from './pbca'
+import {
+  LATTICE_NEIGHBORS as LATTICE,
+  outsideCellPenalty as outsidePenalty,
+} from './latticeNeighbors'
 
 export type PlacementMode = 'nearest' | 'wrapped'
-
-const LATTICE: Vec3[] = (() => {
-  const out: Vec3[] = []
-  for (let i = -1; i <= 1; i++) {
-    for (let j = -1; j <= 1; j++) {
-      for (let k = -1; k <= 1; k++) {
-        out.push([i, j, k])
-      }
-    }
-  }
-  return out
-})()
+export {
+  LATTICE_NEIGHBORS,
+  outsideCellPenalty,
+  bestNeighborShift,
+} from './latticeNeighbors'
 
 function cartDist(a: Vec3, b: Vec3, cell: CellParams): number {
   const ca = fracToCart(a, cell)
@@ -42,15 +39,6 @@ function cartDist(a: Vec3, b: Vec3, cell: CellParams): number {
   const dy = ca[1] - cb[1]
   const dz = ca[2] - cb[2]
   return Math.sqrt(dx * dx + dy * dy + dz * dz)
-}
-
-function outsidePenalty(p: Vec3): number {
-  let s = 0
-  for (let i = 0; i < 3; i++) {
-    if (p[i] < 0) s += -p[i]
-    else if (p[i] > 1) s += p[i] - 1
-  }
-  return s
 }
 
 function distToScrewAxis(

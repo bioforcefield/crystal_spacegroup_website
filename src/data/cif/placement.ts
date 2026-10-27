@@ -3,36 +3,22 @@
  * - nearest ("Near"): translate intact molecules by lattice vectors so they
  *   sit next to the selected symmetry element (may leave the cell).
  * - wrapped ("Cell"): every atom at its wrapped [0,1)³ image inside the cell.
+ *
+ * Lattice ±1 search and outside-cell penalty are shared with
+ * `latticeNeighbors` / `nearestImages` (same Near/Cell semantics).
  */
 
 import { addFrac, fracToCart } from '../math'
+import {
+  bestNeighborShift,
+  outsideCellPenalty,
+} from '../latticeNeighbors'
 import { distToElement } from '../nearestImages'
 import type { PlacementMode } from '../nearestImages'
 import type { SpaceGroupDemo, Vec3 } from '../types'
 import type { ExpandedStructure, SymmetryCopyAtom } from './types'
 
 export type CifPlacementMode = PlacementMode // 'nearest' | 'wrapped'
-
-const LATTICE: Vec3[] = (() => {
-  const out: Vec3[] = []
-  for (let i = -1; i <= 1; i++) {
-    for (let j = -1; j <= 1; j++) {
-      for (let k = -1; k <= 1; k++) {
-        out.push([i, j, k])
-      }
-    }
-  }
-  return out
-})()
-
-function outsidePenalty(p: Vec3): number {
-  let s = 0
-  for (let i = 0; i < 3; i++) {
-    if (p[i] < 0) s += -p[i]
-    else if (p[i] > 1) s += p[i] - 1
-  }
-  return s
-}
 
 function moleculeCentroidFrac(
   atoms: SymmetryCopyAtom[],
@@ -63,31 +49,12 @@ export function bestLatticeShift(
     demo.operators.find((o) => o.index === selectedOpIndex) ??
     demo.operators[0]
   if (!op || op.classId === 'identity') {
-    // Prefer staying near the cell: minimize outside penalty only
-    let best: Vec3 = [0, 0, 0]
-    let bestScore = Infinity
-    for (const n of LATTICE) {
-      const cand = addFrac(frac, n)
-      const score = outsidePenalty(cand)
-      if (score < bestScore - 1e-9) {
-        bestScore = score
-        best = n
-      }
-    }
-    return best
+    return bestNeighborShift(frac, (cand) => outsideCellPenalty(cand))
   }
-
-  let best: Vec3 = [0, 0, 0]
-  let bestScore = Infinity
-  for (const n of LATTICE) {
-    const cand = addFrac(frac, n)
-    const score = distToElement(demo, cand, op) + 0.2 * outsidePenalty(cand)
-    if (score < bestScore - 1e-9) {
-      bestScore = score
-      best = n
-    }
-  }
-  return best
+  return bestNeighborShift(
+    frac,
+    (cand) => distToElement(demo, cand, op) + 0.2 * outsideCellPenalty(cand),
+  )
 }
 
 export interface CifPlacementResult {
@@ -141,7 +108,6 @@ export function placeCifStructure(
     if (demo) {
       shifts.set(mid, bestLatticeShift(centroid, demo, selectedOp))
     } else {
-      // No SG demo: keep intact display (already min-image unwrapped)
       shifts.set(mid, [0, 0, 0])
     }
   }
