@@ -2,39 +2,16 @@
 
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
-Tip: `main` **aefab8d** (feat **fd12253**), `gh-pages` **2a865ec**. Tests: **535**.
+Tip: `main` **5de67db**, `gh-pages` **2a865ec**. Tests: **535**.
 Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on large sample trees.
 
-## COD workflows install attempt (Cursor GitHub connected)
+## COD workflows installed (2026-10-27)
 
-**Blocked for `.github/workflows/` on remote.** Cursor GitHub MCP is connected and can list Actions, but content pushes still use the local `gh` OAuth token scopes: `gist`, `read:org`, `repo` — **no `workflow`**. Exact reject:
+`gh auth refresh` added **`workflow`** scope. Pushed to `main` **5de67db**:
+- `.github/workflows/refresh-cod-cache.yml` → **Refresh COD cache** (active)
+- `.github/workflows/deploy-cod-proxy.yml` → **Deploy COD CORS proxy** (active)
 
-```
-refusing to allow an OAuth App to create or update workflow
-`.github/workflows/deploy-cod-proxy.yml` without `workflow` scope
-```
-
-Contents API create also failed (404 / no write of workflow paths). Inline cursor-github has **no** create/update-file API; CloudAgent tool not available in this executor session.
-
-**On remote today:** only GitHub’s dynamic `pages-build-deployment` workflow. Templates remain at:
-- `scripts/github-workflows/refresh-cod-cache.yml` → name **Refresh COD cache**
-- `scripts/github-workflows/deploy-cod-proxy.yml` → name **Deploy COD CORS proxy**
-- `scripts/github-workflows/README.md`
-
-Local untracked copies may exist under `.github/workflows/` on the box (ready once scope is granted).
-
-### Unblock (pick one)
-
-1. **Web UI (no new token):** GitHub → repo → Add file → create  
-   `.github/workflows/refresh-cod-cache.yml` and  
-   `.github/workflows/deploy-cod-proxy.yml`  
-   by pasting the matching files from `scripts/github-workflows/`.
-2. **OAuth `workflow` scope:** on a machine with browser,  
-   `gh auth refresh -h github.com -s repo,workflow,read:org,gist`  
-   then from the box: copy templates → commit → `git push origin main`.
-3. **Classic PAT** with `repo` + `workflow`, configure as git HTTPS credential, push.
-
-After files land, confirm: Actions tab should list **Refresh COD cache** and **Deploy COD CORS proxy**.
+Templates also remain under `scripts/github-workflows/` for reference.
 
 ### Remaining user steps — Cloudflare + `VITE_COD_PROXY`
 
