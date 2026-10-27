@@ -3,7 +3,7 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-Tip: `main` *(pending pubs deploy)*, `gh-pages` *(pending)*. See SHAs after push.
+Tip: `main` **2e005a4**, `gh-pages` **21fbe5b**. Tests: **557**.
 
 ## Publications /pubs (2026-10-27)
 - Route `/pubs` — curated COD literature by year + tags (`src/data/pubs/`, `PublicationsPage.tsx`)
@@ -29,3 +29,8 @@ Tip: `main` *(pending pubs deploy)*, `gh-pages` *(pending)*. See SHAs after push
 - Pubs: `src/data/pubs/`, `src/pages/PublicationsPage.tsx`
 - COD: `scripts/cod-cors-worker.js`, `public/samples/cod/`
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
+
+## SHAs
+- main: `2e005a4`
+- gh-pages: `21fbe5b` (VITE_COD_PROXY baked)
+- tests: 557
