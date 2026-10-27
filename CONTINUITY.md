@@ -42,4 +42,5 @@ Hand-polished demos: **57** (CSD top + textbook). CIF map at `/cif`.
 - `npm test` · `npm run build:pages` · Pages via **temp `dist/` → orphan gh-pages**
 
 ## SHAs
-_feature / tip / gh-pages filled after commit+deploy_
+- main / feature tip: `a7b7691`
+- gh-pages: `0ecc6cf` (238 files from clean dist/)
