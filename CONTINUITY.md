@@ -3,7 +3,7 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-Tip: see SHAs below after deploy. Tests: **574**.
+Tip: `main` **aba0eb2**, `gh-pages` **eb19836**. Tests: **574**.
 
 ## Publications /pubs — Crossref recent titles (2026-10-27)
 - Tabs: **Recent titles** (live Crossref metadata) | **Curated COD**
@@ -32,6 +32,6 @@ Tip: see SHAs below after deploy. Tests: **574**.
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main: _(pending push)_
-- gh-pages: _(pending deploy)_
+- main: `aba0eb2`
+- gh-pages: `eb19836` (VITE_COD_PROXY baked)
 - tests: 574
