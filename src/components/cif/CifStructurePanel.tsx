@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
 import { isImproper } from '../../data/math'
+import { describeCifStructure } from '../../data/a11y/structureSummary'
 import type { Operator, SpaceGroupDemo } from '../../data/types'
 
 export interface CifStructurePanelProps {
@@ -26,10 +27,15 @@ export default function CifStructurePanel({
   elementDemo,
   selected,
 }: CifStructurePanelProps) {
+  const summary = describeCifStructure(structure)
+
   return (
     <>
-      <section className="seed-box">
-        <h2>Structure</h2>
+      <section className="seed-box" aria-labelledby="cif-structure-heading">
+        <h2 id="cif-structure-heading">Structure</h2>
+        <p className="sr-only" aria-live="polite">
+          {summary}
+        </p>
         {(structure.metadata?.name || structure.metadata?.formula) && (
           <p
             className="cif-struct-name"
@@ -75,8 +81,11 @@ export default function CifStructurePanel({
             <div className="cif-zprime">
               <dt title={structure.metadata.zPrimeNote}>
                 Z′
-                <span className="cif-zprime-hint" aria-hidden>
-                  ?
+                <span className="cif-zprime-hint" title={structure.metadata.zPrimeNote}>
+                  <span aria-hidden>?</span>
+                  <span className="sr-only">
+                    {structure.metadata.zPrimeNote ?? 'Z prime note'}
+                  </span>
                 </span>
               </dt>
               <dd>

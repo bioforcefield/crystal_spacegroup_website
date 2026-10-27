@@ -12,6 +12,7 @@ import UnitCellScene from '../components/UnitCellScene'
 import { operatorClass } from '../data/math'
 import type { PlacementMode } from '../data/nearestImages'
 import type { SpaceGroupDemo } from '../data/types'
+import { describeSpaceGroupCanvas } from '../data/a11y/structureSummary'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -250,6 +251,8 @@ export default function SpaceGroupPage({ demo }: Props) {
                 }
                 onClick={() => handleSelect(op.index)}
                 title={`${op.triplet} · ${op.label}`}
+                aria-pressed={active}
+                aria-label={`Operator ${op.index}: ${op.triplet}, ${op.label}`}
               >
                 <span className="op-chip-idx">{op.index}</span>
                 <span className="op-chip-triplet">{op.triplet}</span>
@@ -258,7 +261,11 @@ export default function SpaceGroupPage({ demo }: Props) {
           })}
         </div>
         <div className="viewport-body">
-          <div className="canvas-wrap">
+          <div
+            className="canvas-wrap"
+            role="img"
+            aria-label={describeSpaceGroupCanvas(demo)}
+          >
             <UnitCellScene
               demo={demo}
               selectedIndex={selectedIndex}

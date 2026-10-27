@@ -234,6 +234,19 @@ export default function CifExplorerPage() {
           </div>
           <p className="eyebrow">Application</p>
           <h1>CIF symmetry map</h1>
+          <p className="sr-only" id="cif-status-live" aria-live="polite" aria-atomic="true">
+            {error
+              ? `Error: ${error}`
+              : structure
+                ? `Loaded ${fileName ?? 'structure'}: space group ${
+                    structure.spaceGroupNumber ??
+                    structure.spaceGroupName ??
+                    'unknown'
+                  }, ${structure.moleculeCount} molecules, ${
+                    structure.operators.length
+                  } operators.`
+                : 'No structure loaded yet.'}
+          </p>
           <p className="blurb">
             Load a COD code, paste/upload a CSD or COD CIF, and explore intact
             molecules colored by the symmetry operator that generated each

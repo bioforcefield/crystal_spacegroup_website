@@ -1,3 +1,15 @@
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 :root {
   color-scheme: dark;
   --bg: #070b14;
@@ -2699,4 +2711,23 @@ button.linkish {
   background: color-mix(in srgb, #34d399 18%, #0f172a);
   color: #a7f3d0;
   border-color: color-mix(in srgb, #34d399 40%, transparent);
+}
+
+/* Stage E focus rings */
+.seg:focus-visible,
+.btn:focus-visible,
+.op-chip:focus-visible,
+.legend-item:focus-visible,
+.op-row:focus-visible,
+.cif-view-toggle:focus-visible,
+.back-link:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+.cif-view-sheet:focus {
+  outline: none;
+}
+.canvas-wrap[role='img']:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
 }

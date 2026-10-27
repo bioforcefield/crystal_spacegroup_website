@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import CellParamsBadge from './CellParamsBadge'
 import type {
   CifColorMode,
@@ -8,6 +8,7 @@ import type {
 } from './cifViewTypes'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
+import { describeCifStructure } from '../../data/a11y/structureSummary'
 import type { SpaceGroupDemo } from '../../data/types'
 
 const CifStructureScene = lazy(() => import('../CifStructureScene'))
@@ -55,6 +56,19 @@ export default function CifViewport({
 }: CifViewportProps) {
   const [viewOpen, setViewOpen] = useState(false)
 
+  useEffect(() => {
+    if (!viewOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setViewOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [viewOpen])
+
+  const canvasLabel = structure
+    ? describeCifStructure(structure)
+    : 'Crystal structure 3D view. Upload a CIF to begin.'
+
   return (
     <main className="viewport">
       <div className="viewport-toolbar">
@@ -68,6 +82,8 @@ export default function CifViewport({
                   className={`legend-item cif-legend-op${op.index === selectedOp ? ' active' : ''}`}
                   onClick={() => onSelectOp(op.index)}
                   title={op.triplet}
+                  aria-pressed={op.index === selectedOp}
+                  aria-label={`Operator ${op.index}${op.index === 1 ? ' asymmetric unit' : ''}: ${op.triplet}`}
                 >
                   <span
                     className="swatch"
@@ -134,6 +150,7 @@ export default function CifViewport({
                 type="button"
                 className={placementMode === 'nearest' ? 'seg active' : 'seg'}
                 onClick={() => onPlacementModeChange('nearest')}
+                aria-pressed={placementMode === 'nearest'}
                 title="Place molecules near the selected element (may leave the cell)"
               >
                 <span className="label-full">Nearest images</span>
@@ -143,6 +160,7 @@ export default function CifViewport({
                 type="button"
                 className={placementMode === 'wrapped' ? 'seg active' : 'seg'}
                 onClick={() => onPlacementModeChange('wrapped')}
+                aria-pressed={placementMode === 'wrapped'}
                 title="Wrap every atom into the unit cell [0,1)³"
               >
                 <span className="label-full">In cell</span>
@@ -158,6 +176,7 @@ export default function CifViewport({
                 type="button"
                 className={visibility === 'molecules' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('molecules')}
+                aria-pressed={visibility === 'molecules'}
               >
                 Molecules
               </button>
@@ -180,6 +199,7 @@ export default function CifViewport({
                 type="button"
                 className={visibility === 'molecules' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('molecules')}
+              aria-pressed={visibility === 'molecules'}
               >
                 Molecules
               </button>
@@ -187,6 +207,7 @@ export default function CifViewport({
                 type="button"
                 className={visibility === 'all' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('all')}
+              aria-pressed={visibility === 'all'}
               >
                 All copies
               </button>
@@ -194,6 +215,7 @@ export default function CifViewport({
                 type="button"
                 className={visibility === 'selected' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('selected')}
+              aria-pressed={visibility === 'selected'}
               >
                 BASE + IMAGE
               </button>
@@ -201,6 +223,7 @@ export default function CifViewport({
                 type="button"
                 className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('asymmetric')}
+              aria-pressed={visibility === 'asymmetric'}
               >
                 AU only
               </button>
@@ -235,6 +258,7 @@ export default function CifViewport({
                 type="button"
                 className={colorMode === 'operator' ? 'seg active' : 'seg'}
                 onClick={() => onColorModeChange('operator')}
+                aria-pressed={colorMode === 'operator'}
                 title="Tint by symmetry operator"
               >
                 By op
@@ -243,6 +267,7 @@ export default function CifViewport({
                 type="button"
                 className={colorMode === 'residue' ? 'seg active' : 'seg'}
                 onClick={() => onColorModeChange('residue')}
+                aria-pressed={colorMode === 'residue'}
                 title="Color by residue / component id when present"
               >
                 Residue
@@ -253,6 +278,7 @@ export default function CifViewport({
                 type="button"
                 className={thermalMode === 'off' ? 'seg active' : 'seg'}
                 onClick={() => onThermalModeChange('off')}
+              aria-pressed={thermalMode === 'off'}
               >
                 No U
               </button>
@@ -260,6 +286,7 @@ export default function CifViewport({
                 type="button"
                 className={thermalMode === 'uiso' ? 'seg active' : 'seg'}
                 onClick={() => onThermalModeChange('uiso')}
+                aria-pressed={thermalMode === 'uiso'}
                 title="Scale ball radius by Uiso when present"
               >
                 Uiso
@@ -268,6 +295,7 @@ export default function CifViewport({
                 type="button"
                 className={thermalMode === 'ellipsoid' ? 'seg active' : 'seg'}
                 onClick={() => onThermalModeChange('ellipsoid')}
+                aria-pressed={thermalMode === 'ellipsoid'}
                 title="Draw anisotropic ellipsoids when Uij present; else Uiso balls"
               >
                 Ellipsoid
@@ -291,12 +319,14 @@ export default function CifViewport({
             className="cif-view-sheet"
             role="region"
             aria-label="View options"
+            tabIndex={-1}
           >
             <div className="segmented" role="group" aria-label="Copy visibility">
               <button
                 type="button"
                 className={visibility === 'molecules' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('molecules')}
+              aria-pressed={visibility === 'molecules'}
               >
                 Molecules
               </button>
@@ -304,6 +334,7 @@ export default function CifViewport({
                 type="button"
                 className={visibility === 'all' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('all')}
+              aria-pressed={visibility === 'all'}
               >
                 All
               </button>
@@ -311,6 +342,7 @@ export default function CifViewport({
                 type="button"
                 className={visibility === 'selected' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('selected')}
+              aria-pressed={visibility === 'selected'}
               >
                 BASE+IMAGE
               </button>
@@ -318,6 +350,7 @@ export default function CifViewport({
                 type="button"
                 className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
                 onClick={() => onVisibilityChange('asymmetric')}
+              aria-pressed={visibility === 'asymmetric'}
               >
                 AU
               </button>
@@ -327,6 +360,7 @@ export default function CifViewport({
                 type="button"
                 className={colorMode === 'operator' ? 'seg active' : 'seg'}
                 onClick={() => onColorModeChange('operator')}
+              aria-pressed={colorMode === 'operator'}
               >
                 By op
               </button>
@@ -334,6 +368,7 @@ export default function CifViewport({
                 type="button"
                 className={colorMode === 'residue' ? 'seg active' : 'seg'}
                 onClick={() => onColorModeChange('residue')}
+              aria-pressed={colorMode === 'residue'}
               >
                 Residue
               </button>
@@ -343,6 +378,7 @@ export default function CifViewport({
                 type="button"
                 className={thermalMode === 'off' ? 'seg active' : 'seg'}
                 onClick={() => onThermalModeChange('off')}
+              aria-pressed={thermalMode === 'off'}
               >
                 No U
               </button>
@@ -350,6 +386,7 @@ export default function CifViewport({
                 type="button"
                 className={thermalMode === 'uiso' ? 'seg active' : 'seg'}
                 onClick={() => onThermalModeChange('uiso')}
+              aria-pressed={thermalMode === 'uiso'}
               >
                 Uiso
               </button>
@@ -357,6 +394,7 @@ export default function CifViewport({
                 type="button"
                 className={thermalMode === 'ellipsoid' ? 'seg active' : 'seg'}
                 onClick={() => onThermalModeChange('ellipsoid')}
+              aria-pressed={thermalMode === 'ellipsoid'}
               >
                 Ellipsoid
               </button>
@@ -390,7 +428,7 @@ export default function CifViewport({
       </div>
 
       {structure && (
-        <div className="cif-op-chips" aria-label="Operators (touch)">
+        <div className="cif-op-chips" role="toolbar" aria-label="Operators (touch)">
           {structure.operators.map((op) => (
             <button
               key={op.index}
@@ -399,6 +437,8 @@ export default function CifViewport({
               style={{ ['--op-color' as string]: operatorColor(op.index) }}
               onClick={() => onSelectOp(op.index)}
               title={op.triplet}
+              aria-pressed={op.index === selectedOp}
+              aria-label={`Operator ${op.index}: ${op.triplet}`}
             >
               <span className="op-chip-swatch" />
               <span className="op-chip-label">
@@ -410,7 +450,11 @@ export default function CifViewport({
       )}
 
       <div className="viewport-body cif-viewport-body">
-        <div className="canvas-wrap">
+        <div
+          className="canvas-wrap"
+          role="img"
+          aria-label={canvasLabel}
+        >
           {structure ? (
             <Suspense
               fallback={
