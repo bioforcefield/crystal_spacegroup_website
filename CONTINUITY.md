@@ -3,7 +3,7 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`  
 Plan canvas: https://cursor.com/canvas/store-47b63095-92bb-4ade-8ecd-d65e434f207d/99fd7be7-25b5-4ea5-9402-ecaaffb9adf8  
-Latest: feature `2bc5341` · tip `2bc5341` · `gh-pages` `0dc1f80`
+Latest: feature `2bc5341` · tip `b9cb5c5` · `gh-pages` `0dc1f80`
 
 ## Teaching core — complete
 Major crystal-system exemplars are hand-polished (**47** demos) across triclinic → cubic. No further large hand-demo wave unless demand.
