@@ -3,7 +3,7 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`  
 Plan canvas: https://cursor.com/canvas/store-47b63095-92bb-4ade-8ecd-d65e434f207d/99fd7be7-25b5-4ea5-9402-ecaaffb9adf8  
-Latest: feature `1425cc9` · tip `f07eb85` · `gh-pages` `b05904b`
+Latest: feature `1425cc9` · tip `9961f3d` · `gh-pages` `b05904b`
 
 ## Done (this batch) — code review + CIF symmetry map v1
 - **Review** documented in agent report (High/Medium/Low). Small cleanups shipped: removed dead `PbcaPage` / `DemoById`; Index guide legend imports `symmetryPalette` instead of `pbca`; `CONTRACT.md` cell limitations updated (α/β/γ now modeled).
