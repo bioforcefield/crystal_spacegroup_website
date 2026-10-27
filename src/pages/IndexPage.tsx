@@ -172,20 +172,21 @@ export default function IndexPage() {
           <div className="pubs-spotlight-copy">
             <div className="cif-spotlight-badges">
               <span className="cif-spotlight-badge">Literature</span>
+              <span className="cif-spotlight-badge soft">Crossref</span>
               <span className="cif-spotlight-badge soft">COD</span>
             </div>
             <h2 id="pubs-spotlight-title">Publications by year &amp; tags</h2>
             <p>
-              A curated COD browser organized by publication year — filter by
-              organic, inorganic, drug, hydrate, salt, mineral, or MOF, then open
-              the DOI or the structure in the CIF map.
+              Stream recent ACS / IUCr / RSC / Wiley titles via Crossref
+              (metadata + DOI only), or browse the curated COD set by year and
+              tags — then open the paper or the structure in the CIF map.
             </p>
             <div className="cif-spotlight-cta">
               <Link to="/pubs" className="btn btn-primary">
                 Browse publications
               </Link>
               <span className="cif-spotlight-hint">
-                teaching subset · not a full paper stream
+                live Crossref · curated COD · no PDFs
               </span>
             </div>
           </div>

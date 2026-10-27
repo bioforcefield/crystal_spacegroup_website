@@ -17,7 +17,13 @@
  *   /search?text=urea
  *   /search?smile=c1ccccc1   (forwarded to COD as smarts= — SMILES/substructure)
  *   /search?year=2020        (optional; combine with text/smile)
+ *   /crossref?filter=…&rows=20&cursor=*   (Crossref metadata proxy)
  */
+const CROSSREF_UPSTREAM = 'https://api.crossref.org/works'
+const CROSSREF_UA =
+  'CrystalSpaceGroups/1.0 (mailto:chuanjiewu@gmail.com)'
+const CROSSREF_TIMEOUT_MS = 20_000
+const CROSSREF_MAX_BYTES = 2_000_000
 const COD_UPSTREAM = 'https://www.crystallography.net/cod'
 const SEARCH_TIMEOUT_MS = 20_000
 const SEARCH_MAX_BYTES = 4_000_000
@@ -53,13 +59,16 @@ async function handle(request) {
   if (path === '/search' || path.endsWith('/search')) {
     return handleSearch(url, request.method)
   }
+  if (path === '/crossref' || path.endsWith('/crossref')) {
+    return handleCrossref(url, request.method)
+  }
 
   const id =
     url.searchParams.get('id') ||
     (url.pathname.match(/(\d{5,10})(?:\.cif)?\/?$/) || [])[1]
   if (!id) {
     return new Response(
-      'crystal-cod-proxy: GET /{codId}.cif  or  GET /search?text=…|smile=…|year=YYYY\n',
+      'crystal-cod-proxy: GET /{codId}.cif  or  GET /search?text=…|smile=…|year=YYYY  or  GET /crossref?…\n',
       {
         status: 400,
         headers: corsHeaders({ 'content-type': 'text/plain' }),
@@ -272,6 +281,86 @@ async function handleSearch(url, method) {
     200,
     { 'cache-control': 'public, max-age=300', 'x-cod-search': kind },
   )
+}
+
+async function handleCrossref(url, method) {
+  // Forward a curated subset of Crossref works query params.
+  const allowed = ['filter', 'query', 'rows', 'cursor', 'sort', 'order', 'select', 'offset']
+  const upstream = new URL(CROSSREF_UPSTREAM)
+  for (const key of allowed) {
+    const v = url.searchParams.get(key)
+    if (v != null && v !== '') upstream.searchParams.set(key, v)
+  }
+  if (![...upstream.searchParams.keys()].length) {
+    return jsonResponse(
+      {
+        error:
+          'Provide Crossref works params, e.g. ?filter=issn:1528-7483,from-pub-date:2024-01-01&rows=20&cursor=*',
+      },
+      400,
+    )
+  }
+  // Cap rows
+  const rowsRaw = upstream.searchParams.get('rows') || '20'
+  const rows = Math.min(Math.max(parseInt(rowsRaw, 10) || 20, 1), 50)
+  upstream.searchParams.set('rows', String(rows))
+  if (!upstream.searchParams.get('cursor')) {
+    upstream.searchParams.set('cursor', '*')
+  }
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), CROSSREF_TIMEOUT_MS)
+  let res
+  try {
+    res = await fetch(upstream.toString(), {
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        accept: 'application/json',
+        'User-Agent': CROSSREF_UA,
+      },
+    })
+  } catch (e) {
+    const aborted = e && e.name === 'AbortError'
+    return jsonResponse(
+      {
+        error: aborted
+          ? 'Crossref timed out'
+          : `Crossref failed: ${e && e.message ? e.message : String(e)}`,
+      },
+      502,
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+
+  if (method === 'HEAD') {
+    return new Response(null, {
+      status: res.status,
+      headers: corsHeaders({
+        'content-type': 'application/json',
+        'cache-control': 'public, max-age=300',
+        'x-crossref-status': String(res.status),
+      }),
+    })
+  }
+
+  const buf = await res.arrayBuffer()
+  if (buf.byteLength > CROSSREF_MAX_BYTES) {
+    return jsonResponse(
+      { error: 'Crossref response too large; narrow the filter' },
+      502,
+    )
+  }
+  return new Response(buf, {
+    status: res.status,
+    headers: corsHeaders({
+      'content-type':
+        res.headers.get('content-type') || 'application/json; charset=utf-8',
+      'cache-control': 'public, max-age=300',
+      'x-crossref-status': String(res.status),
+    }),
+  })
 }
 
 async function fetchWithTimeout(url, ms) {

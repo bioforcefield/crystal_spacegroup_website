@@ -3,17 +3,18 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-Tip: `main` **2e005a4**, `gh-pages` **21fbe5b**. Tests: **557**.
+Tip: see SHAs below after deploy. Tests: **574**.
 
-## Publications /pubs (2026-10-27)
-- Route `/pubs` — curated COD literature by year + tags (`src/data/pubs/`, `PublicationsPage.tsx`)
-- Tags: organic, inorganic, drug, hydrate, salt, mineral, mof (manual + heuristics in `tagHeuristics.ts`)
-- Cards → DOI + `/cif?cod={id}` deep-link (CIF explorer autoloads once)
-- Home teaser + nav Pubs; worker also accepts `/search?year=YYYY` (optional, capped)
-- Not a full paper stream / no PDFs / no CSD scrape
+## Publications /pubs — Crossref recent titles (2026-10-27)
+- Tabs: **Recent titles** (live Crossref metadata) | **Curated COD**
+- Client: `src/data/pubs/crossref.ts` — ISSN presets ACS / IUCr / RSC / Wiley / All; cursor pagination; title keyword hints
+- Worker: `GET /crossref?filter=…&rows=20&cursor=*` → `api.crossref.org/works` with polite UA `CrystalSpaceGroups/1.0 (mailto:chuanjiewu@gmail.com)`
+- Vite `/crossref` middleware for local/preview
+- Curated COD extended with ~18 entries from 2020–2024
+- No PDFs, no ACS HTML scrape, no CSD scrape
 
 ## COD name / SMILES search (2026-10-27)
-- Worker: `GET /search?text=` + `GET /search?smile=` (maps to COD `smarts`) + optional `year=` in `scripts/cod-cors-worker.js`
+- Worker: `GET /search?text=` + `GET /search?smile=` (+ optional `year=`)
 - Client: `src/data/cif/codSearch.ts`; UI tabs on `CifLoadPanel`
 - Production proxy: `https://crystal-cod-proxy.crystal-sg.workers.dev`
 
@@ -21,7 +22,7 @@ Tip: `main` **2e005a4**, `gh-pages` **21fbe5b**. Tests: **557**.
 - CIF spotlight + pubs spotlight; animated HeroCellMotif (reduced-motion safe)
 
 ## Cloudflare COD proxy
-- Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif
+- Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif (+ `/search`, `/crossref`)
 - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
 - Pages: bake `VITE_COD_PROXY` + keep `.nojekyll`
 
@@ -31,6 +32,6 @@ Tip: `main` **2e005a4**, `gh-pages` **21fbe5b**. Tests: **557**.
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main: `2e005a4`
-- gh-pages: `21fbe5b` (VITE_COD_PROXY baked)
-- tests: 557
+- main: _(pending push)_
+- gh-pages: _(pending deploy)_
+- tests: 574

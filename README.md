@@ -12,7 +12,7 @@ Live: https://bioforcefield.github.io/crystal_spacegroup_website/
 - BASE → IMAGE highlight with nearest-image or in-cell placement
 - Geometric element overlays where axis-aligned loci can be derived; honest “operators / limited geometry” note otherwise
 - ITA Vol. A primary diagrams + Birkbeck/UCL reference links per group
-- **Publications** (`/pubs`): curated COD literature by **year** + tags (organic / inorganic / drug / hydrate / salt / mineral / MOF) → DOI + Open in CIF map
+- **Publications** (`/pubs`): **Recent titles** (live Crossref metadata for ACS / IUCr / RSC / Wiley crystallography journals) + curated COD by **year** + tags → DOI (+ CIF map for COD)
 - **CIF symmetry map** (`/cif`): load by **COD code** (e.g. `1100303`), paste/upload a CIF (CSD via Access Structures), intact molecules + operator colors + lattice a/b/c on the cell
 
 ## Run locally
@@ -61,8 +61,8 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 | `src/data/cif/` | CIF parse + AU×ops expand |
 | `src/pages/SpaceGroupPage.tsx` | Demo chrome |
 | `src/pages/CifExplorerPage.tsx` | CIF map |
-| `src/pages/PublicationsPage.tsx` | COD pubs browser |
-| `src/data/pubs/` | Curated COD cards + tag filters |
+| `src/pages/PublicationsPage.tsx` | Pubs browser (Crossref + curated COD) |
+| `src/data/pubs/` | Curated COD cards, Crossref client, tag filters |
 | `src/pages/IndexPage.tsx` | Catalog / primer / guide |
 | `public/ita-diagrams/` | ITA Vol. A plates |
 | `CONTINUITY.md` | Agent resume notes |
@@ -83,10 +83,10 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 
 ## Publications (`/pubs`)
 
-- Curated COD subset (~60 entries) with year, journal, DOI, formula, space group, and teaching tags
-- Filter by year chips + multi-select tags (AND) + text search; cards link to DOI and `/cif?cod=`
-- Tags are curated + light heuristics (`src/data/pubs/tagHeuristics.ts`) — not a full COD classifier
-- No PDF hosting, no CSD scrape. Optional worker `GET /search?year=YYYY` for live COD year lists (capped)
+- **Recent titles** tab: live Crossref REST metadata (title, journal, year, authors, publisher, DOI) filtered by ISSN presets — ACS (Crystal Growth & Design, Inorganic Chemistry), IUCr (Acta A/B/C/E, IUCrJ, J. Appl. Cryst.), RSC (CrystEngComm), Wiley (Crystal Research and Technology), or the union. Default window = last 3 years; Load more via Crossref cursor. Keyword chips on cards are title hints only.
+- **Curated COD** tab: teaching subset (includes a 2020–2024 refresh) with year, journal, DOI, formula, space group, and tags; cards link to DOI and `/cif?cod=`
+- Crossref is proxied by the Cloudflare worker `GET /crossref?…` (polite User-Agent) so GitHub Pages can call it; Vite also exposes `/crossref` in dev/preview. Direct Crossref has CORS `*` but browsers cannot set the mailto User-Agent.
+- No PDF hosting, no publisher HTML scrape, no CSD scrape. Optional worker `GET /search?year=YYYY` for live COD year lists (capped)
 
 ## Stack
 

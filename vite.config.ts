@@ -172,6 +172,83 @@ function codSearchDevProxy(): Plugin {
   }
 }
 
+
+/** Dev/preview: same-origin Crossref works proxy (polite User-Agent). */
+function crossrefDevProxy(): Plugin {
+  const UPSTREAM = 'https://api.crossref.org/works'
+  const UA = 'CrystalSpaceGroups/1.0 (mailto:chuanjiewu@gmail.com)'
+
+  async function handle(req: import('http').IncomingMessage, res: import('http').ServerResponse) {
+    const host = req.headers.host || 'localhost'
+    const u = new URL(req.url || '/', `http://${host}`)
+    if (u.pathname !== '/crossref') return false
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204
+      res.setHeader('access-control-allow-origin', '*')
+      res.end()
+      return true
+    }
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.statusCode = 405
+      res.end('Method not allowed')
+      return true
+    }
+    const allowed = ['filter', 'query', 'rows', 'cursor', 'sort', 'order', 'select', 'offset']
+    const upstream = new URL(UPSTREAM)
+    for (const key of allowed) {
+      const v = u.searchParams.get(key)
+      if (v != null && v !== '') upstream.searchParams.set(key, v)
+    }
+    if (![...upstream.searchParams.keys()].length) {
+      res.statusCode = 400
+      res.setHeader('content-type', 'application/json')
+      res.end(JSON.stringify({ error: 'Provide Crossref works params' }))
+      return true
+    }
+    try {
+      const r = await fetch(upstream.toString(), {
+        headers: { accept: 'application/json', 'User-Agent': UA },
+      })
+      const body = await r.arrayBuffer()
+      res.statusCode = r.status
+      res.setHeader(
+        'content-type',
+        r.headers.get('content-type') || 'application/json; charset=utf-8',
+      )
+      res.setHeader('access-control-allow-origin', '*')
+      if (req.method === 'HEAD') res.end()
+      else res.end(Buffer.from(body))
+    } catch (e) {
+      res.statusCode = 502
+      res.setHeader('content-type', 'application/json')
+      res.end(
+        JSON.stringify({
+          error: `Crossref failed: ${e instanceof Error ? e.message : String(e)}`,
+        }),
+      )
+    }
+    return true
+  }
+
+  return {
+    name: 'crossref-dev-proxy',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        void handle(req, res).then((done) => {
+          if (!done) next()
+        })
+      })
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((req, res, next) => {
+        void handle(req, res).then((done) => {
+          if (!done) next()
+        })
+      })
+    },
+  }
+}
+
 /** After build, duplicate index.html as 404.html for GitHub Pages SPA refreshes. */
 function spaFallback404() {
   return {
@@ -193,7 +270,7 @@ const pages = process.env.PAGES === '1'
 
 export default defineConfig({
   base: pages ? '/crystal_spacegroup_website/' : '/',
-  plugins: [react(), spaFallback404(), codSearchDevProxy()],
+  plugins: [react(), spaFallback404(), codSearchDevProxy(), crossrefDevProxy()],
   build: {
     rollupOptions: {
       output: {
