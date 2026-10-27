@@ -2,8 +2,13 @@
 
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
-Tip: `main` **a8f4278**, `gh-pages` **bfa0478** (VITE_COD_PROXY live). Tests: **535**.
+Tip: `main` **6b3658d**, `gh-pages` **5be4984** (VITE_COD_PROXY live). Tests: **535**. Home: CIF spotlight + animated hero cell.
 Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on large sample trees.
+
+## Home UX (2026-10-27)
+- CIF spotlight card under hero (`Structures` / `New`) → `/cif`
+- Animated SVG hero cell (`HeroCellMotif`) — CSS tilt + atom drift; `prefers-reduced-motion` freezes
+- No R3F on `/`
 
 ## COD workflows installed (2026-10-27)
 
