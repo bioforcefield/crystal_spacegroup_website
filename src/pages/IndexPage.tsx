@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import SymmetryPrimer from '../components/SymmetryPrimer'
 import CsdStatistics from '../components/CsdStatistics'
+import HeroCellMotif from '../components/hero/HeroCellMotif'
 import {
   CRYSTAL_SYSTEMS,
   READY_COUNT,
@@ -108,9 +109,6 @@ export default function IndexPage() {
               <a href="#guide" className="btn btn-ghost">
                 How to use
               </a>
-              <Link to="/cif" className="btn btn-ghost">
-                CIF symmetry map
-              </Link>
               <a
                 className="btn btn-ghost"
                 href="https://img.chem.ucl.ac.uk/sgp/large/sgp.htm"
@@ -122,63 +120,43 @@ export default function IndexPage() {
               </a>
             </div>
           </div>
-          <div className="hero-motif" aria-hidden>
-            <svg viewBox="0 0 220 200" className="hero-cell">
-              <defs>
-                <linearGradient id="cellFace" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.15" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M40 70 L110 35 L180 70 L180 140 L110 175 L40 140 Z"
-                fill="url(#cellFace)"
-                stroke="#38bdf8"
-                strokeWidth="1.6"
-              />
-              <path
-                d="M110 35 L110 105 L40 140 L40 70 Z"
-                fill="rgba(15,23,42,0.45)"
-                stroke="#64748b"
-                strokeWidth="1"
-              />
-              <path
-                d="M110 35 L180 70 L180 140 L110 105 Z"
-                fill="rgba(56,189,248,0.08)"
-                stroke="#64748b"
-                strokeWidth="1"
-              />
-              <line
-                x1="110"
-                y1="105"
-                x2="110"
-                y2="175"
-                stroke="#94a3b8"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-              />
-              <circle cx="92" cy="98" r="5" fill="#fef08a" />
-              <circle cx="128" cy="118" r="5" fill="#a78bfa" />
-              <path
-                d="M92 98 Q110 88 128 118"
-                fill="none"
-                stroke="#fbbf24"
-                strokeWidth="1.4"
-                strokeDasharray="4 3"
-              />
-              <text x="86" y="88" fill="#fef08a" fontSize="9" fontWeight="700">
-                B
-              </text>
-              <text x="132" y="132" fill="#a78bfa" fontSize="9" fontWeight="700">
-                I
-              </text>
-              <text x="118" y="52" fill="#38bdf8" fontSize="10" fontWeight="700">
-                P21/c · P-1
-              </text>
-            </svg>
-          </div>
+          <HeroCellMotif />
         </div>
       </header>
+
+      <section className="cif-spotlight" aria-labelledby="cif-spotlight-title">
+        <div className="cif-spotlight-inner">
+          <div className="cif-spotlight-copy">
+            <div className="cif-spotlight-badges">
+              <span className="cif-spotlight-badge">Structures</span>
+              <span className="cif-spotlight-badge soft">New</span>
+            </div>
+            <h2 id="cif-spotlight-title">CIF symmetry map</h2>
+            <p>
+              Upload a CSD or COD CIF and see each symmetry operator colored on
+              the real unit cell — screws, glides, mirrors, and inversions over
+              the actual molecules. Load any COD id through the live proxy, or
+              try a teaching chip on the explorer.
+            </p>
+            <div className="cif-spotlight-cta">
+              <Link to="/cif" className="btn btn-primary">
+                Open CIF symmetry map
+              </Link>
+              <span className="cif-spotlight-hint">
+                or try a teaching COD chip on that page
+              </span>
+            </div>
+          </div>
+          <div className="cif-spotlight-aside" aria-hidden>
+            <div className="cif-spotlight-orbits">
+              <span className="cif-orb cif-orb-a" />
+              <span className="cif-orb cif-orb-b" />
+              <span className="cif-orb cif-orb-c" />
+            </div>
+            <p className="cif-spotlight-aside-label">CSD · COD · operators</p>
+          </div>
+        </div>
+      </section>
 
       <main className="index-main">
         <section id="explore" className="index-section">
@@ -192,7 +170,7 @@ export default function IndexPage() {
               <Link to="/sg/15">C2/c (15)</Link>,{' '}
               <Link to="/sg/61">Pbca (61)</Link>, and{' '}
               <Link to="/sg/19">P212121 (19)</Link>.
-              Upload a CSD/COD CIF via the{' '}
+              Real structures:{' '}
               <Link to="/cif">CIF symmetry map</Link>.
             </p>
           </div>
