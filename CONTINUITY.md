@@ -3,48 +3,47 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Done — Deferred “out of scope” sprint (stages A–E)
+## Done — Deferred leftovers pass (stages 1–4)
 
-### Stage A — COD CORS on Pages (`fe383e1`)
-- Expanded same-origin cache: 16 COD CIFs under `public/samples/cod/` + `manifest.json` + teaching chips
-- Client: cache → optional `VITE_COD_PROXY` → Vite `/cod-proxy` (dev) → direct COD
-- Worker script + `wrangler.cod-proxy.toml` documented; no CF token in this repo → arbitrary non-cached ids still need user-deployed worker or paste/upload
-- CSD: Access Structures link + upload/paste only (no scrape)
+### Stage 1 — COD cache + proxy tooling (`a735854`)
+- Same-origin cache expanded to **45** COD CIFs (`public/samples/cod/` + manifest)
+- `scripts/build-cod-manifest.py`, improved worker + `wrangler.cod-proxy.toml`
+- Workflow templates in `scripts/github-workflows/` (copy into `.github/workflows/` when the repo token has `workflow` scope): `deploy-cod-proxy.yml` (needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`), `refresh-cod-cache.yml`
+- Client: cache → `VITE_COD_PROXY` → Vite `/cod-proxy` → direct COD; UI shows cache/proxy/fail notes
+- **Arbitrary COD on live Pages still needs a user-deployed Cloudflare Worker** (no CF token here)
+- CSD: Access Structures + upload/paste only (no scrape)
 
-### Stage B — CIF v2 (`1721725`)
-- Occupancy filter / altloc handling; residue coloring; Uiso balls + anisotropic ellipsoids when present
-- Phone View-sheet toggles for color/thermal
+### Stage 2 — Cross-op H-bonds (`fa78f91`)
+- Geometric D–H···A across molecules; prefer cross-operator contacts
+- CIF View: No H-bonds / H-bonds / Partners; dashed lines (pink = cross-op)
+- Cap ~180 contacts; skip very large cells
 
-### Stage C — Exotic loci (`3bf6cb2`)
-- Face-diagonal 2-folds, 4 ‖ a/b, per-op body-diagonal 3-folds where math is reliable
-- Remaining geometryLimited cases keep clearer notes
+### Stage 3 — Hand polish +14 (`a54ae4f`)
+- Hand demos **57 → 71**: P2, P222, P2221, Pmc21, Pmn21, P4, P42, I4, P42/mnm, P3121, P3221, P63, P213, F-43m
+- `makeHandDemo` + `handExtra.ts`
 
-### Stage D — Generated polish (`86ad6b7`)
-- Richer blurbs (CSD rank when in top table, overlay counts, honesty note)
-- Locus-preferring focus chips; `demoSource`; Hand-tuned / Generated badges
-
-### Stage E — Pragmatic a11y (`1201f37`)
-- Structure summaries + load live region; canvas `role="img"` aria-labels (CIF + SG)
-- Escape closes View sheet; `aria-pressed` on toolbar/ops; focus-visible rings
-- Not full WebGL screen-reader a11y
+### Stage 4 — Exotic loci + a11y (`fe2d5e7`)
+- `deriveSixfoldC` (6/61–65 ‖ c); off-origin d-glide locus labels; diagonal offset notes
+- Structure canvas summary mentions H-bond counts
+- Still not full WebGL screen-reader a11y
 
 ## Key paths
 - COD: `src/data/cif/codSamples.ts`, `fetchRemoteCif.ts`, `public/samples/cod/`, `scripts/cod-cors-worker.js`
-- CIF UI: `src/components/cif/*`, `src/pages/CifExplorerPage.tsx`
-- A11y: `src/data/a11y/structureSummary.ts`
+- H-bonds: `src/data/cif/hbonds.ts`
+- Hand extras: `src/data/handExtra.ts`, `makeHandDemo.ts`
 - Loci: `src/data/groups/deriveElements.ts`
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
-## Deferred leftovers (with reason)
-- **Arbitrary COD on Pages without proxy**: needs a hosted CORS worker (`VITE_COD_PROXY`); cache covers teaching ids only
-- **Full WebGL / canvas SR a11y**: WebGL has no real accessibility tree; summaries + controls only
-- **Cross-op H-bond dimer clustering**: chemically ambiguous; kept per-operator intact molecules
-- **Some exotic d-glide / off-origin loci**: still geometryLimited when locus math is unreliable
-- **Hand-authoring remaining ~173 groups**: badges + better generated blurbs instead
+## Still limited
+- Arbitrary COD fetch on Pages without Cloudflare account / `VITE_COD_PROXY`
+- Full WebGL / canvas SR a11y
+- Some exotic cubic/rhombohedral loci may remain geometryLimited
+- Remaining ~159 generated groups not hand-authored
+- Cross-op H-bonds are geometric (need H in CIF); not a full H-placement refinement
 
-## SHAs (this sprint)
-- A `fe383e1` → B `1721725` → C `3bf6cb2` → D `86ad6b7` → E `1201f37`
-- Prior tip before A: `9978524`
-- tests: 390
-- main tip: `4c74616`
-- gh-pages: `8e370a5` (259 files; includes 16 COD cache CIFs)
+## SHAs (this pass)
+- 1 `a735854` → 2 `fa78f91` → 3 `a54ae4f` → 4 `fe2d5e7`
+- Prior tip: `9cc2d9f`
+- tests: 465
+- main tip: `1e8993b`
+- gh-pages: `eebb9ce` (288 files; 45 COD cache CIFs)
