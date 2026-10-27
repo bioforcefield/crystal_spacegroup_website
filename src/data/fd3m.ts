@@ -40,6 +40,7 @@ export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'screw',
   'inversion',
   'd-glide',
+  'c-glide',
 ]
 
 const triplets = (

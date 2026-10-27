@@ -28,7 +28,7 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
-  'c-glide': { id: 'c-glide', label: 'c-glide / mirror', color: '#fb923c' },
+  'c-glide': { id: 'c-glide', label: 'c / n-glide', color: '#fb923c' },
   'n-glide': { id: 'n-glide', label: 'n-glide', color: '#2dd4bf' },
   'd-glide': { id: 'd-glide', label: 'd-glide', color: '#f9a8d4' },
 }
@@ -40,6 +40,7 @@ export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'screw',
   'inversion',
   'd-glide',
+  'c-glide',
 ]
 
 const triplets = (

@@ -22,7 +22,7 @@ export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },
   twofold: { id: 'twofold', label: '2-fold', color: '#c4b5fd' },
   threefold: { id: 'threefold', label: '3-fold', color: '#67e8f9' },
-  fourfold: { id: 'fourfold', label: '4₂ screw', color: '#a5b4fc' },
+  fourfold: { id: 'fourfold', label: '4₂ screw ‖ c', color: '#a5b4fc' },
   screw: { id: 'screw', label: '2-fold', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
   mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },

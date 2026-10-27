@@ -17,10 +17,10 @@ export const SEED: Vec3 = [0.17, 0.23, 0.31]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },
-  twofold: { id: 'twofold', label: '2-fold', color: '#c4b5fd' },
+  twofold: { id: 'twofold', label: '2-fold ⊥ c', color: '#c4b5fd' },
   threefold: { id: 'threefold', label: '3-fold', color: '#67e8f9' },
   fourfold: { id: 'fourfold', label: '4-fold', color: '#a5b4fc' },
-  screw: { id: 'screw', label: '4₃ / 2₁ screw', color: '#a78bfa' },
+  screw: { id: 'screw', label: '4₃ / 2₁ ‖ c,a,b', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
   mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide', color: '#fbbf24' },

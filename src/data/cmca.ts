@@ -19,16 +19,16 @@ export const SEED: Vec3 = [0.22, 0.15, 0.3]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },
-  twofold: { id: 'twofold', label: '2-fold', color: '#c4b5fd' },
+  twofold: { id: 'twofold', label: '2-fold ‖ a,b', color: '#c4b5fd' },
   threefold: { id: 'threefold', label: '3-fold', color: '#67e8f9' },
   fourfold: { id: 'fourfold', label: '4-fold', color: '#a5b4fc' },
-  screw: { id: 'screw', label: '2₁ screw', color: '#a78bfa' },
+  screw: { id: 'screw', label: '2₁ screw ‖ b,c', color: '#a78bfa' },
   inversion: { id: 'inversion', label: 'inversion', color: '#f472b6' },
-  mirror: { id: 'mirror', label: 'mirror', color: '#facc15' },
+  mirror: { id: 'mirror', label: 'mirror ⊥ a', color: '#facc15' },
   'a-glide': { id: 'a-glide', label: 'a-glide ⊥ c', color: '#fbbf24' },
   'b-glide': { id: 'b-glide', label: 'b-glide', color: '#34d399' },
-  'c-glide': { id: 'c-glide', label: 'c-glide', color: '#fb923c' },
-  'n-glide': { id: 'n-glide', label: 'n-glide', color: '#2dd4bf' },
+  'c-glide': { id: 'c-glide', label: 'c-glide ⊥ b', color: '#fb923c' },
+  'n-glide': { id: 'n-glide', label: 'n-glide ⊥ b', color: '#2dd4bf' },
   'd-glide': { id: 'd-glide', label: 'd-glide', color: '#f9a8d4' },
 }
 
@@ -39,6 +39,7 @@ export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'inversion',
   'mirror',
   'a-glide',
+  'c-glide',
   'n-glide',
 ]
 

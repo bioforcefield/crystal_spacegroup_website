@@ -70,12 +70,24 @@ export default function SpaceGroupPage({ demo }: Props) {
               <span className="chip image">IMAGE</span>
             </div>
             <div className="legend elements-legend">
-              <span className="chip element">⊙</span> inversion
-              <span className="sep">·</span>
-              <span className="chip element">‖</span> 2 / 2₁
-              <span className="sep">·</span>
-              <span className="chip element">▭</span> glide plane
-              <span className="sep">·</span>
+              {demo.inversionCenters.length > 0 && (
+                <>
+                  <span className="chip element">⊙</span> inversion
+                  <span className="sep">·</span>
+                </>
+              )}
+              {demo.screwAxes.length > 0 && (
+                <>
+                  <span className="chip element">‖</span> 2 / 2₁
+                  <span className="sep">·</span>
+                </>
+              )}
+              {demo.glidePlanes.length > 0 && (
+                <>
+                  <span className="chip element">▭</span> mirror / glide
+                  <span className="sep">·</span>
+                </>
+              )}
               selected element emphasized; others faint
             </div>
           </div>
