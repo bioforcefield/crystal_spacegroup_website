@@ -36,7 +36,7 @@ Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on l
 - Full WebGL / canvas SR a11y
 
 ## SHAs (this pass)
-- main tip: `c9c8ef6` (feat `fd12253`)
+- main tip: `fe1c274` (feat `fd12253`)
 - gh-pages: `2a865ec` (299 files; 55 COD cache CIFs)
 - tests: 535
 - hand demos: 85
