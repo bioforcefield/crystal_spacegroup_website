@@ -32,3 +32,9 @@ Tests: **353** green.
 ## SHAs
 - main tip: `d0f9401` (feature `5e33203`)
 - gh-pages: `22df158` (239 files)
+
+## 2026-10-27 — CIF phone layout
+- ≤900px: in-scene lattice badge hidden; `CellParamsBadge variant="strip"` renders below the canvas (compact a/b/c · αβγ · origin line).
+- Desktop overlay badge fonts reduced (0.95→0.78rem).
+- CIF toolbar wraps (no sideways scroll): full-width view-mode segmented row, ≥40px buttons; canvas 56vh / min 280px.
+- main `16ee188`, gh-pages `fe7f27b`.
