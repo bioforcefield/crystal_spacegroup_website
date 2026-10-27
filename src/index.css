@@ -3610,8 +3610,11 @@ button.linkish {
 /* —— Teaching pages: morphology & kinetics —— */
 .teach-page {
   max-width: 960px;
+  width: 100%;
   margin: 0 auto;
   padding: 1.25rem 1.25rem 3rem;
+  overflow-x: clip;
+  box-sizing: border-box;
 }
 
 .teach-hero {
@@ -3941,6 +3944,139 @@ button.linkish {
   .teach-spotlight {
     margin: 0 0.85rem 1.1rem;
   }
+}
+
+/* Phone: prevent morph/kinetics horizontal cut-off */
+@media (max-width: 640px) {
+  .teach-page {
+    padding: 0.85rem 0.65rem 2.25rem;
+    overflow-x: clip;
+  }
+  .teach-section {
+    padding: 0.85rem 0.7rem 1rem;
+    margin: 1.1rem 0;
+  }
+  .teach-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .teach-svg,
+  .teach-wulff-svg {
+    max-width: 100%;
+    width: 100%;
+  }
+  .teach-cards {
+    grid-template-columns: 1fr;
+  }
+  .teach-preset-row {
+    gap: 0.35rem;
+  }
+  .teach-bfdh-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .teach-bfdh-row .teach-input {
+    width: 100%;
+  }
+  .site-shell .site-topbar {
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    padding: 0.55rem 0.65rem;
+  }
+  .site-shell .site-nav {
+    min-width: 0;
+    flex: 1 1 100%;
+  }
+}
+
+
+.teach-bfdh-load {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.teach-bfdh-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+
+.teach-input {
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.teach-textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: var(--bg);
+  color: var(--text);
+  font: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.teach-btn-solid {
+  background: var(--accent-soft) !important;
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent) !important;
+  color: var(--accent) !important;
+  font-weight: 700;
+}
+
+.teach-error {
+  margin: 0.5rem 0;
+  color: var(--danger);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.teach-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.teach-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.teach-table th,
+.teach-table td {
+  padding: 0.35rem 0.45rem;
+  text-align: left;
+  border-bottom: 1px solid var(--panel-border);
+  white-space: nowrap;
+}
+
+.teach-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.teach-bfdh-result {
+  margin-top: 0.75rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

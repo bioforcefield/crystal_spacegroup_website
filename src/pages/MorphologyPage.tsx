@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   HABIT_PRESETS,
@@ -10,10 +10,28 @@ import {
   wulffPolygon2D,
   type FaceSpec,
 } from '../data/morphology/wulff2d'
+import { rankBfdh, type BfdhResult } from '../data/morphology/bfdh'
+import { parseCif } from '../data/cif/parseCif'
+import {
+  CorsBlockedError,
+  CsdManualError,
+  NotFoundError,
+  fetchRemoteCif,
+} from '../data/cif/fetchRemoteCif'
 
 const VB = 320
 const PAD = 28
 const PLOT = VB - 2 * PAD
+
+const BFDH_CHIPS: ReadonlyArray<{ id: string; short: string }> = [
+  { id: '9008565', short: 'Si · Fd-3m' },
+  { id: '9000001', short: 'PbS · Fm-3m' },
+  { id: '1010962', short: 'Calcite · R-3c' },
+  { id: '9011577', short: 'Graphite · P63/mmc' },
+  { id: '1507756', short: 'BaTiO₃ · P4mm' },
+  { id: '1100303', short: 'Organic · P-1' },
+  { id: '1010916', short: 'Apatite · P63/m' },
+]
 
 function rateBarMax(Ra: number, Rb: number, Rc: number) {
   return Math.max(Ra, Rb, Rc, 0.01)
@@ -89,7 +107,6 @@ function WulffOutline({
 
   const pts = result.vertices
   let poly = ''
-  let scale = 1
   if (pts.length >= 3) {
     const xs = pts.map((v) => v.x)
     const ys = pts.map((v) => v.y)
@@ -98,7 +115,7 @@ function WulffOutline({
     const minY = Math.min(...ys)
     const maxY = Math.max(...ys)
     const span = Math.max(maxX - minX, maxY - minY, 1e-6)
-    scale = PLOT / span
+    const scale = PLOT / span
     const cx = (minX + maxX) / 2
     const cy = (minY + maxY) / 2
     poly = pts
@@ -110,7 +127,6 @@ function WulffOutline({
       .join(' ')
   }
 
-  // Face mid-edge labels: for each unique label, find midpoint of that face segment
   const edgeLabels: { x: number; y: number; text: string }[] = []
   if (pts.length >= 3) {
     const xs = pts.map((v) => v.x)
@@ -134,7 +150,6 @@ function WulffOutline({
         a.faces.find((f) => b.faces.includes(f)) ?? a.faces[0]
       const mx = (a.x + b.x) / 2
       const my = (a.y + b.y) / 2
-      // Push label slightly outward
       const L = Math.hypot(mx, my) || 1
       const ox = mx + (mx / L) * 0.12 * span
       const oy = my + (my / L) * 0.12 * span
@@ -161,7 +176,6 @@ function WulffOutline({
         className="teach-plot-frame"
         rx={8}
       />
-      {/* axes */}
       <line
         x1={VB / 2}
         y1={PAD + 8}
@@ -199,6 +213,255 @@ function WulffOutline({
         {habitLabel} · aspect {result.aspect.toFixed(2)}
       </text>
     </svg>
+  )
+}
+
+function runBfdhFromCifText(text: string): {
+  result: BfdhResult
+  label: string
+  cellLine: string
+} {
+  const parsed = parseCif(text)
+  const result = rankBfdh(parsed.cell, {
+    hm: parsed.spaceGroupName,
+    maxIndex: 2,
+    topN: 12,
+  })
+  const c = parsed.cell
+  const angles = [
+    c.alphaDeg != null ? `α=${c.alphaDeg.toFixed(1)}°` : null,
+    c.betaDeg != null ? `β=${c.betaDeg.toFixed(1)}°` : null,
+    c.gammaDeg != null ? `γ=${c.gammaDeg.toFixed(1)}°` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const cellLine = `a=${c.a.toFixed(3)} b=${c.b.toFixed(3)} c=${c.c.toFixed(3)} Å${angles ? ` · ${angles}` : ''}`
+  const label = [
+    parsed.metadata?.formula,
+    parsed.spaceGroupName,
+    parsed.spaceGroupNumber != null ? `ITA ${parsed.spaceGroupNumber}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ') || parsed.dataBlock || 'CIF'
+  return { result, label, cellLine }
+}
+
+function BfdhPredictSection() {
+  const [codId, setCodId] = useState('9008565')
+  const [paste, setPaste] = useState('')
+  const [status, setStatus] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [label, setLabel] = useState<string | null>(null)
+  const [cellLine, setCellLine] = useState<string | null>(null)
+  const [bfdh, setBfdh] = useState<BfdhResult | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const applyText = (text: string, sourceNote: string) => {
+    try {
+      const { result, label: lab, cellLine: cell } = runBfdhFromCifText(text)
+      setBfdh(result)
+      setLabel(lab)
+      setCellLine(cell)
+      setStatus(sourceNote)
+      setError(null)
+    } catch (e) {
+      setBfdh(null)
+      setError(e instanceof Error ? e.message : String(e))
+      setStatus(null)
+    }
+  }
+
+  const loadCod = async (id: string) => {
+    setBusy(true)
+    setError(null)
+    setStatus('Loading…')
+    try {
+      const remote = await fetchRemoteCif(id.trim())
+      applyText(remote.text, `${remote.label} · ${remote.sourceNote}`)
+      setCodId(id.trim())
+    } catch (e) {
+      setBfdh(null)
+      if (e instanceof CorsBlockedError) {
+        setError(
+          `${e.message} Try a teaching chip (cached), paste/upload a CIF, or use the COD proxy build.`,
+        )
+      } else if (e instanceof CsdManualError) {
+        setError(e.message)
+      } else if (e instanceof NotFoundError) {
+        setError(e.message)
+      } else {
+        setError(e instanceof Error ? e.message : String(e))
+      }
+      setStatus(null)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const onFile = async (ev: ChangeEvent<HTMLInputElement>) => {
+    const file = ev.target.files?.[0]
+    if (!file) return
+    const text = await file.text()
+    applyText(text, `Uploaded · ${file.name}`)
+    ev.target.value = ''
+  }
+
+  const outlineFaces = bfdh?.faces2d ?? []
+  const outline = useMemo(
+    () => (outlineFaces.length ? wulffPolygon2D(outlineFaces) : null),
+    [outlineFaces],
+  )
+
+  return (
+    <section className="teach-section teach-interactive" aria-labelledby="morph-bfdh">
+      <h2 id="morph-bfdh">Predict · BFDH from crystal</h2>
+      <p className="teach-caption">
+        Bravais–Friedel–Donnay–Harker ranks faces by lattice spacing with Harker
+        corrections from lattice centering. Relative growth{' '}
+        <strong>R ∝ 1/d<sub>DH</sub></strong>. This is a{' '}
+        <strong>geometric heuristic</strong> from the cell alone — not attachment
+        energy, not kinetic morphology, and not a full 3D Wulff for arbitrary
+        point groups. The outline is an <strong>ab-plane 2D teaching slice</strong>{' '}
+        of the ranked forms.
+      </p>
+
+      <div className="teach-preset-row" role="group" aria-label="Cached COD samples">
+        {BFDH_CHIPS.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className="teach-preset-btn"
+            disabled={busy}
+            onClick={() => void loadCod(c.id)}
+          >
+            {c.short}
+          </button>
+        ))}
+      </div>
+
+      <div className="teach-bfdh-load">
+        <label className="teach-slider-label" htmlFor="bfdh-cod">
+          COD id
+        </label>
+        <div className="teach-bfdh-row">
+          <input
+            id="bfdh-cod"
+            className="teach-input"
+            value={codId}
+            onChange={(e) => setCodId(e.target.value)}
+            inputMode="numeric"
+            placeholder="9008566"
+            aria-label="COD entry id"
+          />
+          <button
+            type="button"
+            className="teach-preset-btn teach-btn-solid"
+            disabled={busy || !codId.trim()}
+            onClick={() => void loadCod(codId)}
+          >
+            {busy ? 'Loading…' : 'Load COD'}
+          </button>
+          <button
+            type="button"
+            className="teach-preset-btn"
+            onClick={() => fileRef.current?.click()}
+          >
+            Upload CIF
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".cif,chemical/x-cif,text/plain"
+            className="sr-only"
+            onChange={(e) => void onFile(e)}
+          />
+        </div>
+
+        <label className="teach-slider-label" htmlFor="bfdh-paste">
+          Or paste CIF text
+        </label>
+        <textarea
+          id="bfdh-paste"
+          className="teach-textarea"
+          rows={4}
+          value={paste}
+          onChange={(e) => setPaste(e.target.value)}
+          placeholder="data_…&#10;_cell_length_a …"
+        />
+        <button
+          type="button"
+          className="teach-preset-btn"
+          disabled={!paste.trim()}
+          onClick={() => applyText(paste, 'Pasted CIF')}
+        >
+          Predict from paste
+        </button>
+      </div>
+
+      {error ? <p className="teach-error" role="alert">{error}</p> : null}
+      {status ? <p className="teach-caption">{status}</p> : null}
+
+      {bfdh ? (
+        <div className="teach-grid-2 teach-bfdh-result">
+          <div className="teach-panel">
+            <h3 className="teach-subhead">{label}</h3>
+            <p className="teach-caption">
+              {cellLine}
+              <br />
+              Centering <strong>{bfdh.centering}</strong> · {bfdh.note}
+            </p>
+            <WulffOutline
+              faces={outlineFaces}
+              habitLabel={`BFDH · ${bfdh.centering}`}
+            />
+            <p className="teach-caption">
+              Outline faces:{' '}
+              <strong>
+                {outline
+                  ? activeFaceLabels(outline).join(' · ') || '—'
+                  : '—'}
+              </strong>
+              . Aspect ≈ {outline?.aspect.toFixed(2) ?? '—'}.
+            </p>
+          </div>
+          <div className="teach-panel">
+            <h3 className="teach-subhead">Ranked forms (top)</h3>
+            <div className="teach-table-wrap">
+              <table className="teach-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Form</th>
+                    <th scope="col">n<sub>H</sub></th>
+                    <th scope="col">d<sub>DH</sub> (Å)</th>
+                    <th scope="col">R ∝ 1/d</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bfdh.faces.slice(0, 10).map((f) => (
+                    <tr key={f.form}>
+                      <td>{f.form}</td>
+                      <td>{f.harkerN}</td>
+                      <td>{f.dDh.toFixed(3)}</td>
+                      <td>{f.relativeR.toFixed(3)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="teach-caption">
+              Larger d<sub>DH</sub> → slower relative growth → more morphologically
+              important. n<sub>H</sub> is the Harker multiple required by centering.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className="teach-caption">
+          Load a cached chip (works offline on Pages), a COD id via proxy, or
+          paste/upload a CIF to rank faces.
+        </p>
+      )}
+    </section>
   )
 }
 
@@ -356,6 +619,8 @@ export default function MorphologyPage() {
         </div>
       </section>
 
+      <BfdhPredictSection />
+
       <section className="teach-section" aria-labelledby="morph-habits">
         <h2 id="morph-habits">Common habits from rate ratios</h2>
         <div className="teach-cards">
@@ -392,9 +657,10 @@ export default function MorphologyPage() {
 
       <footer className="teach-footer">
         <p>
-          Schematic 2D Wulff / relative-velocity model for teaching. Not a full
-          3D equilibrium shape for arbitrary point groups, and not a fitted
-          industrial morphology prediction.
+          Schematic 2D Wulff / relative-velocity model for teaching. BFDH
+          predictor uses cell + centering only. Not a full 3D equilibrium shape
+          for arbitrary point groups, and not a fitted industrial morphology
+          prediction.
         </p>
         <p>
           <Link to="/kinetics">Crystal kinetics</Link>
