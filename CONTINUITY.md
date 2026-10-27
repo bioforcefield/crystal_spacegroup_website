@@ -19,3 +19,7 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 
 ## Key paths
 - `npm test` · deploy script above
+
+## SHAs
+- main: `1797360`
+- gh-pages: `28fd7da` (VITE_COD_PROXY baked)
