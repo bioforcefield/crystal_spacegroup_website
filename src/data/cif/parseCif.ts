@@ -342,6 +342,13 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
         x === '_atom_site_label_comp_id' ||
         x === '_atom_site_entity_id',
     )
+    const iOcc = h.findIndex((x) => x === '_atom_site_occupancy')
+    const iAlt = h.findIndex(
+      (x) =>
+        x === '_atom_site_disorder_group' ||
+        x === '_atom_site_label_alt_id' ||
+        x === '_atom_site_disorder_assembly',
+    )
 
     if (iX < 0 || iY < 0 || iZ < 0) continue
     if (h[iX] === '_atom_site_cartn_x') {
@@ -349,26 +356,77 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
       continue
     }
 
-    const atoms: CifAtomSite[] = []
+    // First pass: collect rows; pick a preferred altloc if disorder is present.
+    type RowAtom = CifAtomSite & { _alt?: string }
+    const raw: RowAtom[] = []
+    let skippedOcc = 0
     for (const row of loop.rows) {
       const fx = unquoteNumber(row[iX] ?? '')
       const fy = unquoteNumber(row[iY] ?? '')
       const fz = unquoteNumber(row[iZ] ?? '')
       if (fx == null || fy == null || fz == null) continue
+
+      let occupancy: number | undefined
+      if (iOcc >= 0) {
+        const occ = unquoteNumber(row[iOcc] ?? '')
+        if (occ != null) {
+          occupancy = occ
+          if (occ < 0.05) {
+            skippedOcc++
+            continue
+          }
+        }
+      }
+
+      const altRaw = iAlt >= 0 ? (row[iAlt] ?? '').trim() : ''
+      const altloc =
+        altRaw && altRaw !== '.' && altRaw !== '?' && altRaw !== '0'
+          ? altRaw
+          : undefined
+
       const label =
         (iLabel >= 0 ? row[iLabel] : null) ||
         (iType >= 0 ? row[iType] : null) ||
-        `A${atoms.length + 1}`
+        `A${raw.length + 1}`
       const typeSym = iType >= 0 ? row[iType] : undefined
       const residue = iComp >= 0 ? row[iComp] : undefined
-      atoms.push({
+      raw.push({
         label,
         element: elementFromLabel(label, typeSym),
         fractional: [fx, fy, fz] as Vec3,
         residue,
+        occupancy,
+        altloc,
+        _alt: altloc,
       })
     }
-    if (atoms.length) return atoms
+
+    if (skippedOcc > 0) {
+      warnings.push(`Skipped ${skippedOcc} atom site(s) with occupancy ≈ 0`)
+    }
+
+    // Keep only the first disorder group / altloc when multiple are present.
+    const alts = [
+      ...new Set(raw.map((a) => a._alt).filter((x): x is string => !!x)),
+    ]
+    let atoms: CifAtomSite[] = raw
+    if (alts.length > 1) {
+      const prefer = alts.sort()[0]!
+      atoms = raw.filter((a) => !a._alt || a._alt === prefer)
+      warnings.push(
+        `Disorder altlocs ${alts.join(', ')}; keeping group "${prefer}" only`,
+      )
+    }
+
+    const cleaned: CifAtomSite[] = atoms.map((a) => ({
+      label: a.label,
+      element: a.element,
+      fractional: a.fractional,
+      residue: a.residue,
+      occupancy: a.occupancy,
+      altloc: a.altloc,
+    }))
+    if (cleaned.length) return cleaned
   }
   return []
 }

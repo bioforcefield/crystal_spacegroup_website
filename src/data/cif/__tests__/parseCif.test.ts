@@ -46,10 +46,14 @@ describe('expandStructure', () => {
     const ops = new Set(expanded.atoms.map((a) => a.opIndex))
     expect([...ops].sort()).toEqual([1, 2, 3, 4])
     expect(expanded.bonds.length).toBeGreaterThan(0)
-    // Bonds only within a copy
+    expect(expanded.moleculeCount).toBe(4)
+    // Bonds only within a copy / molecule
     for (const b of expanded.bonds) {
       expect(expanded.atoms[b.a]!.opIndex).toBe(b.opIndex)
       expect(expanded.atoms[b.b]!.opIndex).toBe(b.opIndex)
+      expect(expanded.atoms[b.a]!.moleculeId).toBe(
+        expanded.atoms[b.b]!.moleculeId,
+      )
     }
   })
 

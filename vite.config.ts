@@ -28,10 +28,27 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    proxy: {
+      // Same-origin COD CIF proxy for local / preview (avoids browser CORS)
+      '/cod-proxy': {
+        target: 'https://www.crystallography.net',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p: string) => p.replace(/^\/cod-proxy\//, '/cod/'),
+      },
+    },
   },
   preview: {
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    proxy: {
+      '/cod-proxy': {
+        target: 'https://www.crystallography.net',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p: string) => p.replace(/^\/cod-proxy\//, '/cod/'),
+      },
+    },
   },
 })

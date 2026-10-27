@@ -1,6 +1,6 @@
 import { useMemo, useRef, useEffect, type RefObject } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Line } from '@react-three/drei'
+import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { cellCenterCart, cellCornersCart, fracToCart } from '../data/math'
@@ -12,12 +12,56 @@ import {
 import type { ExpandedStructure } from '../data/cif/types'
 import type { CellParams, Vec3 } from '../data/types'
 
+export type CifVisibility = 'molecules' | 'all' | 'selected' | 'asymmetric'
+
 interface Props {
   structure: ExpandedStructure
   selectedOp: number
-  /** 'all' | 'selected' | 'asymmetric' */
-  visibility: 'all' | 'selected' | 'asymmetric'
+  /** molecules = intact (default); all = same atoms dimmed uniformly; selected = BASE+IMAGE; asymmetric = AU */
+  visibility: CifVisibility
   resetToken: number
+  /** When set, dim molecules that are not this id (optional focus). */
+  selectedMolecule?: number | null
+}
+
+function fmtLen(v: number): string {
+  return v >= 10 ? v.toFixed(2) : v.toFixed(3)
+}
+
+function fmtAngle(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1)
+}
+
+/** Compact HTML readout of lattice parameters (phone-friendly, corner of canvas). */
+export function CellParamsBadge({ cell }: { cell: CellParams }) {
+  const alpha = cell.alphaDeg ?? 90
+  const beta = cell.betaDeg ?? 90
+  const gamma = cell.gammaDeg ?? 90
+  const orthorhombic =
+    Math.abs(alpha - 90) < 1e-3 &&
+    Math.abs(beta - 90) < 1e-3 &&
+    Math.abs(gamma - 90) < 1e-3
+  return (
+    <div className="cif-cell-badge" aria-label="Unit-cell parameters">
+      <span className="cif-cell-axis a">
+        a {fmtLen(cell.a)} Å
+      </span>
+      <span className="cif-cell-axis b">
+        b {fmtLen(cell.b)} Å
+      </span>
+      <span className="cif-cell-axis c">
+        c {fmtLen(cell.c)} Å
+      </span>
+      {!orthorhombic && (
+        <span className="cif-cell-angles">
+          α {fmtAngle(alpha)}° · β {fmtAngle(beta)}° · γ {fmtAngle(gamma)}°
+        </span>
+      )}
+      {orthorhombic && (
+        <span className="cif-cell-angles">α = β = γ = 90°</span>
+      )}
+    </div>
+  )
 }
 
 function CellWire({ cell }: { cell: CellParams }) {
@@ -52,16 +96,48 @@ function CellWire({ cell }: { cell: CellParams }) {
   )
 }
 
-function AxisHints({ cell }: { cell: CellParams }) {
+function AxisLabels({ cell }: { cell: CellParams }) {
   const o = fracToCart([0, 0, 0], cell)
-  const a = fracToCart([0.2, 0, 0], cell)
-  const b = fracToCart([0, 0.2, 0], cell)
-  const c = fracToCart([0, 0, 0.2], cell)
+  const aEnd = fracToCart([1, 0, 0], cell)
+  const bEnd = fracToCart([0, 1, 0], cell)
+  const cEnd = fracToCart([0, 0, 1], cell)
+  // Labels just past each axis tip so they sit on the box, not over the molecule
+  const scale = Math.max(0.2, Math.min(cell.a, cell.b, cell.c) * 0.038)
+  const bump = (p: Vec3, q: Vec3, extra = 0.28): Vec3 => {
+    const dx = q[0] - p[0]
+    const dy = q[1] - p[1]
+    const dz = q[2] - p[2]
+    const len = Math.hypot(dx, dy, dz) || 1
+    return [
+      q[0] + (dx / len) * extra,
+      q[1] + (dy / len) * extra,
+      q[2] + (dz / len) * extra,
+    ]
+  }
+
+  const label = (text: string, position: Vec3, color: string) => (
+    <Billboard key={text} position={position}>
+      <Text
+        fontSize={scale}
+        color={color}
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={scale * 0.08}
+        outlineColor="#0f172a"
+      >
+        {text}
+      </Text>
+    </Billboard>
+  )
+
   return (
     <group>
-      <Line points={[o, a]} color="#f87171" lineWidth={2} />
-      <Line points={[o, b]} color="#4ade80" lineWidth={2} />
-      <Line points={[o, c]} color="#60a5fa" lineWidth={2} />
+      <Line points={[o, aEnd]} color="#f87171" lineWidth={2} transparent opacity={0.85} />
+      <Line points={[o, bEnd]} color="#4ade80" lineWidth={2} transparent opacity={0.85} />
+      <Line points={[o, cEnd]} color="#60a5fa" lineWidth={2} transparent opacity={0.85} />
+      {label(`a ${fmtLen(cell.a)}`, bump(o, aEnd), '#f87171')}
+      {label(`b ${fmtLen(cell.b)}`, bump(o, bEnd), '#4ade80')}
+      {label(`c ${fmtLen(cell.c)}`, bump(o, cEnd), '#60a5fa')}
     </group>
   )
 }
@@ -72,6 +148,7 @@ function SceneBody({
   visibility,
   controlsRef,
   resetToken,
+  selectedMolecule = null,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const center = cellCenterCart(structure.cell)
 
@@ -109,10 +186,11 @@ function SceneBody({
       maxR = Math.max(maxR, d)
     }
     for (const a of visibleAtoms) {
+      const p = a.displayCartesian
       const d = Math.hypot(
-        a.cartesian[0] - center[0],
-        a.cartesian[1] - center[1],
-        a.cartesian[2] - center[2],
+        p[0] - center[0],
+        p[1] - center[1],
+        p[2] - center[2],
       )
       maxR = Math.max(maxR, d)
     }
@@ -138,21 +216,30 @@ function SceneBody({
 
       <group position={[-center[0], -center[1], -center[2]]}>
         <CellWire cell={structure.cell} />
-        <AxisHints cell={structure.cell} />
+        <AxisLabels cell={structure.cell} />
 
         {visibleBonds.map((b, i) => {
           const A = structure.atoms[b.a]!
           const B = structure.atoms[b.b]!
-          const emphasized = b.opIndex === selectedOp || b.opIndex === 1
-          const col = operatorColor(b.opIndex, emphasized ? 0.9 : 0.35)
+          const opMatch = b.opIndex === selectedOp
+          const molFocus =
+            selectedMolecule == null || b.moleculeId === selectedMolecule
+          const emphasized =
+            (opMatch || b.opIndex === 1 || visibility === 'molecules') &&
+            molFocus
+          const dim = visibility === 'molecules' && !opMatch && selectedOp !== 1
+          const col = operatorColor(
+            b.opIndex,
+            emphasized && !dim ? 0.95 : visibility === 'all' ? 0.55 : 0.3,
+          )
           return (
             <Line
               key={`bond-${i}`}
-              points={[A.cartesian, B.cartesian]}
+              points={[A.displayCartesian, B.displayCartesian]}
               color={col}
-              lineWidth={emphasized ? 2.2 : 1.2}
+              lineWidth={emphasized && !dim ? 2.4 : 1.15}
               transparent
-              opacity={emphasized ? 0.95 : 0.4}
+              opacity={emphasized && !dim ? 0.98 : 0.35}
             />
           )
         })}
@@ -160,24 +247,38 @@ function SceneBody({
         {visibleAtoms.map((a, i) => {
           const isSel = a.opIndex === selectedOp
           const isBase = a.opIndex === 1
-          const emphasized = isSel || isBase || visibility !== 'all'
-          const opTint = operatorColor(a.opIndex, emphasized ? 1 : 0.45)
+          const molFocus =
+            selectedMolecule == null || a.moleculeId === selectedMolecule
+          const emphasized =
+            (isSel ||
+              isBase ||
+              visibility === 'molecules' ||
+              visibility !== 'all') &&
+            molFocus
+          const strong =
+            (isSel || (visibility === 'selected' && isBase)) && molFocus
+          const opTint = operatorColor(
+            a.opIndex,
+            strong ? 1 : emphasized ? 0.85 : 0.4,
+          )
           const el = elementColor(a.element)
-          const r = elementRadius(a.element) * (emphasized ? 1.05 : 0.85)
+          const r =
+            elementRadius(a.element) *
+            (strong ? 1.12 : emphasized ? 1.0 : 0.82)
           return (
             <mesh
-              key={`atom-${a.opIndex}-${a.auIndex}-${i}`}
-              position={a.cartesian as Vec3}
+              key={`atom-${a.opIndex}-${a.auIndex}-${a.moleculeId}-${i}`}
+              position={a.displayCartesian as Vec3}
             >
               <sphereGeometry args={[r, 18, 18]} />
               <meshStandardMaterial
                 color={el}
                 emissive={opTint}
-                emissiveIntensity={emphasized ? 0.45 : 0.12}
+                emissiveIntensity={strong ? 0.55 : emphasized ? 0.38 : 0.1}
                 metalness={0.15}
                 roughness={0.45}
-                transparent={!emphasized}
-                opacity={emphasized ? 1 : 0.55}
+                transparent={!strong && visibility === 'all'}
+                opacity={strong ? 1 : emphasized ? 0.95 : 0.5}
               />
             </mesh>
           )
@@ -199,12 +300,15 @@ function SceneBody({
 export default function CifStructureScene(props: Props) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null)
   return (
-    <Canvas
-      camera={{ position: [8, 6, 10], fov: 42, near: 0.1, far: 200 }}
-      dpr={[1, 2]}
-      gl={{ antialias: true }}
-    >
-      <SceneBody {...props} controlsRef={controlsRef} />
-    </Canvas>
+    <div className="cif-canvas-frame">
+      <Canvas
+        camera={{ position: [8, 6, 10], fov: 42, near: 0.1, far: 200 }}
+        dpr={[1, 2]}
+        gl={{ antialias: true }}
+      >
+        <SceneBody {...props} controlsRef={controlsRef} />
+      </Canvas>
+      <CellParamsBadge cell={props.structure.cell} />
+    </div>
   )
 }

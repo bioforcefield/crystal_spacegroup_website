@@ -12,7 +12,7 @@ Live: https://bioforcefield.github.io/crystal_spacegroup_website/
 - BASE → IMAGE highlight with nearest-image or in-cell placement
 - Geometric element overlays where axis-aligned loci can be derived; honest “operators / limited geometry” note otherwise
 - ITA Vol. A primary diagrams + Birkbeck/UCL reference links per group
-- **CIF symmetry map** (`/cif`): upload a CSD/COD `.cif` (or load the sample) and color each symmetry copy by operator
+- **CIF symmetry map** (`/cif`): load by **COD code** (e.g. `1100303`), paste/upload a CIF (CSD via Access Structures), intact molecules + operator colors + lattice a/b/c on the cell
 
 ## Run locally
 
@@ -63,6 +63,14 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 | `src/pages/IndexPage.tsx` | Catalog / primer / guide |
 | `public/ita-diagrams/` | ITA Vol. A plates |
 | `CONTINUITY.md` | Agent resume notes |
+
+## CIF map (`/cif`)
+
+- **Intact molecules**: min-image bonding + unwrap so copies are not chopped by the cell
+- **Symmetry operators**: ITA xyz list, color-matched to 3D copies; Molecules / All / BASE+IMAGE / AU
+- **Lattice**: a/b/c labels (Å) on the box + α/β/γ badge
+- **COD load**: enter a numeric id → tries bundled cache (`public/samples/cod/`), optional `VITE_COD_PROXY`, Vite `/cod-proxy` (dev/preview), then `https://www.crystallography.net/cod/{id}.cif`. Direct COD often lacks CORS on GitHub Pages — UI then offers open-link + paste/upload. Optional Cloudflare Worker: `scripts/cod-cors-worker.js`.
+- **CSD**: no free anonymous CIF API; UI links to [CCDC Access Structures](https://www.ccdc.cam.ac.uk/structures/) for download, then upload/paste. We do not scrape CSD.
 
 ## Stack
 
