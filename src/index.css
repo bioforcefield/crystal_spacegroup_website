@@ -2516,3 +2516,43 @@ button.linkish {
 .cif-literature h3 { font-size: 0.85rem; margin: 0 0 0.25rem; }
 .cif-literature p { margin: 0.15rem 0; overflow-wrap: anywhere; }
 .cif-lit-title { font-style: italic; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Z′ panel — keep phone-friendly (wrap, no overlay on canvas) */
+.cif-zprime dd {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.cif-zprime-hint {
+  display: inline-block;
+  margin-left: 0.25rem;
+  width: 0.95em;
+  height: 0.95em;
+  line-height: 0.95em;
+  text-align: center;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--text, #e2e8f0) 35%, transparent);
+  font-size: 0.65em;
+  opacity: 0.7;
+  vertical-align: middle;
+}
+.cif-zprime-note {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.cif-zprime-warn {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #fbbf24;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .cif-zprime-note,
+  .cif-zprime-warn {
+    font-size: 0.72rem;
+  }
+}

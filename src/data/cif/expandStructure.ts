@@ -119,13 +119,41 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
     bonds: assembled.bonds,
     moleculeCount: assembled.moleculeCount,
     moleculeOpIndex: assembled.moleculeOpIndex,
-    metadata: withZPrime(parsed.metadata, operators.length),
+    metadata: withZPrime(parsed.metadata, {
+      nOps: operators.length,
+      spaceGroupNumber: parsed.spaceGroupNumber,
+      operatorSource: source,
+    }),
     warnings,
   }
 }
 
-function withZPrime(meta: ParsedCif['metadata'] | undefined, nOps: number) {
+function nearInteger(v: number, tol = 0.05): boolean {
+  return Math.abs(v - Math.round(v)) <= tol
+}
+
+/**
+ * Prefer explicit CIF Z′ tags. Otherwise estimate Z′ ≈ Z / N_ops
+ * (exact only when every formula unit occupies a general position and
+ * N_ops is the full set of general-position operators).
+ */
+function withZPrime(
+  meta: ParsedCif['metadata'] | undefined,
+  ctx: {
+    nOps: number
+    spaceGroupNumber?: number | null
+    operatorSource: OperatorSource
+  },
+) {
   const m = { ...(meta ?? {}) }
+  const { nOps, spaceGroupNumber, operatorSource } = ctx
+
+  if (m.zPrime != null && m.zPrimeSource === 'cif') {
+    m.zPrimeNote =
+      'Z′ from the CIF (_cell_formula_units_z_prime / related tags).'
+    return m
+  }
+
   if (m.zPrime == null && m.z != null && nOps >= 1) {
     const zp = m.z / nOps
     if (zp > 0) {
@@ -133,5 +161,38 @@ function withZPrime(meta: ParsedCif['metadata'] | undefined, nOps: number) {
       m.zPrimeSource = 'computed' as const
     }
   }
+
+  if (m.zPrimeSource === 'computed' && m.zPrime != null) {
+    m.zPrimeNote =
+      'Estimated as Z′ = Z / N_ops (general-position teaching formula). Prefer an explicit CIF Z′ tag when present.'
+
+    const warnings: string[] = []
+    if (!nearInteger(m.zPrime)) {
+      warnings.push(
+        `Z/N_ops = ${m.zPrime} is not near an integer — special positions or an incomplete operator list are likely.`,
+      )
+    }
+
+    if (spaceGroupNumber != null) {
+      const demo = getDemo(spaceGroupNumber)
+      const expected = demo?.meta.multiplicity
+      if (expected != null && nOps > 0 && nOps < expected) {
+        warnings.push(
+          `Only ${nOps} of ${expected} ITA general positions are listed — Z′ from Z/ops may be high.`,
+        )
+      }
+    }
+
+    if (operatorSource === 'identity' && nOps <= 1 && (m.z ?? 0) > 1) {
+      warnings.push(
+        'No symmetry operators found; Z′ estimate assumes P1 and is unreliable.',
+      )
+    }
+
+    if (warnings.length) {
+      m.zPrimeWarning = warnings.join(' ')
+    }
+  }
+
   return m
 }

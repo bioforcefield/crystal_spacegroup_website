@@ -72,16 +72,37 @@ export default function CifStructurePanel({
             </dd>
           </div>
           {structure.metadata?.zPrime != null && (
-            <div>
-              <dt>Z′</dt>
+            <div className="cif-zprime">
+              <dt title={structure.metadata.zPrimeNote}>
+                Z′
+                <span className="cif-zprime-hint" aria-hidden>
+                  ?
+                </span>
+              </dt>
               <dd>
-                {structure.metadata.zPrime}
-                {structure.metadata.z != null
-                  ? ` (Z = ${structure.metadata.z})`
-                  : ''}
-                {structure.metadata.zPrimeSource === 'computed'
-                  ? ' · from Z/ops'
-                  : ''}
+                <span title={structure.metadata.zPrimeNote}>
+                  {structure.metadata.zPrime}
+                  {structure.metadata.z != null
+                    ? ` (Z = ${structure.metadata.z})`
+                    : ''}
+                  {structure.metadata.zPrimeSource === 'cif'
+                    ? ' · CIF'
+                    : structure.metadata.zPrimeSource === 'computed'
+                      ? ' · Z/N_ops'
+                      : ''}
+                </span>
+                {structure.metadata.zPrimeNote && (
+                  <span className="cif-zprime-note hint">
+                    {structure.metadata.zPrimeSource === 'cif'
+                      ? 'From CIF tag'
+                      : 'Z′ = Z / N_ops (general positions)'}
+                  </span>
+                )}
+                {structure.metadata.zPrimeWarning && (
+                  <span className="cif-zprime-warn" role="status">
+                    {structure.metadata.zPrimeWarning}
+                  </span>
+                )}
               </dd>
             </div>
           )}

@@ -176,3 +176,60 @@ C1 C 0.2 0.3 0.1
     expect(expanded.operators.length).toBe(4)
   })
 })
+
+describe('Z′ reliability', () => {
+  it('explicit CIF Z′ has note and no warning', () => {
+    const e = expandStructure(
+      parseCif(`data_X
+_cell_length_a 5
+_cell_length_b 5
+_cell_length_c 5
+_cell_formula_units_Z 8
+_space_group_z_prime 2
+_space_group_IT_number 14
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+-x,y+1/2,-z+1/2
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.1 0.2 0.3
+`),
+    )
+    expect(e.metadata.zPrime).toBe(2)
+    expect(e.metadata.zPrimeSource).toBe('cif')
+    expect(e.metadata.zPrimeNote).toMatch(/CIF/i)
+    expect(e.metadata.zPrimeWarning).toBeUndefined()
+  })
+
+  it('non-integer Z/ops sets a warning', () => {
+    const e = expandStructure(
+      parseCif(`data_X
+_cell_length_a 5
+_cell_length_b 5
+_cell_length_c 5
+_cell_formula_units_Z 3
+_space_group_IT_number 2
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+-x,-y,-z
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0.1 0.2 0.3
+`),
+    )
+    expect(e.metadata.zPrimeSource).toBe('computed')
+    expect(e.metadata.zPrime).toBe(1.5)
+    expect(e.metadata.zPrimeWarning).toMatch(/not near an integer/i)
+    expect(e.metadata.zPrimeNote).toMatch(/Z′ = Z \/ N_ops|Z \/ N_ops/i)
+  })
+})
