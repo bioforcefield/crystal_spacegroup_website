@@ -11,6 +11,7 @@ import {
 } from 'react-router-dom'
 import IndexPage from './pages/IndexPage'
 import SpaceGroupPage from './pages/SpaceGroupPage'
+import CifExplorerPage from './pages/CifExplorerPage'
 import { getDemo } from './data/registry'
 
 const SECTION_NAV = [
@@ -90,6 +91,9 @@ function SiteChrome({
           <NavLink to="/sg/19" className="nav-demo">
             P212121
           </NavLink>
+          <NavLink to="/cif" className="nav-demo">
+            CIF map
+          </NavLink>
         </nav>
       </header>
       {children}
@@ -124,6 +128,14 @@ export default function App() {
       <Routes>
         <Route path="/" element={<IndexRoute />} />
         <Route path="/sg/:id" element={<DemoRoute />} />
+        <Route
+          path="/cif"
+          element={
+            <SiteChrome variant="demo">
+              <CifExplorerPage />
+            </SiteChrome>
+          }
+        />
         <Route path="/pbca" element={<Navigate to="/sg/61" replace />} />
         <Route path="/c2c" element={<Navigate to="/sg/15" replace />} />
         <Route path="/p21c" element={<Navigate to="/sg/14" replace />} />

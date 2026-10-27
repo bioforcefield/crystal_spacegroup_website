@@ -43,7 +43,8 @@ Hand modules (`p1.ts`, `pbar1.ts`, `p21.ts`, `c2.ts`, `cc.ts`, `p21c.ts`, `c2c.t
 
 ## Generator / cell limitations
 
-- **`fracToCart` / `cartToFrac`:** unique-axis-**b** monoclinic β only. Triclinic α/γ and hexagonal/trigonal **γ = 120°** are **not** modeled — teaching cells for those systems are orthogonal (or use a single β for triclinic) so operator teaching still works; metric angles are approximate.
+- **`fracToCart` / `cartToFrac`:** full ITA orthogonalization with α / β / γ (defaults 90°). Generated teaching cells set triclinic α/β/γ, monoclinic β, and hexagonal/trigonal γ = 120°.
 - **Element derivation** (`deriveElements`): tuned for unique-b monoclinic 2/2₁ and mirrors/glides ⊥ b, plus generic inversion (`R = −I`). Orthorhombic / tetragonal / cubic screws and glides often have **empty or partial** overlay lists — do not claim perfect element geometry for every group yet.
 - Class labels for generated ops are heuristics (identity / inversion / unique-b / fallback improper→glide-ish, proper→screw-ish).
 - Tolerances: fractional coords within ~`1e-6` for op equality; locus checks typically ~`1e-3`–`0.02`.
+- **CIF explorer** (`/cif`): client-side parse of user-uploaded CSD/COD CIFs; expands AU atoms by ITA operators (or CIF symops) and colors each copy by operator index.

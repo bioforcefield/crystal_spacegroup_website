@@ -11,7 +11,7 @@ import {
   type CrystalSystemId,
   type SpaceGroupEntry,
 } from '../data/spaceGroupCatalog'
-import { CLASS_LEGEND_ORDER, SYMMETRY_CLASSES } from '../data/pbca'
+import { CLASS_PALETTE_ORDER as CLASS_LEGEND_ORDER, SYMMETRY_CLASSES } from '../data/symmetryPalette'
 
 type SystemFilter = CrystalSystemId | 'all'
 
@@ -118,6 +118,9 @@ export default function IndexPage() {
               <a href="#guide" className="btn btn-ghost">
                 How to use
               </a>
+              <Link to="/cif" className="btn btn-ghost">
+                CIF symmetry map
+              </Link>
             </div>
           </div>
           <div className="hero-motif" aria-hidden>
@@ -190,6 +193,8 @@ export default function IndexPage() {
               <Link to="/sg/15">C2/c (15)</Link>,{' '}
               <Link to="/sg/61">Pbca (61)</Link>, and{' '}
               <Link to="/sg/19">P212121 (19)</Link>.
+              Upload a CSD/COD CIF via the{' '}
+              <Link to="/cif">CIF symmetry map</Link>.
             </p>
           </div>
           <p className="explore-hint">Click a system to filter the index below.</p>

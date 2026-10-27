@@ -1,5 +1,4 @@
 import { useCallback, useMemo, useState, type CSSProperties } from 'react'
-import { Navigate } from 'react-router-dom'
 import OperatorPanel from '../components/OperatorPanel'
 import SpaceGroupDiagram2D from '../components/SpaceGroupDiagram2D'
 import UnitCellScene from '../components/UnitCellScene'
@@ -241,11 +240,4 @@ export default function SpaceGroupPage({ demo }: Props) {
       </main>
     </div>
   )
-}
-
-/** Route helper: resolve demo or redirect home. */
-export function DemoById({ id }: { id: string }) {
-  // lazy import avoided — parent passes resolved demo
-  void id
-  return <Navigate to="/" replace />
 }
