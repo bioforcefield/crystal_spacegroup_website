@@ -304,9 +304,7 @@ async function handleCrossref(url, method) {
   const rowsRaw = upstream.searchParams.get('rows') || '20'
   const rows = Math.min(Math.max(parseInt(rowsRaw, 10) || 20, 1), 50)
   upstream.searchParams.set('rows', String(rows))
-  if (!upstream.searchParams.get('cursor')) {
-    upstream.searchParams.set('cursor', '*')
-  }
+  // Do not force cursor=* — incompatible with sort=published (use offset).
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), CROSSREF_TIMEOUT_MS)

@@ -123,7 +123,9 @@ export interface CrossrefWork {
 export interface CrossrefPage {
   works: CrossrefWork[]
   total: number
-  nextCursor: string | null
+  /** Offset for the next page, or null when exhausted.
+   * Offset pagination (not cursor) so we can sort by published date. */
+  nextOffset: number | null
 }
 
 export interface CrossrefQuery {
@@ -134,8 +136,8 @@ export interface CrossrefQuery {
   recentYears?: number
   /** Free-text query AND’d with filters (optional). */
   query?: string
-  /** Crossref cursor; omit or '*' for first page. */
-  cursor?: string | null
+  /** Result offset for pagination (default 0). Incompatible with Crossref cursors when sorting. */
+  offset?: number
   rows?: number
   /** “Now” for tests (defaults to Date). */
   now?: Date
@@ -190,14 +192,15 @@ export function buildCrossrefUrl(
   const params = new URLSearchParams()
   params.set('filter', filter)
   params.set('rows', String(query.rows ?? CROSSREF_ROWS))
+  // Offset + published sort (Crossref rejects sort with deep cursor pagination).
   params.set('sort', 'published')
   params.set('order', 'desc')
   params.set(
     'select',
     'DOI,title,author,published,published-print,published-online,container-title,publisher,type',
   )
-  const cursor = query.cursor?.trim() || '*'
-  params.set('cursor', cursor)
+  const offset = Math.max(0, query.offset ?? 0)
+  params.set('offset', String(offset))
 
   const qParts: string[] = []
   if (preset.query?.trim()) qParts.push(preset.query.trim())
@@ -347,14 +350,11 @@ export function parseCrossrefResponse(json: unknown): CrossrefPage {
     if (w) works.push(w)
   }
   const total = Number(message['total-results'] ?? works.length)
-  const next =
-    typeof message['next-cursor'] === 'string' && message['next-cursor']
-      ? message['next-cursor']
-      : null
+  const safeTotal = Number.isFinite(total) ? total : works.length
   return {
     works,
-    total: Number.isFinite(total) ? total : works.length,
-    nextCursor: next,
+    total: safeTotal,
+    nextOffset: null, // filled by fetchCrossrefPage with request offset/rows
   }
 }
 
@@ -389,7 +389,14 @@ export async function fetchCrossrefPage(
     )
   }
   const json = await res.json()
-  return parseCrossrefResponse(json)
+  const page = parseCrossrefResponse(json)
+  const rows = query.rows ?? CROSSREF_ROWS
+  const offset = Math.max(0, query.offset ?? 0)
+  const nextOffset =
+    offset + page.works.length < page.total && page.works.length > 0
+      ? offset + rows
+      : null
+  return { ...page, nextOffset }
 }
 
 /** Year chips for the Recent panel (newest first, including “window”). */

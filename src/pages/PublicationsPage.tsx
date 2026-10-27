@@ -326,8 +326,8 @@ function RecentTitlesPanel() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [works, setWorks] = useState<CrossrefWork[]>([])
   const [total, setTotal] = useState(0)
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
-  const nextCursorRef = useRef<string | null>(null)
+  const [nextOffset, setNextOffset] = useState<number | null>(null)
+  const nextOffsetRef = useRef<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -346,10 +346,10 @@ function RecentTitlesPanel() {
     if (mode === 'replace') {
       setLoading(true)
       setError(null)
-      nextCursorRef.current = null
-      setNextCursor(null)
+      nextOffsetRef.current = null
+      setNextOffset(null)
     } else {
-      if (!nextCursorRef.current) return
+      if (nextOffsetRef.current == null) return
       setLoadingMore(true)
     }
     try {
@@ -358,15 +358,15 @@ function RecentTitlesPanel() {
           preset,
           year,
           query: debouncedQuery || undefined,
-          cursor: mode === 'append' ? nextCursorRef.current : '*',
+          offset: mode === 'append' ? (nextOffsetRef.current ?? 0) : 0,
           recentYears: 3,
         },
         { signal: ac.signal },
       )
       if (ac.signal.aborted) return
       setTotal(page.total)
-      nextCursorRef.current = page.nextCursor
-      setNextCursor(page.nextCursor)
+      nextOffsetRef.current = page.nextOffset
+      setNextOffset(page.nextOffset)
       setWorks((prev) =>
         mode === 'append' ? [...prev, ...page.works] : page.works,
       )
@@ -377,8 +377,8 @@ function RecentTitlesPanel() {
       if (mode === 'replace') {
         setWorks([])
         setTotal(0)
-        nextCursorRef.current = null
-        setNextCursor(null)
+        nextOffsetRef.current = null
+        setNextOffset(null)
       }
     } finally {
       if (!ac.signal.aborted) {
@@ -597,7 +597,7 @@ function RecentTitlesPanel() {
           </ul>
         )}
 
-        {nextCursor && !error && (
+        {nextOffset != null && !error && (
           <div className="pubs-load-more">
             <button
               type="button"

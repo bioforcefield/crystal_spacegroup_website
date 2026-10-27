@@ -77,7 +77,7 @@ describe('buildCrossrefUrl', () => {
       {
         preset: 'acs',
         year: 2025,
-        cursor: '*',
+        offset: 0,
         now: new Date('2026-10-27'),
       },
       { searchBase: 'https://crystal-cod-proxy.example.workers.dev' },
@@ -89,7 +89,8 @@ describe('buildCrossrefUrl', () => {
     expect(u.searchParams.get('rows')).toBe('20')
     expect(u.searchParams.get('sort')).toBe('published')
     expect(u.searchParams.get('order')).toBe('desc')
-    expect(u.searchParams.get('cursor')).toBe('*')
+    expect(u.searchParams.get('offset')).toBe('0')
+    expect(u.searchParams.get('cursor')).toBeNull()
     expect(u.searchParams.get('filter')).toContain('issn:1528-7483')
     expect(u.searchParams.get('filter')).toContain('from-pub-date:2025-01-01')
   })
@@ -182,17 +183,16 @@ describe('parseCrossrefWork / response', () => {
     })
   })
 
-  it('parses a list response with next-cursor', () => {
+  it('parses a list response (nextOffset filled by fetch)', () => {
     const page = parseCrossrefResponse({
       status: 'ok',
       message: {
-        'total-results': 2940,
-        'next-cursor': 'AoIIP%2F%2F%2F',
+        'total-results': 40,
         items: [sampleItem, { DOI: '', title: ['x'] }],
       },
     })
-    expect(page.total).toBe(2940)
-    expect(page.nextCursor).toBe('AoIIP%2F%2F%2F')
+    expect(page.total).toBe(40)
+    expect(page.nextOffset).toBeNull()
     expect(page.works).toHaveLength(1)
   })
 
@@ -249,5 +249,42 @@ describe('fetch wiring (mocked)', () => {
     expect(decodeURIComponent(calledUrl)).toContain('issn:2052-2525')
     expect(page.works[0].doi).toBe('10.1107/S2052252523009582')
     expect(page.works[0].hintTags).toContain('drug')
+    expect(page.nextOffset).toBeNull()
+    expect(calledUrl).toContain('offset=0')
+    expect(calledUrl).not.toContain('cursor=')
+  })
+
+  it('fetchCrossrefPage sets nextOffset when more results remain', async () => {
+    const { fetchCrossrefPage } = await import('../crossref')
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        message: {
+          'total-results': 50,
+          items: [
+            {
+              DOI: '10.1021/acs.cgd.demo',
+              title: ['Demo crystal hydrate'],
+              'container-title': ['Crystal Growth & Design'],
+              publisher: 'ACS',
+              published: { 'date-parts': [[2025]] },
+              author: [{ family: 'Demo', given: 'D' }],
+            },
+          ],
+        },
+      }),
+    })) as unknown as typeof fetch
+
+    const page = await fetchCrossrefPage(
+      {
+        preset: 'acs',
+        year: 2025,
+        offset: 0,
+        rows: 20,
+        now: new Date('2026-10-27'),
+      },
+      { searchBase: 'https://proxy.test', fetchImpl },
+    )
+    expect(page.nextOffset).toBe(20)
   })
 })
