@@ -2,7 +2,7 @@
 
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
-Tip: `main` **c9c8ef6** (feat fd12253), `gh-pages` **2a865ec**. Tests: **535**.
+Tip: `main` **aefab8d** (feat **fd12253**), `gh-pages` **2a865ec**. Tests: **535**.
 Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on large sample trees.
 
 ## Done — Pass 4 (Stages 2–3 + Stage 1 assist)
@@ -36,7 +36,7 @@ Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on l
 - Full WebGL / canvas SR a11y
 
 ## SHAs (this pass)
-- main tip: `fe1c274` (feat `fd12253`)
+- main tip: `aefab8d` (feat `fd12253`)
 - gh-pages: `2a865ec` (299 files; 55 COD cache CIFs)
 - tests: 535
 - hand demos: 85
