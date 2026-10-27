@@ -37,7 +37,7 @@ function fmtAngle(v: number): string {
 }
 
 /** Compact HTML readout of lattice parameters (phone-friendly, corner of canvas). */
-export function CellParamsBadge({ cell }: { cell: CellParams }) {
+export function CellParamsBadge({ cell, variant = 'overlay' }: { cell: CellParams; variant?: 'overlay' | 'strip' }) {
   const alpha = cell.alphaDeg ?? 90
   const beta = cell.betaDeg ?? 90
   const gamma = cell.gammaDeg ?? 90
@@ -46,7 +46,7 @@ export function CellParamsBadge({ cell }: { cell: CellParams }) {
     Math.abs(beta - 90) < 1e-3 &&
     Math.abs(gamma - 90) < 1e-3
   return (
-    <div className="cif-cell-badge" aria-label="Unit-cell parameters">
+    <div className={variant === 'strip' ? 'cif-cell-strip' : 'cif-cell-badge'} aria-label="Unit-cell parameters">
       <span className="cif-cell-axis a">
         a {fmtLen(cell.a)} Å
       </span>

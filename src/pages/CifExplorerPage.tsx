@@ -7,6 +7,7 @@ import {
 } from 'react'
 import { Link } from 'react-router-dom'
 import CifStructureScene, {
+  CellParamsBadge,
   type CifVisibility,
 } from '../components/CifStructureScene'
 import {
@@ -669,6 +670,8 @@ export default function CifExplorerPage() {
             )}
           </div>
         </div>
+
+        {structure && <CellParamsBadge cell={structure.cell} variant="strip" />}
 
         <footer className="viewport-footer">
           CIF explorer · intact molecules (covalent + min-image unwrap) ·
