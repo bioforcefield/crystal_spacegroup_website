@@ -274,7 +274,11 @@ export function hintTagsFromTitle(title: string | null | undefined): PubTag[] {
   if (/\b(mof|metal[- ]organic framework|zeolite|framework)\b/.test(t)) {
     tags.push('mof')
   }
-  if (/\b(hydrate|hydrated|water of crystallization)\b/.test(t)) {
+  if (
+    /\b(hydrate|hydrated|monohydrate|dihydrate|trihydrate|hemihydrate|water of crystallization)\b/.test(
+      t,
+    )
+  ) {
     tags.push('hydrate')
   }
   if (/\b(salt|cocrystal|co-crystal|chloride|sulfate|phosphate)\b/.test(t)) {
@@ -300,8 +304,45 @@ export function hintTagsFromTitle(title: string | null | undefined): PubTag[] {
   ) {
     tags.push('inorganic')
   }
+  if (
+    /machine learning|deep learning|neural network|graph neural|\bgnn\b|artificial intelligence/.test(
+      t,
+    )
+  ) {
+    tags.push('ml')
+  }
+  if (/crystal structure prediction|\bcsp\b|structure prediction/.test(t)) {
+    tags.push('csp')
+  }
   const seen = new Set<PubTag>()
   return tags.filter((x) => (seen.has(x) ? false : (seen.add(x), true)))
+}
+
+/**
+ * Crossref free-text AND’d with ISSN filters when topic chips are on.
+ * Needed because the first newest-first page rarely mentions sparse keywords
+ * (hydrate, CSP, ML, …); client-side title filtering alone looks empty.
+ */
+const HINT_CROSSREF_QUERY: Partial<Record<PubTag, string>> = {
+  hydrate: 'hydrate',
+  mof: 'MOF',
+  drug: 'pharmaceutical',
+  salt: 'cocrystal',
+  mineral: 'mineral',
+  ml: '"machine learning"',
+  csp: '"crystal structure prediction"',
+}
+
+export function crossrefQueryForHintTags(
+  tags: readonly PubTag[],
+): string | undefined {
+  const parts: string[] = []
+  for (const tag of tags) {
+    const q = HINT_CROSSREF_QUERY[tag]
+    if (q && !parts.includes(q)) parts.push(q)
+  }
+  if (!parts.length) return undefined
+  return parts.join(' ')
 }
 
 export function parseCrossrefWork(item: unknown): CrossrefWork | null {

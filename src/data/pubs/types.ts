@@ -7,6 +7,8 @@ export type PubTag =
   | 'salt'
   | 'mineral'
   | 'mof'
+  | 'ml'
+  | 'csp'
 
 export interface CodPubEntry {
   /** COD numeric id */

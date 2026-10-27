@@ -11,6 +11,8 @@
  * - salt: halide/sulfate/phosphate/nitrate cues, or alkali+halide without C
  * - drug: curated pharma names (aspirin, ibuprofen, pristinamycin, …)
  * - mof: MOF / framework / zeolite keywords (or curated MOF ids)
+ * - ml: machine learning / neural / GNN cues in name/title
+ * - csp: crystal structure prediction / CSP cues in name/title
  * - organic vs inorganic: C+H (or light-atom-only) molecular formulas → organic;
  *   otherwise inorganic (elements, oxides, minerals without organics)
  */
@@ -58,7 +60,11 @@ export function suggestTags(input: {
   ) {
     tags.push('mineral')
   }
-  if (/\b(hydrate|h2o|ice\b|gypsum|baylissite)\b/.test(blob)) {
+  if (
+    /\b(hydrate|hydrated|monohydrate|dihydrate|trihydrate|hemihydrate|h2o|ice\b|gypsum|baylissite)\b/.test(
+      blob,
+    )
+  ) {
     tags.push('hydrate')
   }
   if (

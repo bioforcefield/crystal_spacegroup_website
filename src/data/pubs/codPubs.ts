@@ -14,7 +14,22 @@ export const PUB_TAG_ORDER: readonly PubTag[] = [
   'salt',
   'mineral',
   'mof',
+  'ml',
+  'csp',
 ] as const
+
+/** Short chip / list label (may differ from the internal tag id). */
+export const PUB_TAG_LABELS: Record<PubTag, string> = {
+  organic: 'organic',
+  inorganic: 'inorganic',
+  drug: 'drug',
+  hydrate: 'hydrate',
+  salt: 'salt',
+  mineral: 'mineral',
+  mof: 'mof',
+  ml: 'machine learning',
+  csp: 'CSP',
+}
 
 export const PUB_TAG_BLURBS: Record<PubTag, string> = {
   organic: 'Mostly C/H/N/O molecular crystals (and related organics).',
@@ -24,6 +39,8 @@ export const PUB_TAG_BLURBS: Record<PubTag, string> = {
   salt: 'Ionic salts (halides, sulfates, phosphates, etc.).',
   mineral: 'Named minerals or mineral-analogue structures.',
   mof: 'Framework / MOF-like entries when present in the curated set.',
+  ml: 'Machine learning / neural models applied to crystals (title or curated cues).',
+  csp: 'Crystal structure prediction (CSP) methods and benchmarks.',
 }
 
 export const COD_PUBS: readonly CodPubEntry[] = [

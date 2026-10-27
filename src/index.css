@@ -3441,6 +3441,8 @@ button.linkish {
 .pubs-tag-salt { --tag-c: #fbbf24; }
 .pubs-tag-mineral { --tag-c: #a78bfa; }
 .pubs-tag-mof { --tag-c: #fb923c; }
+.pubs-tag-ml { --tag-c: #e879f9; }
+.pubs-tag-csp { --tag-c: #2dd4bf; }
 
 .pubs-chip.pubs-tag.active,
 .pubs-mini-tag {

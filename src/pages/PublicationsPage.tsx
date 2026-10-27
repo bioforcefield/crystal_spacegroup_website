@@ -4,12 +4,14 @@ import {
   COD_PUBS,
   COD_PUBS_NOTE,
   PUB_TAG_BLURBS,
+  PUB_TAG_LABELS,
   PUB_TAG_ORDER,
 } from '../data/pubs/codPubs'
 import {
   CROSSREF_PRESETS,
   type CrossrefPublisherPreset,
   type CrossrefWork,
+  crossrefQueryForHintTags,
   fetchCrossrefPage,
   recentYearOptions,
 } from '../data/pubs/crossref'
@@ -203,7 +205,7 @@ function CuratedCodPanel() {
                 title={PUB_TAG_BLURBS[t]}
                 onClick={() => toggleTag(t)}
               >
-                {t}
+                {PUB_TAG_LABELS[t]}
                 <span className="pubs-chip-count">{tagCounts[t]}</span>
               </button>
             ))}
@@ -224,7 +226,7 @@ function CuratedCodPanel() {
           <ul>
             {PUB_TAG_ORDER.map((t) => (
               <li key={t}>
-                <strong>{t}</strong> — {PUB_TAG_BLURBS[t]}
+                <strong>{PUB_TAG_LABELS[t]}</strong> — {PUB_TAG_BLURBS[t]}
               </li>
             ))}
           </ul>
@@ -238,7 +240,7 @@ function CuratedCodPanel() {
           Showing <strong>{filtered.length}</strong> of {COD_PUBS.length}{' '}
           curated entries
           {year != null ? ` · year ${year}` : ''}
-          {tags.length ? ` · tags: ${tags.join(', ')}` : ''}
+          {tags.length ? ` · tags: ${tags.map((x) => PUB_TAG_LABELS[x]).join(', ')}` : ''}
           {query.trim() ? ` · “${query.trim()}”` : ''}.
         </p>
       </section>
@@ -283,7 +285,7 @@ function CuratedCodPanel() {
                     <div className="pubs-card-tags" aria-label="Tags">
                       {e.tags.map((t) => (
                         <span key={t} className={`pubs-mini-tag pubs-tag-${t}`}>
-                          {t}
+                          {PUB_TAG_LABELS[t]}
                         </span>
                       ))}
                     </div>
@@ -353,11 +355,15 @@ function RecentTitlesPanel() {
       setLoadingMore(true)
     }
     try {
+      const topicQ = crossrefQueryForHintTags(hintFilter)
+      const qParts = [debouncedQuery, topicQ].filter(
+        (s): s is string => Boolean(s && s.trim()),
+      )
       const page = await fetchCrossrefPage(
         {
           preset,
           year,
-          query: debouncedQuery || undefined,
+          query: qParts.length ? qParts.join(' ') : undefined,
           offset: mode === 'append' ? (nextOffsetRef.current ?? 0) : 0,
           recentYears: 3,
         },
@@ -386,7 +392,7 @@ function RecentTitlesPanel() {
         setLoadingMore(false)
       }
     }
-  }, [preset, year, debouncedQuery])
+  }, [preset, year, debouncedQuery, hintFilter])
 
   // Initial + filter changes (not load-more)
   useEffect(() => {
@@ -414,8 +420,10 @@ function RecentTitlesPanel() {
     >
       <p className="pubs-note">
         Live Crossref metadata for crystallography journals (ISSN filters).
-        Keyword chips on each card are <em>title hints only</em> — not COD
-        curation. Open DOI goes to the publisher; no full text here.
+        Topic chips (hydrate, CSP, machine learning, …) refine the Crossref
+        query so you are not stuck with whatever landed on the first page;
+        chips on each card are still <em>title hints</em>, not COD curation.
+        Open DOI goes to the publisher; no full text here.
       </p>
 
       <section className="pubs-filters" aria-label="Filter recent titles">
@@ -501,10 +509,13 @@ function RecentTitlesPanel() {
                   hintFilter.includes(t) ? ' active' : ''
                 }`}
                 aria-pressed={hintFilter.includes(t)}
-                title={`Filter loaded results whose titles hint at “${t}”`}
+                title={
+                  PUB_TAG_BLURBS[t] +
+                  ' · sends a Crossref topic query when useful, then filters titles'
+                }
                 onClick={() => toggleHint(t)}
               >
-                {t}
+                {PUB_TAG_LABELS[t]}
               </button>
             ))}
           </div>
@@ -526,7 +537,7 @@ function RecentTitlesPanel() {
               ? `Error: ${error}`
               : `Showing ${visible.length} of ${works.length} loaded · ~${total.toLocaleString()} match Crossref filters${
                   hintFilter.length
-                    ? ` · hints: ${hintFilter.join(', ')}`
+                    ? ` · hints: ${hintFilter.map((x) => PUB_TAG_LABELS[x]).join(', ')}`
                     : ''
                 }.`}
         </p>
@@ -572,7 +583,7 @@ function RecentTitlesPanel() {
                           className={`pubs-mini-tag pubs-tag-${t}`}
                           title="Keyword hint from title — not curated"
                         >
-                          {t}?
+                          {PUB_TAG_LABELS[t]}?
                         </span>
                       ))}
                     </div>
