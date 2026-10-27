@@ -1,5 +1,6 @@
 import type { KeyboardEvent } from 'react'
 import AsuDiagram from './AsuDiagram'
+import CifXrayPanel from './CifXrayPanel'
 import { Link } from 'react-router-dom'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
@@ -177,6 +178,8 @@ export default function CifStructurePanel({
           </ul>
         )}
       </section>
+
+      <CifXrayPanel structure={structure} />
 
       <section className="ops cif-ops">
         <h2>Symmetry operators</h2>

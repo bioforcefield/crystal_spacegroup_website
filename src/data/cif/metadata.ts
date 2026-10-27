@@ -12,6 +12,23 @@ export interface CifLiterature {
   citation?: string
 }
 
+export interface CifXrayMeta {
+  /** Radiation wavelength in Å when present. */
+  wavelengthA?: number
+  /** e.g. MoKα, CuKα from _diffrn_radiation_type. */
+  radiationType?: string
+  /** Probe when tagged (x-ray / neutron / electron). */
+  probe?: string
+  /** Ambient / measurement temperature in K when present. */
+  temperatureK?: number
+  /** R-factor (all) when present. */
+  rFactorAll?: number
+  /** Weighted R on reflections when present. */
+  wRFactorRef?: number
+  /** Goodness of fit (S) when present. */
+  gof?: number
+}
+
 export interface CifMetadata {
   name?: string
   formula?: string
@@ -31,6 +48,8 @@ export interface CifMetadata {
   /** High-resolution limit d_min in Å. */
   resolutionA?: number
   resolutionSource?: 'refine' | 'theta'
+  /** Diffraction / refinement tags for the X-ray panel (omit when absent). */
+  xray?: CifXrayMeta
   literature?: CifLiterature
 }
 
@@ -121,6 +140,32 @@ export function extractMetadata(pairs: Map<string, string>, loops: Loop[]): CifM
       meta.resolutionA = lambda / (2 * Math.sin((theta * Math.PI) / 180))
       meta.resolutionSource = 'theta'
     }
+  }
+
+  const xray: CifXrayMeta = {}
+  const wl = num(get('_diffrn_radiation_wavelength', '_diffrn_radiation_wavelength.wavelength', '_diffrn_radiation.wavelength'))
+  if (wl != null && wl > 0) xray.wavelengthA = wl
+  const radType = get('_diffrn_radiation_type', '_diffrn_radiation.type')
+  if (radType) xray.radiationType = radType.replace(/\\a/gi, 'α').replace(/\\b/gi, 'β')
+  const probe = get('_diffrn_radiation_probe', '_diffrn_radiation.probe', '_diffrn_radiation_xray_symbol')
+  if (probe) xray.probe = probe
+  else if (radType) {
+    const low = radType.toLowerCase()
+    if (low.includes('neutron')) xray.probe = 'neutron'
+    else if (low.includes('electron')) xray.probe = 'electron'
+    else xray.probe = 'x-ray'
+  }
+  const temp = num(get('_diffrn_ambient_temperature', '_diffrn_ambient_temperature.temperature', '_cell_measurement_temperature', '_cell.measurement_temperature'))
+  if (temp != null && temp > 0) xray.temperatureK = temp
+  const rAll = num(get('_refine_ls_R_factor_all', '_refine.ls_R_factor_all'))
+  if (rAll != null && rAll >= 0) xray.rFactorAll = rAll
+  const wR = num(get('_refine_ls_wR_factor_ref', '_refine.ls_wR_factor_ref', '_refine_ls_wR_factor_gt'))
+  if (wR != null && wR >= 0) xray.wRFactorRef = wR
+  const gof = num(get('_refine_ls_goodness_of_fit_ref', '_refine.ls_goodness_of_fit_ref', '_refine_ls_goodness_of_fit_all', '_refine_ls_goodness_of_fit_gt'))
+  if (gof != null && gof > 0) xray.gof = gof
+  if (xray.wavelengthA != null || xray.radiationType || xray.temperatureK != null ||
+      xray.rFactorAll != null || xray.wRFactorRef != null || xray.gof != null || xray.probe) {
+    meta.xray = xray
   }
 
   const authors = loopCol(['_publ_author_name', '_publ_author.name', '_citation_author.name'])

@@ -3,24 +3,21 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## BFDH interactive + disclaimer (2026-10-27)
-- `/morphology` BFDH: Note + amber Disclaimer callout (teaching only; centering Harker only; 2D ab slice; may disagree with experiment)
-- After load: per-form rate sliders seeded from R∝1/d_DH, include/exclude checkboxes, live Wulff + habit badge, **Reset to BFDH**
-- Helpers: `uniqueFormRates` / `applyFormRates` in `bfdh.ts`
+## CIF map — X-ray / PXRD (2026-10-27)
+- `/cif` structure panel: **X-ray · powder** section after ASU/meta
+- Experiment tags from CIF when present: λ, radiation type/probe, T, R/wR/GoF (`metadata.xray`)
+- Interactive simulated PXRD: wavelength presets (Cu/Mo/Co + CIF λ + custom), 2θ min/max, FWHM Lorentzian envelope, hover sticks (hkl/d/2θ/I), peak table
+- Helpers: `src/data/cif/xray/{formFactors,bragg,powder,envelope}.ts` + vitest; centering extinctions via morphology helpers
+- Teaching only — not Rietveld / not measured data
 
-## Morphology phone fix + BFDH predictor (2026-10-27)
-- `/morphology` mobile: teach-page/section padding, single-column ≤640px, SVG `max-width:100%`, teach-cards 1-col, site-topbar wrap — stops horizontal cut-off from `minmax(160px)` cards + tight padding
-- Shared teach CSS also helps `/kinetics`
-- **Predict · BFDH from crystal** on morphology: COD id / cached chips / paste / upload → `rankBfdh` (d_hkl + centering Harker) → ranked table + ab-plane 2D Wulff via `wulffPolygon2D`
-- Helpers: `src/data/morphology/{dHkl,centering,bfdh}.ts` + tests
+## BFDH interactive + disclaimer (2026-10-27)
+- `/morphology` BFDH: Note + amber Disclaimer; per-form rate sliders; Reset to BFDH
+
+## Morphology phone fix + BFDH predictor
+- Mobile single-column; BFDH from COD/CIF
 
 ## Morphology & kinetics teaching pages
-- `/morphology` (+ `/morph`): 2D Wulff from rates + BFDH predictor
-- `/kinetics`: nucleation / growth / size–time schematics
-- Teaching only — not full 3D Wulff / not fitted plant kinetics
-
-## CIF map — ASU · 2D diagram
-- PCA stick sketch of ASU when discrete molecule; lattices stay formula-only
+- `/morphology`, `/kinetics`
 
 ## Cloudflare COD proxy
 - Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif (+ `/search`, `/crossref`)
@@ -30,5 +27,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · `VITE_COD_PROXY=https://crystal-cod-proxy.crystal-sg.workers.dev bash scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main: `a464dea`
-- gh-pages: `3aec56f` (VITE_COD_PROXY baked)
+- main: (pending)
+- gh-pages: (pending)
