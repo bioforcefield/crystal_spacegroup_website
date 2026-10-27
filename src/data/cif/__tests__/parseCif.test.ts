@@ -79,3 +79,34 @@ C1 C 0.1 0.2 0.3
     )
   })
 })
+
+describe('CIF metadata', () => {
+  const fs = require('node:fs') as typeof import('node:fs')
+  const path = require('node:path') as typeof import('node:path')
+  const read = (p: string) => fs.readFileSync(path.resolve(__dirname, '../../../../public/samples', p), 'utf8')
+  it('acetic sample: name + computed Z′', () => {
+    const e = expandStructure(parseCif(read('acetic_p21c.cif')))
+    expect(e.metadata.name).toBe('Teaching acetic-like')
+    expect(e.metadata.z).toBe(4)
+    expect(e.metadata.zPrime).toBe(1)
+    expect(e.metadata.zPrimeSource).toBe('computed')
+    expect(e.metadata.literature).toBeUndefined()
+  })
+  it('COD 1100303: literature + DOI', () => {
+    const e = expandStructure(parseCif(read('cod/1100303.cif')))
+    const lit = e.metadata.literature!
+    expect(lit.authors.length).toBe(4)
+    expect(lit.doi).toBe('10.1002/anie.198913921')
+    expect(lit.title).toMatch(/Lithiophenylacetonitrile/)
+    expect(lit.title).toMatch(/α-Lithio/)
+    expect(lit.citation).toMatch(/Zarges et al\., Angewandte.*28 \(1989\) 1392–1394/)
+    expect(e.metadata.formula).toBe('C26 H52 Li2 N6')
+    expect(e.metadata.zPrime).toBe(1)
+  })
+  it('explicit Z′ and refine resolution tags', () => {
+    const m = parseCif(`data_X\n_cell_length_a 5\n_cell_length_b 5\n_cell_length_c 5\n_space_group_z_prime 2\n_refine_ls_d_res_high 0.78\n_struct.title 'Foo'\nloop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nC1 C 0.1 0.2 0.3\n`).metadata
+    expect(m.zPrime).toBe(2)
+    expect(m.resolutionA).toBeCloseTo(0.78)
+    expect(m.name).toBe('Foo')
+  })
+})

@@ -361,6 +361,14 @@ export default function CifExplorerPage() {
           <>
             <section className="seed-box">
               <h2>Structure</h2>
+              {(structure.metadata?.name || structure.metadata?.formula) && (
+                <p className="cif-struct-name" title={structure.metadata.name ?? structure.metadata.formula}>
+                  {structure.metadata.name ?? structure.metadata.formula}
+                  {structure.metadata.name && structure.metadata.formula && (
+                    <span className="cif-formula"> · {structure.metadata.formula}</span>
+                  )}
+                </p>
+              )}
               <dl className="meta-grid">
                 <div>
                   <dt>Space group</dt>
@@ -388,6 +396,25 @@ export default function CifExplorerPage() {
                       : ''}
                   </dd>
                 </div>
+                {structure.metadata?.zPrime != null && (
+                  <div>
+                    <dt>Z′</dt>
+                    <dd>
+                      {structure.metadata.zPrime}
+                      {structure.metadata.z != null ? ` (Z = ${structure.metadata.z})` : ''}
+                      {structure.metadata.zPrimeSource === 'computed' ? ' · from Z/ops' : ''}
+                    </dd>
+                  </div>
+                )}
+                {structure.metadata?.resolutionA != null && (
+                  <div>
+                    <dt>Resolution</dt>
+                    <dd>
+                      {structure.metadata.resolutionA.toFixed(2)} Å
+                      {structure.metadata.resolutionSource === 'theta' ? ' · from θmax' : ''}
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt>AU atoms</dt>
                   <dd>{structure.asymmetric.length}</dd>
@@ -401,6 +428,24 @@ export default function CifExplorerPage() {
                   </dd>
                 </div>
               </dl>
+              {structure.metadata?.literature && (
+                <div className="cif-literature">
+                  <h3>Literature</h3>
+                  {structure.metadata.literature.title && (
+                    <p className="cif-lit-title">{structure.metadata.literature.title}</p>
+                  )}
+                  {structure.metadata.literature.citation && (
+                    <p className="hint">{structure.metadata.literature.citation}</p>
+                  )}
+                  {structure.metadata.literature.doi && (
+                    <p className="hint">
+                      <a href={`https://doi.org/${structure.metadata.literature.doi}`} target="_blank" rel="noreferrer">
+                        doi:{structure.metadata.literature.doi} ↗
+                      </a>
+                    </p>
+                  )}
+                </div>
+              )}
               {elementDemo?.geometryLimited && elementDemo.geometryNote && (
                 <p className="hint cif-geometry-note">
                   Symmetry overlays: {elementDemo.geometryNote}

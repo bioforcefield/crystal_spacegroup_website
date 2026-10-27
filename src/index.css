@@ -2509,3 +2509,10 @@ button.linkish {
   }
   .cif-explorer .cif-canvas-frame { min-height: 0; }
 }
+
+.cif-struct-name { font-weight: 600; margin: 0 0 0.4rem; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cif-formula { font-weight: 400; opacity: 0.75; }
+.cif-literature { margin-top: 0.6rem; min-width: 0; }
+.cif-literature h3 { font-size: 0.85rem; margin: 0 0 0.25rem; }
+.cif-literature p { margin: 0.15rem 0; overflow-wrap: anywhere; }
+.cif-lit-title { font-style: italic; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

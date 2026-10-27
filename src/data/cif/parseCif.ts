@@ -432,6 +432,8 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
 }
 
 /** Parse a CIF string into cell / SG / operators / asymmetric atoms. */
+import { extractMetadata } from './metadata'
+
 export function parseCif(text: string): ParsedCif {
   const warnings: string[] = []
   if (!text || !text.trim()) {
@@ -442,6 +444,7 @@ export function parseCif(text: string): ParsedCif {
       spaceGroupName: null,
       cifOperators: [],
       atoms: [],
+      metadata: {},
       warnings: ['Empty CIF'],
     }
   }
@@ -471,6 +474,7 @@ export function parseCif(text: string): ParsedCif {
     spaceGroupName: name,
     cifOperators,
     atoms,
+    metadata: extractMetadata(pairs, loops),
     warnings,
   }
 }

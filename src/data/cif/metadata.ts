@@ -1,0 +1,114 @@
+/** Descriptive CIF metadata for the structure panel (name, Z′, resolution, literature). */
+
+export interface CifLiterature {
+  title?: string
+  authors: string[]
+  journal?: string
+  year?: string
+  volume?: string
+  pages?: string
+  doi?: string
+  /** Short formatted citation line, e.g. "Zarges et al. Angew. … 28 (1989) 1392–1394". */
+  citation?: string
+}
+
+export interface CifMetadata {
+  name?: string
+  formula?: string
+  z?: number
+  /** Z′ from the CIF tag, or computed as Z / operator count (set by expandStructure). */
+  zPrime?: number
+  zPrimeSource?: 'cif' | 'computed'
+  /** High-resolution limit d_min in Å. */
+  resolutionA?: number
+  resolutionSource?: 'refine' | 'theta'
+  literature?: CifLiterature
+}
+
+type Loop = { headers: string[]; rows: string[][] }
+
+export function cleanText(raw: string | null | undefined): string | undefined {
+  if (raw == null) return undefined
+  let s = raw.trim()
+  if ((s.startsWith("'") && s.endsWith("'")) || (s.startsWith('"') && s.endsWith('"')))
+    s = s.slice(1, -1)
+  s = s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/\\a/g, 'α').replace(/\\b/g, 'β').replace(/\\g/g, 'γ')
+    .replace(/---/g, '—').replace(/\s+/g, ' ').trim()
+  if (!s || s === '?' || s === '.') return undefined
+  return s
+}
+
+const num = (raw: string | undefined) => {
+  if (!raw) return undefined
+  const v = parseFloat(raw.replace(/\(.*\)$/, ''))
+  return Number.isFinite(v) ? v : undefined
+}
+
+export function extractMetadata(pairs: Map<string, string>, loops: Loop[]): CifMetadata {
+  const loopCol = (keys: string[]): string[] => {
+    for (const k of keys) {
+      for (const l of loops) {
+        const idx = l.headers.indexOf(k)
+        if (idx >= 0) return l.rows.map((r) => cleanText(r[idx])).filter((x): x is string => !!x)
+      }
+    }
+    return []
+  }
+  const get = (...keys: string[]): string | undefined => {
+    for (const k of keys) {
+      const v = cleanText(pairs.get(k))
+      if (v) return v
+      const col = loopCol([k])
+      if (col.length) return col[0]
+    }
+    return undefined
+  }
+
+  const meta: CifMetadata = {}
+  meta.formula = get('_chemical_formula_sum', '_chemical_formula.sum')
+  meta.name =
+    get('_chemical_name_common', '_chemical_name.common', '_chemical_name_systematic',
+      '_chemical_name.systematic', '_chemical_name_mineral', '_struct_title', '_struct.title')
+
+  meta.z = num(get('_cell_formula_units_z', '_cell.formula_units_z'))
+  const zp = num(get('_cell_formula_units_z_prime', '_exptl_crystal_z_prime', '_exptl_crystal.z_prime', '_cell.z_prime', '_space_group_z_prime'))
+  if (zp != null && zp > 0) { meta.zPrime = zp; meta.zPrimeSource = 'cif' }
+
+  const res = num(get('_refine_ls_d_res_high', '_refine.ls_d_res_high', '_reflns_d_resolution_high', '_reflns.d_resolution_high', '_diffrn_reflns_resolution_high'))
+  if (res != null && res > 0) { meta.resolutionA = res; meta.resolutionSource = 'refine' }
+  else {
+    const theta = num(get('_diffrn_reflns_theta_max', '_diffrn_reflns.theta_max', '_reflns_theta_max'))
+    const lambda = num(get('_diffrn_radiation_wavelength', '_diffrn_radiation_wavelength.wavelength'))
+    if (theta && lambda && theta > 0 && theta < 90) {
+      meta.resolutionA = lambda / (2 * Math.sin((theta * Math.PI) / 180))
+      meta.resolutionSource = 'theta'
+    }
+  }
+
+  const authors = loopCol(['_publ_author_name', '_publ_author.name', '_citation_author.name'])
+  if (!authors.length) { const a = get('_publ_author_name'); if (a) authors.push(a) }
+  const lit: CifLiterature = {
+    authors,
+    title: get('_publ_section_title', '_citation.title', '_citation_title'),
+    journal: get('_journal_name_full', '_journal.name_full', '_citation.journal_full', '_citation.journal_abbrev', '_journal_coden_astm'),
+    year: get('_journal_year', '_journal.year', '_citation.year'),
+    volume: get('_journal_volume', '_journal.volume', '_citation.journal_volume'),
+    doi: get('_journal_paper_doi', '_journal.paper_doi', '_citation.pdbx_database_id_doi', '_citation.doi', '_citation_doi'),
+  }
+  const pf = get('_journal_page_first', '_journal.page_first', '_citation.page_first')
+  const pl = get('_journal_page_last', '_journal.page_last', '_citation.page_last')
+  if (pf) lit.pages = pl && pl !== pf ? `${pf}–${pl}` : pf
+  if (lit.doi) lit.doi = lit.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')
+  if (lit.title || lit.journal || lit.doi || authors.length) {
+    const surname = (a: string) => a.split(',')[0]!.trim()
+    const who = authors.length === 0 ? '' : authors.length === 1 ? surname(authors[0]!)
+      : authors.length === 2 ? `${surname(authors[0]!)} & ${surname(authors[1]!)}` : `${surname(authors[0]!)} et al.`
+    const src = [lit.journal, lit.volume, lit.year ? `(${lit.year})` : '', lit.pages].filter(Boolean).join(' ')
+    const c = [who, src].filter(Boolean).join(', ')
+    if (c) lit.citation = c
+    meta.literature = lit
+  }
+  return meta
+}

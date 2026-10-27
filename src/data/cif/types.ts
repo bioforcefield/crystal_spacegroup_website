@@ -1,3 +1,4 @@
+import type { CifMetadata } from './metadata'
 /** Types for CIF upload → symmetry-mapped structure explorer. */
 
 import type { CellParams, Operator, Vec3 } from '../types'
@@ -25,6 +26,7 @@ export interface ParsedCif {
   /** Operators from CIF symmetry loops (may be empty if only SG number given). */
   cifOperators: Operator[]
   atoms: CifAtomSite[]
+  metadata: CifMetadata
   warnings: string[]
 }
 
@@ -69,5 +71,6 @@ export interface ExpandedStructure {
   moleculeCount: number
   /** moleculeId → opIndex. */
   moleculeOpIndex: number[]
+  metadata: CifMetadata
   warnings: string[]
 }

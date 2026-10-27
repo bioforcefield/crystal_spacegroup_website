@@ -104,6 +104,16 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
     bonds: assembled.bonds,
     moleculeCount: assembled.moleculeCount,
     moleculeOpIndex: assembled.moleculeOpIndex,
+    metadata: withZPrime(parsed.metadata, operators.length),
     warnings,
   }
+}
+
+function withZPrime(meta: ParsedCif['metadata'] | undefined, nOps: number) {
+  const m = { ...(meta ?? {}) }
+  if (m.zPrime == null && m.z != null && nOps > 1) {
+    const zp = m.z / nOps
+    if (zp > 0) { m.zPrime = Math.round(zp * 1000) / 1000; m.zPrimeSource = 'computed' as const }
+  }
+  return m
 }
