@@ -26,6 +26,13 @@ export function describeCifStructure(structure: ExpandedStructure): string {
   bits.push(
     `${structure.moleculeCount} intact molecules, ${structure.operators.length} operators, ${structure.atoms.length} sites`,
   )
+  if (structure.hbonds?.length) {
+    const cross = structure.hbonds.filter((h) => h.crossOp).length
+    bits.push(
+      `${structure.hbonds.length} geometric H-bond contacts` +
+        (cross ? `, ${cross} cross-operator` : ''),
+    )
+  }
   return bits.join('. ') + '.'
 }
 

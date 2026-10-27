@@ -9,7 +9,9 @@
  *  - face-diagonal 2-folds (cubic 〈110〉)
  *  - 4 / 4ₙ ‖ a, b, and c
  *  - mirrors / a·b·c·n·d glides ⊥ a, b, c
+ *  - 6 / 6ₙ ‖ c (hexagonal)
  *  - diagonal (non-axis-aligned) mirrors / glides via corners
+ *  - clearer off-origin d-glide loci
  *
  * Remaining uncaptured loci set geometryLimited on generated demos.
  *
@@ -91,6 +93,19 @@ const THREE_C_INV: Mat3 = [
   [-1, 0, 0],
   [0, 0, 1],
 ]
+
+/** 6 ‖ c (hex): (x,y,z) → (−y, x−y, z) composed twice is 3; once is 6. */
+const SIX_C: Mat3 = [
+  [1, -1, 0],
+  [1, 0, 0],
+  [0, 0, 1],
+]
+const SIX_C_INV: Mat3 = [
+  [0, 1, 0],
+  [-1, 1, 0],
+  [0, 0, 1],
+]
+
 
 function fmtFrac(v: number): string {
   const w = wrap01(v)
@@ -327,7 +342,13 @@ function pushGlide(
     classId,
     opIndex: op.index,
     primary: !out.some((g) => g.opIndex === op.index),
-    locus: `${axis} = ${fmtFrac(planeValue)}, glide (${fmtFrac(glide[0])}, ${fmtFrac(glide[1])}, ${fmtFrac(glide[2])})`,
+    locus: `${axis} = ${fmtFrac(planeValue)}${
+      classId === 'd-glide' && !nearZero(planeValue) && !nearHalf(planeValue)
+        ? ' (off-origin d)'
+        : classId === 'd-glide'
+          ? ' (d-glide)'
+          : ''
+    }, glide (${fmtFrac(glide[0])}, ${fmtFrac(glide[1])}, ${fmtFrac(glide[2])})`,
   })
 }
 
@@ -695,6 +716,50 @@ export function deriveFourfoldAB(ops: Operator[]): ScrewAxisSpec[] {
  * Non-axis-aligned mirrors / diagonal glides (common in cubic / hex).
  * Uses eigenvector normal and GlidePlaneSpec.corners.
  */
+
+/**
+ * 6 / 6ₙ ‖ c (hexagonal): R ≈ [[1,−1,0],[1,0,0],[0,0,1]] (or inverse).
+ * Fixed xy from same algebra as 3-fold; screw from tz.
+ */
+export function deriveSixfoldC(ops: Operator[]): ScrewAxisSpec[] {
+  const out: ScrewAxisSpec[] = []
+  for (const op of ops) {
+    const forward = matClose(op.R, SIX_C, EPS)
+    const inverse = matClose(op.R, SIX_C_INV, EPS)
+    if (!forward && !inverse) continue
+    const tx = op.t[0]
+    const ty = op.t[1]
+    const tz = wrap01(op.t[2])
+    // For R:(x−y+tx, x+ty) wait — SIX_C maps (x,y)→(x−y, x)
+    // Fixed: x−y+tx=x ⇒ −y+tx=0 ⇒ y=tx; x+ty=y ⇒ x=y−ty=tx−ty
+    let x0: number
+    let y0: number
+    if (forward) {
+      y0 = wrap01(tx)
+      x0 = wrap01(tx - ty)
+    } else {
+      // INV: (x,y)→(y, −x+y); fixed y+tx=x, −x+y+ty=y ⇒ −x+ty=0 ⇒ x=ty; y=x−tx=ty−tx
+      x0 = wrap01(ty)
+      y0 = wrap01(ty - tx)
+    }
+    let kind: ScrewAxisSpec['kind'] = '6'
+    if (Math.abs(tz - 1 / 6) < 0.06) kind = '61'
+    else if (Math.abs(tz - 2 / 6) < 0.06) kind = '62'
+    else if (Math.abs(tz - 0.5) < 0.06) kind = '63'
+    else if (Math.abs(tz - 4 / 6) < 0.06) kind = '64'
+    else if (Math.abs(tz - 5 / 6) < 0.06) kind = '65'
+    out.push({
+      origin: [x0, y0, 0],
+      direction: [0, 0, 1],
+      locus: `(${fmtFrac(x0)}, ${fmtFrac(y0)}, z) · ${kind} ‖ c`,
+      opIndex: op.index,
+      primary: !out.some((a) => a.opIndex === op.index),
+      kind,
+    })
+  }
+  return out
+}
+
 export function deriveDiagonalGlides(ops: Operator[]): GlidePlaneSpec[] {
   const out: GlidePlaneSpec[] = []
   for (const op of ops) {
@@ -752,7 +817,8 @@ export function deriveDiagonalGlides(ops: Operator[]): GlidePlaneSpec[] {
       classId,
       opIndex: op.index,
       primary: !out.some((g) => g.opIndex === op.index),
-      locus: `n≈(${n[0].toFixed(2)},${n[1].toFixed(2)},${n[2].toFixed(2)}) · ${label}`,
+      locus: `n≈(${n[0].toFixed(2)},${n[1].toFixed(2)},${n[2].toFixed(2)}) · ${label}` +
+        (Math.abs(d) > 0.02 ? ` · offset ${d.toFixed(2)}` : ''),
     })
   }
   return out
@@ -778,6 +844,7 @@ export function deriveElements(ops: Operator[]): DerivedElements {
     ...deriveFourfoldC(ops),
     ...deriveFourfoldAB(ops),
     ...deriveThreefoldC(ops),
+    ...deriveSixfoldC(ops),
     ...deriveBodyDiagonalThreefolds(ops),
   ]
   const glides = [

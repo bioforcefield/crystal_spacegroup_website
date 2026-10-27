@@ -67,7 +67,7 @@ export interface ScrewAxisSpec {
   opIndex: number
   primary: boolean
   /** Axis order/type (default '21' for backward compat). */
-  kind?: '2' | '21' | '3' | '4' | '41' | '42' | '43' | '6' | '63' | 'bar4'
+  kind?: '2' | '21' | '3' | '4' | '41' | '42' | '43' | '6' | '61' | '62' | '63' | '64' | '65' | 'bar4'
 }
 
 export interface InversionCenterSpec {
