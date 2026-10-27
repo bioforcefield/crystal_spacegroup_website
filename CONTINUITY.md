@@ -2,7 +2,7 @@
 
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
-Tip: `main` **5de67db**, `gh-pages` **2a865ec**. Tests: **535**.
+Tip: `main` **a8f4278**, `gh-pages` **bfa0478** (VITE_COD_PROXY live). Tests: **535**.
 Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on large sample trees.
 
 ## COD workflows installed (2026-10-27)
@@ -13,22 +13,14 @@ Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on l
 
 Templates also remain under `scripts/github-workflows/` for reference.
 
-### Remaining user steps — Cloudflare + `VITE_COD_PROXY`
+### Cloudflare COD proxy — done (2026-10-27)
 
-(Cannot invent CF credentials.)
+- Workers subdomain: `crystal-sg`
+- Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif
+- Repo Actions secrets set: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+- Pages rebuilt with `VITE_COD_PROXY` → `gh-pages` **bfa0478** (keep `.nojekyll`)
 
-1. Cloudflare account → API token with Workers deploy rights; note Account ID.
-2. Repo **Settings → Secrets and variables → Actions**:  
-   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
-3. With workflows installed: **Actions → Deploy COD CORS proxy → Run workflow**  
-   **or** locally: `npx wrangler deploy -c scripts/wrangler.cod-proxy.toml`
-4. Note worker URL, e.g. `https://crystal-cod-proxy.<subdomain>.workers.dev/{id}.cif`
-5. Rebuild & orphan-deploy Pages with proxy baked in:  
-   `VITE_COD_PROXY="https://crystal-cod-proxy.<subdomain>.workers.dev/{id}.cif" npm run build:pages`  
-   then `scripts/deploy-gh-pages.sh` (keep `.nojekyll`).
-6. Optional: **Refresh COD cache** monthly / workflow_dispatch to refresh `public/samples/cod/`.
-
-Without the proxy, live site still serves the **55** same-origin teaching COD samples.
+Optional later: **Refresh COD cache** workflow_dispatch to refresh `public/samples/cod/`.
 
 ## Done — Pass 4 (Stages 2–3 + Stage 1 assist)
 
