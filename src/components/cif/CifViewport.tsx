@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useState } from 'react'
 import CellParamsBadge from './CellParamsBadge'
 import type { CifPlacementMode, CifVisibility } from './cifViewTypes'
 import { operatorColor } from '../../data/cif/operatorColors'
@@ -40,6 +40,8 @@ export default function CifViewport({
   resetToken,
   onResetView,
 }: CifViewportProps) {
+  const [viewOpen, setViewOpen] = useState(false)
+
   return (
     <main className="viewport">
       <div className="viewport-toolbar">
@@ -111,91 +113,185 @@ export default function CifViewport({
             </div>
           )}
         </div>
-        <div className="toolbar-actions">
-          <div className="segmented" role="group" aria-label="Motif placement">
+        <div className="toolbar-actions cif-toolbar-actions">
+          {/* Always one-tap: Near/Cell + Molecules */}
+          <div className="cif-toolbar-primary">
+            <div className="segmented" role="group" aria-label="Motif placement">
+              <button
+                type="button"
+                className={placementMode === 'nearest' ? 'seg active' : 'seg'}
+                onClick={() => onPlacementModeChange('nearest')}
+                title="Place molecules near the selected element (may leave the cell)"
+              >
+                <span className="label-full">Nearest images</span>
+                <span className="label-short">Near</span>
+              </button>
+              <button
+                type="button"
+                className={placementMode === 'wrapped' ? 'seg active' : 'seg'}
+                onClick={() => onPlacementModeChange('wrapped')}
+                title="Wrap every atom into the unit cell [0,1)³"
+              >
+                <span className="label-full">In cell</span>
+                <span className="label-short">Cell</span>
+              </button>
+            </div>
+            <div
+              className="segmented cif-vis-primary"
+              role="group"
+              aria-label="Molecule visibility"
+            >
+              <button
+                type="button"
+                className={visibility === 'molecules' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('molecules')}
+              >
+                Molecules
+              </button>
+            </div>
             <button
               type="button"
-              className={placementMode === 'nearest' ? 'seg active' : 'seg'}
-              onClick={() => onPlacementModeChange('nearest')}
-              title="Place molecules near the selected element (may leave the cell)"
+              className={`btn cif-view-toggle${viewOpen ? ' btn-primary' : ''}`}
+              onClick={() => setViewOpen((o) => !o)}
+              aria-expanded={viewOpen}
+              aria-controls="cif-view-sheet"
             >
-              <span className="label-full">Nearest images</span>
-              <span className="label-short">Near</span>
-            </button>
-            <button
-              type="button"
-              className={placementMode === 'wrapped' ? 'seg active' : 'seg'}
-              onClick={() => onPlacementModeChange('wrapped')}
-              title="Wrap every atom into the unit cell [0,1)³"
-            >
-              <span className="label-full">In cell</span>
-              <span className="label-short">Cell</span>
-            </button>
-          </div>
-          <div className="segmented" role="group" aria-label="Copy visibility">
-            <button
-              type="button"
-              className={visibility === 'molecules' ? 'seg active' : 'seg'}
-              onClick={() => onVisibilityChange('molecules')}
-            >
-              Molecules
-            </button>
-            <button
-              type="button"
-              className={visibility === 'all' ? 'seg active' : 'seg'}
-              onClick={() => onVisibilityChange('all')}
-            >
-              All copies
-            </button>
-            <button
-              type="button"
-              className={visibility === 'selected' ? 'seg active' : 'seg'}
-              onClick={() => onVisibilityChange('selected')}
-            >
-              BASE + IMAGE
-            </button>
-            <button
-              type="button"
-              className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
-              onClick={() => onVisibilityChange('asymmetric')}
-            >
-              AU only
+              View{viewOpen ? ' · close' : ''}
             </button>
           </div>
-          <button
-            type="button"
-            className={`btn${showSymmetryElements && canShowElements ? ' btn-primary' : ''}`}
-            onClick={onToggleSymmetryElements}
-            disabled={!structure || !canShowElements}
-            aria-pressed={showSymmetryElements && canShowElements}
-            title={
-              !structure
-                ? 'Load a CIF first'
-                : !elementDemo
-                  ? 'Needs a resolvable space-group number (1–230)'
-                  : elementCount === 0
-                    ? 'No drawable loci for this group yet (operators still listed)'
-                    : showSymmetryElements
-                      ? 'Hide screw / glide / inversion overlays'
-                      : 'Show screw / glide / inversion overlays'
-            }
-          >
-            Symmetry elements
-            {canShowElements
-              ? showSymmetryElements
-                ? ' · on'
-                : ' · off'
-              : ''}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={onResetView}
-            disabled={!structure}
-          >
-            Reset view
-          </button>
+
+          {/* Desktop secondary row (hidden on phone — lives in View sheet) */}
+          <div className="cif-toolbar-secondary cif-toolbar-desktop-only">
+            <div className="segmented" role="group" aria-label="Copy visibility">
+              <button
+                type="button"
+                className={visibility === 'molecules' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('molecules')}
+              >
+                Molecules
+              </button>
+              <button
+                type="button"
+                className={visibility === 'all' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('all')}
+              >
+                All copies
+              </button>
+              <button
+                type="button"
+                className={visibility === 'selected' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('selected')}
+              >
+                BASE + IMAGE
+              </button>
+              <button
+                type="button"
+                className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('asymmetric')}
+              >
+                AU only
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`btn${showSymmetryElements && canShowElements ? ' btn-primary' : ''}`}
+              onClick={onToggleSymmetryElements}
+              disabled={!structure || !canShowElements}
+              aria-pressed={showSymmetryElements && canShowElements}
+              title={
+                !structure
+                  ? 'Load a CIF first'
+                  : !elementDemo
+                    ? 'Needs a resolvable space-group number (1–230)'
+                    : elementCount === 0
+                      ? 'No drawable loci for this group yet (operators still listed)'
+                      : showSymmetryElements
+                        ? 'Hide screw / glide / inversion overlays'
+                        : 'Show screw / glide / inversion overlays'
+              }
+            >
+              Symmetry elements
+              {canShowElements
+                ? showSymmetryElements
+                  ? ' · on'
+                  : ' · off'
+                : ''}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={onResetView}
+              disabled={!structure}
+            >
+              Reset view
+            </button>
+          </div>
         </div>
+
+        {/* Phone View sheet / drawer — does not cover the canvas (sits in toolbar flow) */}
+        {viewOpen && (
+          <div
+            id="cif-view-sheet"
+            className="cif-view-sheet"
+            role="region"
+            aria-label="View options"
+          >
+            <div className="segmented" role="group" aria-label="Copy visibility">
+              <button
+                type="button"
+                className={visibility === 'molecules' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('molecules')}
+              >
+                Molecules
+              </button>
+              <button
+                type="button"
+                className={visibility === 'all' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('all')}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                className={visibility === 'selected' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('selected')}
+              >
+                BASE+IMAGE
+              </button>
+              <button
+                type="button"
+                className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
+                onClick={() => onVisibilityChange('asymmetric')}
+              >
+                AU
+              </button>
+            </div>
+            <div className="cif-view-sheet-actions">
+              <button
+                type="button"
+                className={`btn${showSymmetryElements && canShowElements ? ' btn-primary' : ''}`}
+                onClick={onToggleSymmetryElements}
+                disabled={!structure || !canShowElements}
+                aria-pressed={showSymmetryElements && canShowElements}
+              >
+                Symmetry elements
+                {canShowElements
+                  ? showSymmetryElements
+                    ? ' · on'
+                    : ' · off'
+                  : ''}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={onResetView}
+                disabled={!structure}
+              >
+                Reset view
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {structure && (
