@@ -133,94 +133,97 @@ export default function IndexPage() {
         </div>
       </header>
 
-      <section className="cif-spotlight" aria-labelledby="cif-spotlight-title">
-        <div className="cif-spotlight-inner">
-          <div className="cif-spotlight-copy">
-            <div className="cif-spotlight-badges">
-              <span className="cif-spotlight-badge">Structures</span>
-              <span className="cif-spotlight-badge soft">New</span>
+      <div className="home-spotlights">
+        <section className="cif-spotlight" aria-labelledby="cif-spotlight-title">
+          <div className="cif-spotlight-inner home-spotlight-card">
+            <div className="cif-spotlight-copy">
+              <div className="cif-spotlight-badges">
+                <span className="cif-spotlight-badge">Structures</span>
+                <span className="cif-spotlight-badge soft">New</span>
+              </div>
+              <h2 id="cif-spotlight-title">CIF symmetry map</h2>
+              <p>
+                Upload a CSD or COD CIF and see each symmetry operator colored on
+                the real unit cell — screws, glides, mirrors, and inversions over
+                the actual molecules. Load any COD id through the live proxy, or
+                try a teaching chip on the explorer.
+              </p>
+              <div className="cif-spotlight-cta">
+                <Link to="/cif" className="btn btn-primary">
+                  Open CIF symmetry map
+                </Link>
+                <span className="cif-spotlight-hint">
+                  or try a teaching COD chip on that page
+                </span>
+              </div>
             </div>
-            <h2 id="cif-spotlight-title">CIF symmetry map</h2>
-            <p>
-              Upload a CSD or COD CIF and see each symmetry operator colored on
-              the real unit cell — screws, glides, mirrors, and inversions over
-              the actual molecules. Load any COD id through the live proxy, or
-              try a teaching chip on the explorer.
-            </p>
-            <div className="cif-spotlight-cta">
-              <Link to="/cif" className="btn btn-primary">
-                Open CIF symmetry map
-              </Link>
-              <span className="cif-spotlight-hint">
-                or try a teaching COD chip on that page
-              </span>
+            <div className="cif-spotlight-aside" aria-hidden>
+              <div className="cif-spotlight-orbits">
+                <span className="cif-orb cif-orb-a" />
+                <span className="cif-orb cif-orb-b" />
+                <span className="cif-orb cif-orb-c" />
+              </div>
+              <p className="cif-spotlight-aside-label">CSD · COD · operators</p>
             </div>
           </div>
-          <div className="cif-spotlight-aside" aria-hidden>
-            <div className="cif-spotlight-orbits">
-              <span className="cif-orb cif-orb-a" />
-              <span className="cif-orb cif-orb-b" />
-              <span className="cif-orb cif-orb-c" />
-            </div>
-            <p className="cif-spotlight-aside-label">CSD · COD · operators</p>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="pubs-spotlight" aria-labelledby="pubs-spotlight-title">
-        <div className="pubs-spotlight-inner">
-          <div className="pubs-spotlight-copy">
-            <div className="cif-spotlight-badges">
-              <span className="cif-spotlight-badge">Literature</span>
-              <span className="cif-spotlight-badge soft">Crossref</span>
-              <span className="cif-spotlight-badge soft">COD</span>
+        <div className="home-spotlight-row">
+          <section className="pubs-spotlight" aria-labelledby="pubs-spotlight-title">
+            <div className="pubs-spotlight-inner home-spotlight-card">
+              <div className="pubs-spotlight-copy">
+                <div className="cif-spotlight-badges">
+                  <span className="cif-spotlight-badge">Literature</span>
+                  <span className="cif-spotlight-badge soft">Crossref</span>
+                  <span className="cif-spotlight-badge soft">COD</span>
+                </div>
+                <h2 id="pubs-spotlight-title">Publications by year &amp; tags</h2>
+                <p>
+                  Stream recent ACS / IUCr / RSC / Wiley titles via Crossref
+                  (metadata + DOI only), or browse the curated COD set by year and
+                  tags — then open the paper or the structure in the CIF map.
+                </p>
+                <div className="cif-spotlight-cta">
+                  <Link to="/pubs" className="btn btn-primary">
+                    Browse publications
+                  </Link>
+                  <span className="cif-spotlight-hint">
+                    live Crossref · curated COD · no PDFs
+                  </span>
+                </div>
+              </div>
             </div>
-            <h2 id="pubs-spotlight-title">Publications by year &amp; tags</h2>
-            <p>
-              Stream recent ACS / IUCr / RSC / Wiley titles via Crossref
-              (metadata + DOI only), or browse the curated COD set by year and
-              tags — then open the paper or the structure in the CIF map.
-            </p>
-            <div className="cif-spotlight-cta">
-              <Link to="/pubs" className="btn btn-primary">
-                Browse publications
-              </Link>
-              <span className="cif-spotlight-hint">
-                live Crossref · curated COD · no PDFs
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-
-      <section className="teach-spotlight" aria-labelledby="teach-spotlight-title">
-        <div className="teach-spotlight-inner">
-          <div className="teach-spotlight-copy">
-            <div className="cif-spotlight-badges">
-              <span className="cif-spotlight-badge">Growth</span>
-              <span className="cif-spotlight-badge soft">Interactive</span>
+          <section className="teach-spotlight" aria-labelledby="teach-spotlight-title">
+            <div className="teach-spotlight-inner home-spotlight-card">
+              <div className="teach-spotlight-copy">
+                <div className="cif-spotlight-badges">
+                  <span className="cif-spotlight-badge">Growth</span>
+                  <span className="cif-spotlight-badge soft">Interactive</span>
+                </div>
+                <h2 id="teach-spotlight-title">Morphology &amp; kinetics</h2>
+                <p>
+                  Explore how relative face growth rates set crystal habit (2D Wulff
+                  schematic), and how supersaturation drives nucleation and growth
+                  mechanism curves — teaching plots with live sliders.
+                </p>
+                <div className="cif-spotlight-cta">
+                  <Link to="/morphology" className="btn btn-primary">
+                    Morphology
+                  </Link>
+                  <Link to="/kinetics" className="btn btn-primary">
+                    Kinetics
+                  </Link>
+                  <span className="cif-spotlight-hint">
+                    Wulff outline · nucleation · growth regimes
+                  </span>
+                </div>
+              </div>
             </div>
-            <h2 id="teach-spotlight-title">Morphology &amp; kinetics</h2>
-            <p>
-              Explore how relative face growth rates set crystal habit (2D Wulff
-              schematic), and how supersaturation drives nucleation and growth
-              mechanism curves — teaching plots with live sliders.
-            </p>
-            <div className="cif-spotlight-cta">
-              <Link to="/morphology" className="btn btn-primary">
-                Morphology
-              </Link>
-              <Link to="/kinetics" className="btn btn-primary">
-                Kinetics
-              </Link>
-              <span className="cif-spotlight-hint">
-                Wulff outline · nucleation · growth regimes
-              </span>
-            </div>
-          </div>
+          </section>
         </div>
-      </section>
+      </div>
 
       <main className="index-main">
         <section id="explore" className="index-section">

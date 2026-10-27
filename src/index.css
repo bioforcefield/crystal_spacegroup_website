@@ -1276,6 +1276,97 @@ button {
   }
 }
 
+/* —— Home spotlights (aligned feature panels) —— */
+.home-spotlights {
+  max-width: 1280px;
+  margin: -0.35rem auto 0.85rem;
+  padding: 0 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-sizing: border-box;
+}
+
+.home-spotlight-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.home-spotlight-card {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.home-spotlights .cif-spotlight,
+.home-spotlights .pubs-spotlight,
+.home-spotlights .teach-spotlight {
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+
+.home-spotlights .pubs-spotlight-inner,
+.home-spotlights .teach-spotlight-inner {
+  max-width: none;
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.home-spotlights .pubs-spotlight-copy,
+.home-spotlights .teach-spotlight-copy {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.home-spotlights .pubs-spotlight-copy p,
+.home-spotlights .teach-spotlight-copy p {
+  flex: 1;
+  margin: 0 0 1rem;
+  max-width: none;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.home-spotlights .pubs-spotlight-copy h2,
+.home-spotlights .teach-spotlight-copy h2 {
+  margin: 0 0 0.45rem;
+  font-size: clamp(1.15rem, 2.2vw, 1.4rem);
+  letter-spacing: -0.02em;
+}
+
+.home-spotlights .teach-spotlight-inner {
+  padding: 1.25rem 1.4rem;
+  border-radius: 18px;
+}
+
+.home-spotlights .pubs-spotlight-inner {
+  padding: 1.25rem 1.4rem;
+  border-radius: 18px;
+}
+
+@media (max-width: 900px) {
+  .home-spotlights {
+    padding: 0 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .home-spotlight-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-spotlights {
+    padding: 0 0.85rem;
+  }
+}
+
 /* —— CIF spotlight (home) —— */
 .cif-spotlight {
   position: relative;
@@ -1513,6 +1604,10 @@ button {
   cursor: pointer;
   transition: border-color 0.15s, transform 0.12s, background 0.15s;
   border-top: 3px solid var(--sys, #38bdf8);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .system-card:hover {
@@ -1547,6 +1642,7 @@ button {
   font-size: 0.9rem;
   color: var(--muted);
   line-height: 1.45;
+  margin-top: auto;
 }
 
 .index-toolbar {

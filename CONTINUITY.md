@@ -3,6 +3,11 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+## Front-page spotlights
+- CIF / Publications / Morphology+kinetics share `.home-spotlights` (1280px, same padding as hero/main)
+- Pubs + teach sit in equal-height `.home-spotlight-row` (2-col → 1-col ≤900px)
+- System cards stretch evenly in the explore grid
+
 ## Review leftovers addressed (P1 later + P2)
 - Peak-shift: same-hkl preferred; nearest-2θ labeled in UI
 - Powder sliders debounced (~80 ms)
@@ -19,5 +24,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `026456a`
-- gh-pages: `b13ca2d` (VITE_COD_PROXY baked)
+- main: (pending commit)
+- gh-pages: (pending deploy)
