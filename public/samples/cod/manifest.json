@@ -44,6 +44,27 @@
       "formula": "Cu S"
     },
     {
+      "id": "1010925",
+      "label": "Adamite",
+      "hm": "P n n m",
+      "ita": 58,
+      "formula": "As H O5 Zn2"
+    },
+    {
+      "id": "1010940",
+      "label": "Chalcopyrite",
+      "hm": "I -4 2 d",
+      "ita": 122,
+      "formula": "Cu Fe S2"
+    },
+    {
+      "id": "1010953",
+      "label": "Carnegieite high",
+      "hm": "P 21 3",
+      "ita": 198,
+      "formula": "Al Na O4 Si"
+    },
+    {
       "id": "1010954",
       "label": "Cristobalite high",
       "hm": "F 41 3 2",
@@ -93,6 +114,13 @@
       "formula": "C22 H43 Ag O2"
     },
     {
+      "id": "1507776",
+      "label": "Nb4 O17 Sr5 Ti",
+      "hm": "P n n m",
+      "ita": 58,
+      "formula": "Nb4 O17 Sr5 Ti"
+    },
+    {
       "id": "1508519",
       "label": "C25 H26 Fe N2 O2",
       "hm": "P c a 21",
@@ -114,11 +142,25 @@
       "formula": "C22 H19 F O2"
     },
     {
+      "id": "1521116",
+      "label": "Ir O6 Sr2 Tb",
+      "hm": "P 1 21/n 1",
+      "ita": 14,
+      "formula": "Ir O6 Sr2 Tb"
+    },
+    {
       "id": "1528996",
       "label": "La1.2 O7 Y0.8 Zr2",
       "hm": "F d -3 m :2",
       "ita": 227,
       "formula": "La1.2 O7 Y0.8 Zr2"
+    },
+    {
+      "id": "1532503",
+      "label": "C38 H80 Fe2 O6 P2 Si8",
+      "hm": "P 1 21/c 1",
+      "ita": 14,
+      "formula": "C38 H80 Fe2 O6 P2 Si8"
     },
     {
       "id": "1532834",
@@ -161,6 +203,13 @@
       "hm": "C m c m",
       "ita": 63,
       "formula": "Cu O2 Sr"
+    },
+    {
+      "id": "2002887",
+      "label": "Br10 Re2 Te6",
+      "hm": "P 1 21 1",
+      "ita": 4,
+      "formula": "Br10 Re2 Te6"
     },
     {
       "id": "2100301",
@@ -226,6 +275,13 @@
       "formula": "C20 H20 N2 O6"
     },
     {
+      "id": "4124843",
+      "label": "H14 N6 O8 Pt2",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "H14 N6 O8 Pt2"
+    },
+    {
       "id": "7206076",
       "label": "1-[(2-biphenylamino)methylen]naphtalen-2(1H)-one",
       "hm": "P 1 21/c 1",
@@ -245,6 +301,13 @@
       "hm": "F m -3 m",
       "ita": 225,
       "formula": "Pb S"
+    },
+    {
+      "id": "9000046",
+      "label": "Graphite",
+      "hm": "F m m m",
+      "ita": 69,
+      "formula": "C"
     },
     {
       "id": "9007681",
@@ -290,6 +353,13 @@
     },
     {
       "id": "9008565",
+      "label": "Silicon",
+      "hm": "F d -3 m :1",
+      "ita": 227,
+      "formula": "Si"
+    },
+    {
+      "id": "9008566",
       "label": "Silicon",
       "hm": "F d -3 m :1",
       "ita": 227,

@@ -103,7 +103,7 @@ export default function OperatorPanel({
   }
 
   return (
-    <aside className="panel">
+    <aside className="panel" id="demo-sidebar">
       <header className="panel-header">
         <div className="panel-nav-row">
           <Link to="/" className="back-link">
@@ -285,6 +285,7 @@ export default function OperatorPanel({
                   role="option"
                   aria-selected={active}
                   aria-pressed={active}
+                  aria-label={`Operator ${op.index}: ${op.triplet}, ${op.label}${op.index === 1 ? ', BASE' : active ? ', IMAGE' : ''}`}
                 >
                   <span className="op-index">{op.index}</span>
                   <span className="op-swatch" title={cls.label} />

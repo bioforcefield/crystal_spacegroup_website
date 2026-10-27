@@ -2,50 +2,39 @@
 
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
-Tip: `main` **9d56c48**, `gh-pages` **20a7bc4** (465 tests).
+Tip: `main` **(pending push)**, `gh-pages` **(pending)**. Tests: **535**.
 Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on large sample trees.
 
-## Done — Deferred leftovers pass (stages 1–4)
+## Done — Pass 4 (Stages 2–3 + Stage 1 assist)
 
-### Stage 1 — COD cache + proxy tooling (`a735854`)
-- Same-origin cache expanded to **45** COD CIFs (`public/samples/cod/` + manifest)
-- `scripts/build-cod-manifest.py`, improved worker + `wrangler.cod-proxy.toml`
-- Workflow templates in `scripts/github-workflows/` (copy into `.github/workflows/` when the repo token has `workflow` scope): `deploy-cod-proxy.yml` (needs `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`), `refresh-cod-cache.yml`
-- Client: cache → `VITE_COD_PROXY` → Vite `/cod-proxy` → direct COD; UI shows cache/proxy/fail notes
-- **Arbitrary COD on live Pages still needs a user-deployed Cloudflare Worker** (no CF token here)
-- CSD: Access Structures + upload/paste only (no scrape)
+### Stage 2 — Hand polish +14
+- Hand demos **71 → 85**: Pmm2, Pnnm, Pmmn, P43, P-4, I4/m, P4mm, P4/nmm, I4/mmm, I41/amd, R32, R3m, R-3m, P63mc
+- `handExtra.ts` + `makeHandDemo` now uses locus-preferring `pickOperatorFocusIndices`
 
-### Stage 2 — Cross-op H-bonds (`fa78f91`)
-- Geometric D–H···A across molecules; prefer cross-operator contacts
-- CIF View: No H-bonds / H-bonds / Partners; dashed lines (pink = cross-op)
-- Cap ~180 contacts; skip very large cells
+### Stage 3 — Pragmatic a11y
+- SG: `aria-pressed` on Near/Cell, All/B+I, 3D|2D; richer canvas aria (system + overlay counts); op-row aria-labels
+- CIF: View sheet focus trap + restore focus on Escape/close; `role="dialog"`; H-bond mode `aria-live`
+- Skip links (Home + demo/CIF shells) → `#demo-main` / `#demo-sidebar`
+- Still **not** full WebGL screen-reader a11y
 
-### Stage 3 — Hand polish +14 (`a54ae4f`)
-- Hand demos **57 → 71**: P2, P222, P2221, Pmc21, Pmn21, P4, P42, I4, P42/mnm, P3121, P3221, P63, P213, F-43m
-- `makeHandDemo` + `handExtra.ts`
-
-### Stage 4 — Exotic loci + a11y (`fe2d5e7`)
-- `deriveSixfoldC` (6/61–65 ‖ c); off-origin d-glide locus labels; diagonal offset notes
-- Structure canvas summary mentions H-bond counts
-- Still not full WebGL screen-reader a11y
+### Stage 1 assist — COD workflows / cache
+- Templates improved under `scripts/github-workflows/` (+ README)
+- Attempted `.github/workflows/` copy — push may need **`workflow` scope** (parent/user)
+- COD same-origin cache **45 → 55** CIFs; teaching chips +2 (NaCl, ZnS/P63mc)
+- Arbitrary COD on live Pages still needs Cloudflare Worker + `VITE_COD_PROXY`
 
 ## Key paths
-- COD: `src/data/cif/codSamples.ts`, `fetchRemoteCif.ts`, `public/samples/cod/`, `scripts/cod-cors-worker.js`
-- H-bonds: `src/data/cif/hbonds.ts`
 - Hand extras: `src/data/handExtra.ts`, `makeHandDemo.ts`
-- Loci: `src/data/groups/deriveElements.ts`
+- A11y: `src/data/a11y/structureSummary.ts`, `CifViewport.tsx`, `App.tsx` skip-links
+- COD: `scripts/github-workflows/`, `public/samples/cod/`, `scripts/fetch-cod-samples.sh`
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## Still limited
-- Arbitrary COD fetch on Pages without Cloudflare account / `VITE_COD_PROXY`
+- Workflow YAML in `.github/workflows/` may be blocked without `workflow` scope
+- No Cloudflare secrets here → no live arbitrary-COD proxy
+- Remaining ~145 generated groups not hand-authored
 - Full WebGL / canvas SR a11y
-- Some exotic cubic/rhombohedral loci may remain geometryLimited
-- Remaining ~159 generated groups not hand-authored
-- Cross-op H-bonds are geometric (need H in CIF); not a full H-placement refinement
 
-## SHAs (this pass)
-- 1 `a735854` → 2 `fa78f91` → 3 `a54ae4f` → 4 `fe2d5e7`
-- Prior tip: `9cc2d9f`
-- tests: 465
-- main tip: `d220302`
-- gh-pages: `4372010` (288 files; 45 COD cache CIFs)
+## SHAs (fill after push)
+- tests: 535
+- hand demos: 85

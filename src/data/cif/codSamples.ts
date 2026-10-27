@@ -45,6 +45,8 @@ export const COD_TEACHING_CHIPS: ReadonlyArray<{ id: string; short: string }> = 
   { id: '1010995', short: 'SiC · F-43m' },
   { id: '1544740', short: 'NiS₂ · Pa-3' },
   { id: '9011577', short: 'graphite · P63/mmc' },
+  { id: '9008566', short: 'NaCl · Fm-3m' },
+  { id: '1010953', short: 'ZnS · P63mc' },
 ]
 
 export async function loadCodSamplesManifest(

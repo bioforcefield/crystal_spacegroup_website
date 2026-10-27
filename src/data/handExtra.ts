@@ -164,7 +164,133 @@ export const fbar43mDemo: SpaceGroupDemo = makeHandDemo({
     'F-43m (No. 216) is the zincblende / SiC aristotype: F-centring with −43m point symmetry (96 general positions). Teaching partner to Fd-3m (diamond) — same cubic family, different glide content and inversion.',
 })
 
-/** All second-wave hand demos. */
+/** 25 · Pmm2 — polar orthorhombic baseline. */
+export const pmm2Demo: SpaceGroupDemo = makeHandDemo({
+  number: 25,
+  shortName: 'Pmm2',
+  classLegendOrder: L(['identity', 'twofold', 'mirror']),
+  blurb:
+    'Pmm2 (No. 25) is the simplest polar orthorhombic group: two mirrors meeting in a 2-fold ‖ c, no glides or screws. Teaching baseline before Pca21 / Pna21 / Pmc21 (which replace mirrors with glides and add 2₁).',
+})
+
+/** 58 · Pnnm */
+export const pnnmDemo: SpaceGroupDemo = makeHandDemo({
+  number: 58,
+  shortName: 'Pnnm',
+  classLegendOrder: L(['identity', 'twofold', 'inversion', 'mirror', 'n-glide']),
+  blurb:
+    'Pnnm (No. 58) is centrosymmetric orthorhombic mmm with n-glides ⊥ a and ⊥ b plus a mirror ⊥ c. Useful contrast with Pnma / Pbca (different glide combinations) and with Pmmn (mirrors vs n-glides swapped).',
+})
+
+/** 59 · Pmmn */
+export const pmmnDemo: SpaceGroupDemo = makeHandDemo({
+  number: 59,
+  shortName: 'Pmmn',
+  classLegendOrder: L(['identity', 'twofold', 'inversion', 'mirror', 'n-glide']),
+  blurb:
+    'Pmmn (No. 59) pairs mirrors ⊥ a and ⊥ b with an n-glide ⊥ c (origin choice 1). Teaching partner to Pnnm — same mmm point group, swapped axial vs diagonal glide content.',
+})
+
+/** 78 · P43 — enantiomorph of P41 */
+export const p43Demo: SpaceGroupDemo = makeHandDemo({
+  number: 78,
+  shortName: 'P43',
+  classLegendOrder: L(['identity', 'screw', 'twofold']),
+  blurb:
+    'P4₃ (No. 78) is the opposite enantiomorph of P4₁: a 4₃ screw ‖ c (translation ¾c) instead of 4₁. Teaching pair for left- vs right-handed tetragonal screws — all operations proper (Sohncke).',
+})
+
+/** 81 · P-4 */
+export const pbar4Demo: SpaceGroupDemo = makeHandDemo({
+  number: 81,
+  shortName: 'P-4',
+  classLegendOrder: L(['identity', 'fourfold', 'twofold']),
+  blurb:
+    'P-4 (No. 81) is the pure −4 tetragonal group: a −4 ‖ c (and its 2-fold power), no mirrors or glides. Teaching start for −4 / −42m before adding c-glides (P-421c) or mirrors.',
+})
+
+/** 87 · I4/m */
+export const i4mDemo: SpaceGroupDemo = makeHandDemo({
+  number: 87,
+  shortName: 'I4/m',
+  classLegendOrder: L(['identity', 'fourfold', 'twofold', 'inversion', 'mirror']),
+  blurb:
+    'I4/m (No. 87) adds mirrors and inversion to I4 (body-centred 4/m). Sixteen general positions — teaching bridge from I4 / I41/a toward I4/mmm.',
+})
+
+/** 99 · P4mm — BaTiO₃ aristotype polar */
+export const p4mmDemo: SpaceGroupDemo = makeHandDemo({
+  number: 99,
+  shortName: 'P4mm',
+  classLegendOrder: L(['identity', 'fourfold', 'twofold', 'mirror']),
+  blurb:
+    'P4mm (No. 99) is the polar tetragonal aristotype (BaTiO₃ ferroelectric phase): 4 ‖ c with vertical mirrors, no inversion. Teaching contrast with centrosymmetric P4/mmm and with screw-bearing P42/mnm (rutile).',
+})
+
+/** 129 · P4/nmm — PbO / FeSe family */
+export const p4nmmDemo: SpaceGroupDemo = makeHandDemo({
+  number: 129,
+  shortName: 'P4/nmm',
+  classLegendOrder: L(['identity', 'fourfold', 'twofold', 'inversion', 'mirror', 'n-glide']),
+  blurb:
+    'P4/nmm (No. 129) is a key inorganic tetragonal 4/mmm group (PbO, FeSe families): n-glide ⊥ c with vertical mirrors (origin choice 1). Sixteen general positions — pair with P4/mmm and I4/mmm.',
+})
+
+/** 139 · I4/mmm — very common inorganic */
+export const i4mmmDemo: SpaceGroupDemo = makeHandDemo({
+  number: 139,
+  shortName: 'I4/mmm',
+  classLegendOrder: L(['identity', 'fourfold', 'twofold', 'inversion', 'mirror']),
+  blurb:
+    'I4/mmm (No. 139) is among the most common inorganic tetragonal groups: I-centring with full 4/mmm (32 general positions). Teaching aristotype for layered and perovskite-related tetragonal cells — contrast with P4/mmm and I41/amd.',
+})
+
+/** 141 · I41/amd — zircon / spinel-related */
+export const i41amdDemo: SpaceGroupDemo = makeHandDemo({
+  number: 141,
+  shortName: 'I41/amd',
+  classLegendOrder: L(['identity', 'screw', 'twofold', 'inversion', 'mirror', 'a-glide', 'd-glide', 'fourfold']),
+  blurb:
+    'I4₁/amd (No. 141) hosts zircon and related aristotypes: 4₁ ‖ c, diamond-type d content, and mirrors (origin choice 1). Thirty-two general positions — teaching partner to I41/a and I4/mmm.',
+})
+
+/** 155 · R32 */
+export const r32Demo: SpaceGroupDemo = makeHandDemo({
+  number: 155,
+  shortName: 'R32',
+  classLegendOrder: L(['identity', 'threefold', 'twofold']),
+  blurb:
+    'R32 (No. 155) is the rhombohedral Sohncke group: 3 ‖ c plus basal 2-folds, with R-centring (hexagonal setting, 18 general positions). Teaching bridge between P3121/P3221 and centrosymmetric R-3m.',
+})
+
+/** 160 · R3m */
+export const r3mDemo: SpaceGroupDemo = makeHandDemo({
+  number: 160,
+  shortName: 'R3m',
+  classLegendOrder: L(['identity', 'threefold', 'mirror']),
+  blurb:
+    'R3m (No. 160) is polar rhombohedral 3m: 3 ‖ c with vertical mirrors and R-centring (hexagonal setting). Teaching contrast with R32 (no mirrors) and R-3m (adds inversion).',
+})
+
+/** 166 · R-3m — calcite / layered aristotype */
+export const rbar3mDemo: SpaceGroupDemo = makeHandDemo({
+  number: 166,
+  shortName: 'R-3m',
+  classLegendOrder: L(['identity', 'threefold', 'twofold', 'inversion', 'mirror']),
+  blurb:
+    'R-3m (No. 166) is the centrosymmetric rhombohedral −3m aristotype (calcite-related and many layered structures): 3/−3 ‖ c, mirrors, and R-centring — thirty-six general positions in the hexagonal setting. Pair with R-3c (c-glides instead of mirrors).',
+})
+
+/** 186 · P63mc — wurtzite */
+export const p63mcDemo: SpaceGroupDemo = makeHandDemo({
+  number: 186,
+  shortName: 'P63mc',
+  classLegendOrder: L(['identity', 'screw', 'threefold', 'mirror', 'c-glide']),
+  blurb:
+    'P6₃mc (No. 186) is the wurtzite aristotype: polar hexagonal 6₃mc with 6₃ ‖ c, vertical mirrors, and c-glides. Teaching partner to F-43m (zincblende) — same composition families, different packing and polarity.',
+})
+
+/** All second-/third-wave hand demos (beyond the original ~57). */
 export const HAND_EXTRA_DEMOS: SpaceGroupDemo[] = [
   p2Demo,
   p222Demo,
@@ -180,4 +306,18 @@ export const HAND_EXTRA_DEMOS: SpaceGroupDemo[] = [
   p63Demo,
   p213Demo,
   fbar43mDemo,
+  pmm2Demo,
+  pnnmDemo,
+  pmmnDemo,
+  p43Demo,
+  pbar4Demo,
+  i4mDemo,
+  p4mmDemo,
+  p4nmmDemo,
+  i4mmmDemo,
+  i41amdDemo,
+  r32Demo,
+  r3mDemo,
+  rbar3mDemo,
+  p63mcDemo,
 ]

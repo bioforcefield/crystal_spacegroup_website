@@ -1,10 +1,15 @@
-# Copy into .github/workflows/ to enable (requires GitHub token with workflow scope).
+# Copy into .github/workflows/ to enable.
+# Requires a GitHub token/PAT with `workflow` scope to push this file the first time
+# (ordinary `repo` scope cannot create/update workflow files).
+#
 # Refresh curated same-origin COD CIF cache (teaching samples for GH Pages).
 name: Refresh COD cache
 on:
   workflow_dispatch:
   schedule:
     - cron: '17 4 1 * *' # monthly
+permissions:
+  contents: write
 jobs:
   refresh:
     runs-on: ubuntu-latest

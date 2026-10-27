@@ -57,6 +57,12 @@ function SiteChrome({
   if (variant === 'demo') {
     return (
       <div className="demo-shell">
+        <a className="skip-link" href="#demo-main">
+          Skip to 3D view
+        </a>
+        <a className="skip-link" href="#demo-sidebar">
+          Skip to operator list
+        </a>
         <header className="demo-topbar" aria-label="Demo navigation">
           <Link to="/" className="site-brand demo-brand">
             <span className="brand-mark" aria-hidden />
@@ -84,6 +90,9 @@ function SiteChrome({
 
   return (
     <div className="site-shell">
+      <a className="skip-link" href="#explore">
+        Skip to content
+      </a>
       <header className="site-topbar">
         <Link to="/" className="site-brand">
           <span className="brand-mark" aria-hidden />

@@ -27,5 +27,8 @@ describe('a11y structure summaries', () => {
     const d = describeSpaceGroupCanvas(demo)
     expect(d).toMatch(/14/)
     expect(d).toMatch(/P21/)
+    expect(d).toMatch(/monoclinic/i)
+    expect(d).toMatch(/operators/i)
+    expect(d).toMatch(/overlay/i)
   })
 })

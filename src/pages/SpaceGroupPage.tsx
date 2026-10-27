@@ -129,6 +129,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                 type="button"
                 className={mobilePane === '3d' ? 'seg active' : 'seg'}
                 onClick={() => setMobilePane('3d')}
+                aria-pressed={mobilePane === '3d'}
                 title="Show 3D unit cell"
               >
                 3D
@@ -137,6 +138,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                 type="button"
                 className={mobilePane === '2d' ? 'seg active' : 'seg'}
                 onClick={() => setMobilePane('2d')}
+                aria-pressed={mobilePane === '2d'}
                 title="Show 2D projection diagram"
               >
                 2D
@@ -153,6 +155,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                   placementMode === 'nearest' ? 'seg active' : 'seg'
                 }
                 onClick={() => setPlacementMode('nearest')}
+                aria-pressed={placementMode === 'nearest'}
                 title="Place BASE/IMAGE near the selected element (may leave the cell)"
               >
                 <span className="label-full">Nearest images</span>
@@ -164,6 +167,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                   placementMode === 'wrapped' ? 'seg active' : 'seg'
                 }
                 onClick={() => setPlacementMode('wrapped')}
+                aria-pressed={placementMode === 'wrapped'}
                 title="Wrap every motif into the unit cell [0,1)³"
               >
                 <span className="label-full">In cell</span>
@@ -179,6 +183,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                 type="button"
                 className={showAllSites ? 'seg active' : 'seg'}
                 onClick={() => setShowAllSites(true)}
+                aria-pressed={showAllSites}
                 title={`Show all ${nOps} general-position motifs`}
               >
                 <span className="label-full">All sites</span>
@@ -188,6 +193,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                 type="button"
                 className={!showAllSites ? 'seg active' : 'seg'}
                 onClick={() => setShowAllSites(false)}
+                aria-pressed={!showAllSites}
                 title="Show only BASE and its IMAGE under the selected operator"
               >
                 <span className="label-full">BASE + IMAGE</span>
@@ -262,9 +268,11 @@ export default function SpaceGroupPage({ demo }: Props) {
         </div>
         <div className="viewport-body">
           <div
+            id="demo-main"
             className="canvas-wrap"
             role="img"
             aria-label={describeSpaceGroupCanvas(demo)}
+            tabIndex={-1}
           >
             <UnitCellScene
               demo={demo}

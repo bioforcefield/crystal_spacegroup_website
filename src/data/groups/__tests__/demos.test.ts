@@ -86,12 +86,12 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the hand-polished golden demos (57 + second wave)', () => {
+  it('has the hand-polished golden demos (57 + extra waves)', () => {
     const nums = demos.map((d) => d.meta.number).sort((a, b) => a - b)
     expect(nums).toEqual([
-      1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 26, 29, 31, 33, 36, 41, 43, 47, 52, 56, 57, 60, 61, 62, 63, 64, 65, 69, 70, 75, 76, 77, 79, 80, 82, 86, 88, 92, 96, 114, 123, 136, 138, 146, 147, 148, 152, 154, 161, 167, 173, 176, 191, 194, 198, 202, 205, 216, 221, 225, 227, 229, 230,
+      1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 26, 29, 31, 33, 36, 41, 43, 47, 52, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 69, 70, 75, 76, 77, 78, 79, 80, 81, 82, 86, 87, 88, 92, 96, 99, 114, 123, 129, 136, 138, 139, 141, 146, 147, 148, 152, 154, 155, 160, 161, 166, 167, 173, 176, 186, 191, 194, 198, 202, 205, 216, 221, 225, 227, 229, 230,
     ])
-    expect(nums.length).toBe(71)
+    expect(nums.length).toBe(85)
     expect(allHandDemos()).toEqual(demos)
   })
 

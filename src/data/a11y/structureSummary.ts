@@ -38,10 +38,18 @@ export function describeCifStructure(structure: ExpandedStructure): string {
 
 export function describeSpaceGroupCanvas(demo: SpaceGroupDemo): string {
   const m = demo.meta
+  const nAxes = demo.screwAxes?.length ?? 0
+  const nGlides = demo.glidePlanes?.length ?? 0
+  const nInv = demo.inversionCenters?.length ?? 0
+  const elements =
+    nAxes + nGlides + nInv > 0
+      ? `, ${nAxes} axis overlay${nAxes === 1 ? '' : 's'}, ${nGlides} plane overlay${nGlides === 1 ? '' : 's'}, ${nInv} inversion center${nInv === 1 ? '' : 's'}`
+      : ', no drawable geometric overlays yet'
   return (
     `Space-group teaching demo ${m.number} ${m.hm}, ${m.system} system, ` +
     `${demo.operators.length} general-position operators` +
-    (demo.demoSource === 'generated' ? ', auto-generated from ITA' : '') +
-    '. Use the operator list to highlight BASE to IMAGE. 3D view is visual only.'
+    elements +
+    (demo.demoSource === 'generated' ? ', auto-generated from ITA' : ', hand-tuned teaching demo') +
+    '. Use the operator list or chips to highlight BASE to IMAGE. 3D view is visual only; not a full screen-reader geometry description.'
   )
 }

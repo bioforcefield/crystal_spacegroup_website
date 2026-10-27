@@ -14,6 +14,7 @@ import {
   isGeometryLimited,
 } from './groups'
 import { CLASS_PALETTE_ORDER, SYMMETRY_CLASSES } from './symmetryPalette'
+import { pickOperatorFocusIndices } from './generatedDemo'
 import type {
   CellParams,
   Operator,
@@ -123,10 +124,20 @@ export function makeHandDemo(spec: HandDemoSpec): SpaceGroupDemo {
     return null
   }
 
-  const focus = operators
-    .filter((o) => o.classId !== 'identity')
-    .slice(0, 6)
-    .map((o) => o.index)
+  const locusOps = new Set<number>([
+    ...derived.axes.map((a) => a.opIndex),
+    ...derived.glides.map((g) => g.opIndex),
+    ...operators.filter((o) => o.classId === 'inversion').map((o) => o.index),
+  ])
+  const focus =
+    pickOperatorFocusIndices(operators, 12, locusOps) ??
+    [
+      1,
+      ...operators
+        .filter((o) => o.classId !== 'identity')
+        .slice(0, 5)
+        .map((o) => o.index),
+    ]
 
   return {
     meta: {

@@ -1,7 +1,12 @@
-# Copy into .github/workflows/ to enable (requires GitHub token with workflow scope).
+# Copy into .github/workflows/ to enable (needs `workflow` scope on the push token).
 # Deploy the COD CORS Cloudflare Worker when CF secrets are configured.
-# Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
-# Optional repo variable / secret: VITE_COD_PROXY (used by pages-build workflow if present)
+#
+# Repo secrets:
+#   CLOUDFLARE_API_TOKEN
+#   CLOUDFLARE_ACCOUNT_ID
+# After the worker is live, rebuild Pages with:
+#   VITE_COD_PROXY="https://YOUR_WORKER.workers.dev/{id}.cif"
+# (set as a GitHub Actions variable/secret consumed by your pages build, or locally).
 name: Deploy COD CORS proxy
 on:
   workflow_dispatch:
@@ -10,7 +15,10 @@ on:
       - 'scripts/cod-cors-worker.js'
       - 'scripts/wrangler.cod-proxy.toml'
       - '.github/workflows/deploy-cod-proxy.yml'
+      - 'scripts/github-workflows/deploy-cod-proxy.yml'
     branches: [main]
+permissions:
+  contents: read
 jobs:
   deploy:
     runs-on: ubuntu-latest

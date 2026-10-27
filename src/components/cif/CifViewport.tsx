@@ -1,4 +1,10 @@
-import { Suspense, lazy, useEffect, useState } from 'react'
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import CellParamsBadge from './CellParamsBadge'
 import type {
   CifColorMode,
@@ -60,15 +66,68 @@ export default function CifViewport({
   onHBondModeChange,
 }: CifViewportProps) {
   const [viewOpen, setViewOpen] = useState(false)
+  const viewToggleRef = useRef<HTMLButtonElement>(null)
+  const viewSheetRef = useRef<HTMLDivElement>(null)
+  const prevOpenRef = useRef(false)
 
   useEffect(() => {
-    if (!viewOpen) return
+    if (!viewOpen) {
+      if (prevOpenRef.current) {
+        viewToggleRef.current?.focus()
+      }
+      prevOpenRef.current = false
+      return
+    }
+    prevOpenRef.current = true
+    const sheet = viewSheetRef.current
+    const focusables = () =>
+      sheet
+        ? Array.from(
+            sheet.querySelectorAll<HTMLElement>(
+              'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+            ),
+          ).filter((el) => !el.hasAttribute('disabled'))
+        : []
+    // Move focus into the sheet when it opens
+    const id = window.setTimeout(() => {
+      const list = focusables()
+      ;(list[0] ?? sheet)?.focus()
+    }, 0)
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setViewOpen(false)
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setViewOpen(false)
+        return
+      }
+      if (e.key !== 'Tab' || !sheet) return
+      const list = focusables()
+      if (list.length === 0) return
+      const first = list[0]!
+      const last = list[list.length - 1]!
+      const active = document.activeElement as HTMLElement | null
+      if (e.shiftKey) {
+        if (active === first || !sheet.contains(active)) {
+          e.preventDefault()
+          last.focus()
+        }
+      } else if (active === last) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.clearTimeout(id)
+      window.removeEventListener('keydown', onKey)
+    }
   }, [viewOpen])
+
+  const hbondLive =
+    hbondMode === 'off'
+      ? 'H-bond contacts hidden'
+      : hbondMode === 'links'
+        ? `H-bond contacts shown${structure?.hbonds?.length ? `, ${structure.hbonds.length} contacts` : ''}`
+        : `H-bond partner highlighting on${structure?.hbonds?.length ? `, ${structure.hbonds.length} contacts` : ''}`
 
   const canvasLabel = structure
     ? describeCifStructure(structure)
@@ -188,6 +247,7 @@ export default function CifViewport({
             </div>
             <button
               type="button"
+              ref={viewToggleRef}
               className={`btn cif-view-toggle${viewOpen ? ' btn-primary' : ''}`}
               onClick={() => setViewOpen((o) => !o)}
               aria-expanded={viewOpen}
@@ -350,13 +410,18 @@ export default function CifViewport({
         </div>
 
         {/* Phone View sheet / drawer — does not cover the canvas (sits in toolbar flow) */}
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {structure ? hbondLive : ''}
+        </p>
         {viewOpen && (
           <div
             id="cif-view-sheet"
             className="cif-view-sheet"
-            role="region"
+            role="dialog"
+            aria-modal="true"
             aria-label="View options"
             tabIndex={-1}
+            ref={viewSheetRef}
           >
             <div className="segmented" role="group" aria-label="Copy visibility">
               <button
@@ -520,9 +585,11 @@ export default function CifViewport({
 
       <div className="viewport-body cif-viewport-body">
         <div
+          id="demo-main"
           className="canvas-wrap"
           role="img"
           aria-label={canvasLabel}
+          tabIndex={-1}
         >
           {structure ? (
             <Suspense

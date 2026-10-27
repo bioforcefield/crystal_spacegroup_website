@@ -236,7 +236,7 @@ export default function CifExplorerPage() {
 
   return (
     <div className="app layout-demo cif-explorer">
-      <aside className="panel">
+      <aside className="panel" id="demo-sidebar">
         <header className="panel-header">
           <div className="panel-nav-row">
             <Link to="/" className="back-link">
