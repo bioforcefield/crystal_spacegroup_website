@@ -30,5 +30,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · `VITE_COD_PROXY=https://crystal-cod-proxy.crystal-sg.workers.dev bash scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main: `c8af9e1`
-- gh-pages: `e5e32e6` (VITE_COD_PROXY baked)
+- main: `a464dea`
+- gh-pages: `3aec56f` (VITE_COD_PROXY baked)
