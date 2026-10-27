@@ -157,12 +157,22 @@ export function distToElement(
       return cartDist(p, center, cell)
     }
     case 'twofold':
+    case 'threefold':
+    case 'fourfold':
+    case 'sixfold':
     case 'screw': {
-      const axis = demo.screwAxes.find(
-        (s) => s.opIndex === op.index && s.primary,
-      )
+      const axis =
+        demo.screwAxes.find((s) => s.opIndex === op.index && s.primary) ??
+        demo.screwAxes.find((s) => s.opIndex === op.index)
       if (!axis) return 0
       return distToScrewAxis(p, axis.origin, axis.direction, cell)
+    }
+    case 'mirror': {
+      const plane =
+        demo.glidePlanes.find((g) => g.opIndex === op.index && g.primary) ??
+        demo.glidePlanes.find((g) => g.opIndex === op.index)
+      if (!plane) return 0
+      return distToGlidePlaneSpec(p, plane, cell)
     }
     case 'inversion': {
       // Prefer inversion center tied to this operator when possible

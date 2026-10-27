@@ -185,10 +185,20 @@ function classifyFourfoldLike(
 function classifySixfoldLike(
   t: Vec3,
 ): { classId: SymmetryClassId; label: string } {
+  // Pure 6-fold (no screw translation) → sixfold, not screw
   if (nearHalf(t[2])) return { classId: 'screw', label: '6₃ screw ‖ c' }
+  const w = fracPart(t[2])
+  if (Math.abs(w - 1 / 6) < 0.06 || Math.abs(w - 5 / 6) < 0.06) {
+    return { classId: 'screw', label: '6₁ / 6₅ screw ‖ c' }
+  }
+  if (Math.abs(w - 1 / 3) < 0.06 || Math.abs(w - 2 / 3) < 0.06) {
+    return { classId: 'screw', label: '6₂ / 6₄ screw ‖ c' }
+  }
   if (nearQuarter(t[2])) return { classId: 'screw', label: '6ₙ screw ‖ c' }
-  if (hasNontrivialT(t)) return { classId: 'screw', label: '6-fold / 6ₙ' }
-  return { classId: 'screw', label: '6-fold ‖ c' }
+  if (hasNontrivialT(t) && !nearZero(t[2])) {
+    return { classId: 'screw', label: '6-fold / 6ₙ' }
+  }
+  return { classId: 'sixfold', label: '6-fold ‖ c' }
 }
 
 /**
@@ -245,7 +255,7 @@ export function classify(
       return { classId: 'fourfold', label: '−4 rotoinversion' }
     }
     if (tr === -2) {
-      return { classId: 'threefold', label: '−6 rotoinversion' }
+      return { classId: 'sixfold', label: '−6 rotoinversion' }
     }
     // Fallback: still an improper isometry — prefer mirror/glide family over inventing c-glide
     return classifyImproperMirrorLike(R, t)

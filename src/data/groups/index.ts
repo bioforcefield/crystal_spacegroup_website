@@ -21,8 +21,10 @@ export {
   deriveTwofoldAxes,
   deriveFourfoldC,
   deriveThreefoldC,
+  deriveBodyDiagonalThreefolds,
   deriveGlidesPerpB,
   deriveAxisAlignedGlides,
+  deriveDiagonalGlides,
   isGeometryLimited,
   fracNear,
 } from './deriveElements'

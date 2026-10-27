@@ -5,10 +5,11 @@
  *  - inversions (R = −I)
  *  - axis-aligned 2 / 2₁ along a, b, c
  *  - 4 / 4ₙ and 3 / 3ₙ along c (tetragonal / hexagonal)
+ *  - cubic 〈111〉 body-diagonal 3-folds
  *  - mirrors / a·b·c·n·d glides ⊥ a, b, c
+ *  - diagonal (non-axis-aligned) mirrors / glides via corners
  *
- * Body-diagonal 3-folds and other non-axis-aligned elements are left to
- * hand demos or shown as operators-only (see geometryLimited on generated demos).
+ * Remaining uncaptured loci set geometryLimited on generated demos.
  *
  * Tolerances: fractional ~1e-3 for classifying R; locus smoke tests ~0.02.
  */
@@ -361,6 +362,265 @@ export function deriveGlidesPerpB(ops: Operator[]): GlidePlaneSpec[] {
   return deriveAxisAlignedGlides(ops).filter((g) => g.normalAxis === 1)
 }
 
+/** ---- Stage 1: body-diagonal 3-folds + diagonal glides ---- */
+
+function sub3(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+}
+function add3(a: Vec3, b: Vec3): Vec3 {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+}
+function scale3(a: Vec3, s: number): Vec3 {
+  return [a[0] * s, a[1] * s, a[2] * s]
+}
+function dot3(a: Vec3, b: Vec3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+}
+function cross3(a: Vec3, b: Vec3): Vec3 {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ]
+}
+function norm3(a: Vec3): number {
+  return Math.hypot(a[0], a[1], a[2])
+}
+function normalize3(a: Vec3): Vec3 | null {
+  const n = norm3(a)
+  if (n < 1e-8) return null
+  return [a[0] / n, a[1] / n, a[2] / n]
+}
+
+/** Eigenvector of R for eigenvalue ≈ +1 (rotation axis). */
+function axisEigenvectorPlus1(R: Mat3): Vec3 | null {
+  // Rows of (R − I); axis ∝ cross of two independent rows
+  const r0: Vec3 = [R[0][0] - 1, R[0][1], R[0][2]]
+  const r1: Vec3 = [R[1][0], R[1][1] - 1, R[1][2]]
+  const r2: Vec3 = [R[2][0], R[2][1], R[2][2] - 1]
+  let v = cross3(r0, r1)
+  if (norm3(v) < 1e-6) v = cross3(r0, r2)
+  if (norm3(v) < 1e-6) v = cross3(r1, r2)
+  return normalize3(v)
+}
+
+/** Eigenvector of R for eigenvalue ≈ −1 (mirror normal). */
+function axisEigenvectorMinus1(R: Mat3): Vec3 | null {
+  const r0: Vec3 = [R[0][0] + 1, R[0][1], R[0][2]]
+  const r1: Vec3 = [R[1][0], R[1][1] + 1, R[1][2]]
+  const r2: Vec3 = [R[2][0], R[2][1], R[2][2] + 1]
+  let v = cross3(r0, r1)
+  if (norm3(v) < 1e-6) v = cross3(r0, r2)
+  if (norm3(v) < 1e-6) v = cross3(r1, r2)
+  return normalize3(v)
+}
+
+function isBodyDiagonalDir(d: Vec3): boolean {
+  const a = [Math.abs(d[0]), Math.abs(d[1]), Math.abs(d[2])]
+  // All |components| ≈ equal and nonzero → 〈111〉 family
+  if (a[0] < 0.4 || a[1] < 0.4 || a[2] < 0.4) return false
+  return (
+    Math.abs(a[0] - a[1]) < 0.25 &&
+    Math.abs(a[1] - a[2]) < 0.25 &&
+    Math.abs(a[0] - a[2]) < 0.25
+  )
+}
+
+function fmtDir(d: Vec3): string {
+  const s = (v: number) => {
+    if (Math.abs(v) < 0.2) return '0'
+    if (v > 0.2) return '1'
+    return '-1'
+  }
+  return `[${s(d[0])}${s(d[1])}${s(d[2])}]`
+}
+
+/**
+ * Point on a screw/rotation axis for angle θ = ±120° (3-fold).
+ * x = ½ t⊥ + ½ cot(θ/2) (û × t⊥); for 120°, cot(60°)=1/√3.
+ */
+function threefoldAxisPoint(R: Mat3, t: Vec3, û: Vec3): Vec3 {
+  const tau = dot3(t, û)
+  const tPerp = sub3(t, scale3(û, tau))
+  // Sense: right-handed if û · (e × R e) > 0 for some e ⊥ û
+  let e: Vec3 = [1, 0, 0]
+  if (Math.abs(dot3(e, û)) > 0.9) e = [0, 1, 0]
+  e = sub3(e, scale3(û, dot3(e, û)))
+  const en = normalize3(e) ?? ([1, 0, 0] as Vec3)
+  const Ren: Vec3 = [
+    R[0][0] * en[0] + R[0][1] * en[1] + R[0][2] * en[2],
+    R[1][0] * en[0] + R[1][1] * en[1] + R[1][2] * en[2],
+    R[2][0] * en[0] + R[2][1] * en[1] + R[2][2] * en[2],
+  ]
+  const sense = Math.sign(dot3(û, cross3(en, Ren))) || 1
+  const cot = 1 / Math.sqrt(3) // |θ|=120°
+  const uxT = cross3(û, tPerp)
+  const origin = add3(
+    scale3(tPerp, 0.5),
+    scale3(uxT, 0.5 * cot * sense),
+  )
+  return [wrap01(origin[0]), wrap01(origin[1]), wrap01(origin[2])]
+}
+
+function det3local(R: Mat3): number {
+  return (
+    R[0][0] * (R[1][1] * R[2][2] - R[1][2] * R[2][1]) -
+    R[0][1] * (R[1][0] * R[2][2] - R[1][2] * R[2][0]) +
+    R[0][2] * (R[1][0] * R[2][1] - R[1][1] * R[2][0])
+  )
+}
+function trace3local(R: Mat3): number {
+  return R[0][0] + R[1][1] + R[2][2]
+}
+
+/**
+ * Cubic 〈111〉 (body-diagonal) 3-folds. Hex 3‖c stays in deriveThreefoldC.
+ */
+export function deriveBodyDiagonalThreefolds(ops: Operator[]): ScrewAxisSpec[] {
+  const out: ScrewAxisSpec[] = []
+  const seen: string[] = []
+  for (const op of ops) {
+    const det = Math.round(det3local(op.R))
+    const tr = Math.round(trace3local(op.R))
+    if (det !== 1 || tr !== 0) continue
+    // Skip hex ‖c (already covered)
+    if (matClose(op.R, THREE_C, EPS) || matClose(op.R, THREE_C_INV, EPS)) continue
+
+    const û = axisEigenvectorPlus1(op.R)
+    if (!û || !isBodyDiagonalDir(û)) continue
+
+    const origin = threefoldAxisPoint(op.R, op.t, û)
+    // Integer direction for rendering / labels
+    const direction: Vec3 = [
+      Math.sign(û[0]) || 1,
+      Math.sign(û[1]) || 1,
+      Math.sign(û[2]) || 1,
+    ]
+    const key = `${direction.join(',')}|${origin.map((c) => c.toFixed(2)).join(',')}`
+    if (seen.includes(key)) continue
+    seen.push(key)
+
+    const dirLabel = fmtDir(direction)
+    out.push({
+      origin,
+      direction,
+      locus: `${dirLabel} through (${fmtFrac(origin[0])}, ${fmtFrac(origin[1])}, ${fmtFrac(origin[2])})`,
+      opIndex: op.index,
+      primary: !out.some((a) => a.opIndex === op.index),
+      kind: '3',
+    })
+  }
+  return out
+}
+
+/** Build a unit-cell parallelogram for plane n·x = d (n unit-ish). */
+function planeCorners(normal: Vec3, d: number): [Vec3, Vec3, Vec3, Vec3] {
+  // Find two in-plane basis vectors from lattice axes
+  const candidates: Vec3[] = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [1, 1, 0],
+    [1, 0, 1],
+    [0, 1, 1],
+  ]
+  let u: Vec3 | null = null
+  let v: Vec3 | null = null
+  for (const c of candidates) {
+    const p = sub3(c, scale3(normal, dot3(c, normal)))
+    const pn = normalize3(p)
+    if (!pn) continue
+    if (!u) {
+      u = pn
+      continue
+    }
+    if (Math.abs(dot3(u, pn)) > 0.85) continue
+    v = pn
+    break
+  }
+  if (!u) u = [1, 0, 0]
+  if (!v) v = normalize3(cross3(normal, u)) ?? [0, 1, 0]
+
+  // Point on plane near cell center projection
+  const center: Vec3 = [0.5, 0.5, 0.5]
+  const p0 = sub3(center, scale3(normal, dot3(center, normal) - d))
+
+  const span = 0.75
+  const c0 = add3(p0, add3(scale3(u, -span / 2), scale3(v, -span / 2)))
+  const c1 = add3(p0, add3(scale3(u, span / 2), scale3(v, -span / 2)))
+  const c2 = add3(p0, add3(scale3(u, span / 2), scale3(v, span / 2)))
+  const c3 = add3(p0, add3(scale3(u, -span / 2), scale3(v, span / 2)))
+  return [c0, c1, c2, c3]
+}
+
+/**
+ * Non-axis-aligned mirrors / diagonal glides (common in cubic / hex).
+ * Uses eigenvector normal and GlidePlaneSpec.corners.
+ */
+export function deriveDiagonalGlides(ops: Operator[]): GlidePlaneSpec[] {
+  const out: GlidePlaneSpec[] = []
+  for (const op of ops) {
+    const det = Math.round(det3local(op.R))
+    const tr = Math.round(trace3local(op.R))
+    if (det !== -1 || tr !== 1) continue
+    // Skip axis-aligned (already in deriveAxisAlignedGlides)
+    if (
+      matClose(op.R, MIRROR_A, EPS) ||
+      matClose(op.R, MIRROR_B, EPS) ||
+      matClose(op.R, MIRROR_C, EPS)
+    ) {
+      continue
+    }
+
+    const n = axisEigenvectorMinus1(op.R)
+    if (!n) continue
+
+    // Plane offset: for mirror/glide, fixed set satisfies n·x = n·(t/2) for pure m;
+    // more generally d = n · (t/2) when R is reflection-like.
+    const d = dot3(n, scale3(op.t, 0.5))
+    const glide = op.t.map((c, i) => {
+      // In-plane part of t
+      return c - n[i]! * dot3(op.t, n)
+    }) as Vec3
+    // wrap glide components lightly for classification
+    const gWrap: Vec3 = [
+      wrap01(glide[0]),
+      wrap01(glide[1]),
+      wrap01(glide[2]),
+    ]
+
+    const nontrivial = gWrap.filter((c) => !nearZero(c)).length
+    const qt = gWrap.filter((c) => nearQuarter(c)).length
+    let classId: GlideClass = 'mirror'
+    let label = 'mirror (diagonal)'
+    if (qt >= 2) {
+      classId = 'd-glide'
+      label = 'd-glide (diagonal)'
+    } else if (nontrivial >= 2) {
+      classId = 'n-glide'
+      label = 'n-glide (diagonal)'
+    } else if (nontrivial === 1) {
+      const i = gWrap.findIndex((c) => !nearZero(c)) as 0 | 1 | 2
+      const letter = i === 0 ? 'a' : i === 1 ? 'b' : 'c'
+      classId = `${letter}-glide` as GlideClass
+      label = `${letter}-glide (diagonal)`
+    }
+
+    const corners = planeCorners(n, d)
+    out.push({
+      corners,
+      glide: gWrap,
+      label,
+      classId,
+      opIndex: op.index,
+      primary: !out.some((g) => g.opIndex === op.index),
+      locus: `n≈(${n[0].toFixed(2)},${n[1].toFixed(2)},${n[2].toFixed(2)}) · ${label}`,
+    })
+  }
+  return out
+}
+
+
 export interface DerivedElements {
   inversions: InversionCenterSpec[]
   /** All derived rotation/screw axes (a/b/c 2-folds, 4‖c, 3‖c). */
@@ -378,8 +638,12 @@ export function deriveElements(ops: Operator[]): DerivedElements {
     ...deriveTwofoldAxes(ops),
     ...deriveFourfoldC(ops),
     ...deriveThreefoldC(ops),
+    ...deriveBodyDiagonalThreefolds(ops),
   ]
-  const glides = deriveAxisAlignedGlides(ops)
+  const glides = [
+    ...deriveAxisAlignedGlides(ops),
+    ...deriveDiagonalGlides(ops),
+  ]
   return {
     inversions: deriveInversions(ops),
     axes,

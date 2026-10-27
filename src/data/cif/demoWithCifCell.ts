@@ -119,7 +119,7 @@ export function elementsDemoForStructure(
     shortName: base?.shortName ?? structure.spaceGroupName ?? 'CIF',
     geometryLimited: limited || undefined,
     geometryNote: limited
-      ? 'Some elements (e.g. body-diagonal axes) are not drawn — operators still listed'
+      ? 'Some loci could not be derived for this setting — operator list remains complete'
       : undefined,
   }
 }

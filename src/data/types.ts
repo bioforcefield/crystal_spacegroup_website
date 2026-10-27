@@ -21,6 +21,7 @@ export type SymmetryClassId =
   | 'twofold'
   | 'threefold'
   | 'fourfold'
+  | 'sixfold'
   | 'screw'
   | 'inversion'
   | 'mirror'

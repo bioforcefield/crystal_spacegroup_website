@@ -56,6 +56,7 @@ const FOCUS_CLASS_PRIORITY: SymmetryClassId[] = [
   'screw',
   'threefold',
   'fourfold',
+  'sixfold',
   'mirror',
   'a-glide',
   'b-glide',
@@ -217,16 +218,30 @@ function geometryNoteFor(
   system: CrystalSystemId,
   derived: DerivedElements,
 ): string {
-  const bits: string[] = []
-  if (derived.axes.length === 0 && derived.glides.length === 0) {
-    bits.push('axis-aligned geometric overlays are limited for this group')
-  } else {
-    bits.push('some non-axis-aligned elements (e.g. body diagonals) are not drawn')
+  const hasAxis = derived.axes.length > 0
+  const hasGlide = derived.glides.length > 0
+  const bySystem: Record<CrystalSystemId, string> = {
+    triclinic:
+      'Triclinic teaching overlays are mostly inversions; remaining ops are listed by Seitz symbol only.',
+    monoclinic:
+      'Unique-b monoclinic axes/glides are drawn when axis-aligned; unusual settings may omit a locus.',
+    orthorhombic:
+      'Axis-aligned 2/2₁ and a/b/c/n/d glides are drawn; diagonal elements in uncommon settings may be missing.',
+    tetragonal:
+      '4/4ₙ ‖ c and axis-aligned mirrors/glides are drawn; some diagonal glides may still be omitted.',
+    trigonal:
+      '3/3ₙ ‖ c (hex setting) and some diagonal c-glides are drawn; rhombohedral-axis special loci may be limited.',
+    hexagonal:
+      '6/6ₙ and 3 ‖ c plus axis-aligned mirrors/glides are drawn; a few diagonal planes may still be omitted.',
+    cubic:
+      '〈100〉 axes, 〈111〉 body-diagonal 3-folds, and many diagonal mirrors/glides are drawn when detected; a minority of d-glide / off-origin loci may still be incomplete.',
   }
-  if (system === 'cubic' || system === 'trigonal') {
-    bits.push('operator list and colours remain complete')
-  }
-  return `Operators only / limited geometry — ${bits.join('; ')}.`
+  const base = bySystem[system] ?? 'Some geometric overlays could not be derived for this group.'
+  const coverage =
+    hasAxis || hasGlide
+      ? `Derived so far: ${derived.axes.length} axis locus(i), ${derived.glides.length} plane(s), ${derived.inversions.length} inversion(s).`
+      : 'No axis/plane loci derived yet — operator list and colours remain complete.'
+  return `Limited geometry — ${base} ${coverage}`
 }
 
 /** Build (and cache) a generated demo for ITA number 1–230. */
