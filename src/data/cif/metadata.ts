@@ -19,6 +19,13 @@ export interface CifMetadata {
   /** Z′ from the CIF tag, or computed as Z / operator count (set by expandStructure). */
   zPrime?: number
   zPrimeSource?: 'cif' | 'computed'
+  /**
+   * Teaching note / formula shown next to Z′.
+   * Explicit CIF tags win; computed uses Z′ = Z / N_ops (general-position estimate).
+   */
+  zPrimeNote?: string
+  /** Warning when the Z′ estimate is unreliable (non-integer, incomplete ops, …). */
+  zPrimeWarning?: string
   /** High-resolution limit d_min in Å. */
   resolutionA?: number
   resolutionSource?: 'refine' | 'theta'
