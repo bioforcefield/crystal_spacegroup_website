@@ -82,6 +82,10 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
         displayFractional: fractional,
         displayCartesian: cartesian,
         moleculeId: -1,
+        residue: site.residue,
+        occupancy: site.occupancy,
+        uIso: site.uIso,
+        aniso: site.aniso,
       })
     }
   }

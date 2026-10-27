@@ -18,7 +18,16 @@ import {
 import type { CellParams, SpaceGroupDemo, Vec3 } from '../data/types'
 import SymmetryElements from './SymmetryElements'
 import CellParamsBadge from './cif/CellParamsBadge'
-import type { CifVisibility } from './cif/cifViewTypes'
+import type {
+  CifColorMode,
+  CifThermalMode,
+  CifVisibility,
+} from './cif/cifViewTypes'
+import {
+  ellipsoidAxes,
+  residueColor,
+  uIsoRadiusScale,
+} from '../data/cif/thermal'
 
 export type { CifPlacementMode }
 export type { CifVisibility }
@@ -42,6 +51,8 @@ interface Props {
   /** Teaching-style screw/glide/inversion overlays (demo cell already = CIF metric). */
   elementDemo?: SpaceGroupDemo | null
   showSymmetryElements?: boolean
+  colorMode?: CifColorMode
+  thermalMode?: CifThermalMode
 }
 
 function CellWire({ cell }: { cell: CellParams }) {
@@ -139,6 +150,8 @@ function SceneBody({
   selectedMolecule = null,
   elementDemo = null,
   showSymmetryElements = false,
+  colorMode = 'operator',
+  thermalMode = 'off',
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const center = cellCenterCart(structure.cell)
 
@@ -276,10 +289,52 @@ function SceneBody({
             a.opIndex,
             strong ? 1 : emphasized ? 0.85 : 0.4,
           )
-          const el = elementColor(a.element)
-          const r =
+          const el =
+            colorMode === 'residue'
+              ? residueColor(a.residue ?? a.label.split(/[0-9]/)[0], 1)
+              : elementColor(a.element)
+          const baseR =
             elementRadius(a.element) *
             (strong ? 1.12 : emphasized ? 1.0 : 0.82)
+          const r =
+            thermalMode === 'off'
+              ? baseR
+              : uIsoRadiusScale(a.uIso ?? (a.aniso ? (a.aniso.u11 + a.aniso.u22 + a.aniso.u33) / 3 : undefined), baseR)
+
+          const useEllipsoid =
+            thermalMode === 'ellipsoid' && a.aniso != null
+
+          if (useEllipsoid) {
+            const { radii, rotation } = ellipsoidAxes(a.aniso!)
+            // rotation columns → Three.js Matrix4 basis; scale unit sphere
+            const m = new THREE.Matrix4()
+            m.makeBasis(
+              new THREE.Vector3(rotation[0][0], rotation[1][0], rotation[2][0]).multiplyScalar(radii[0]),
+              new THREE.Vector3(rotation[0][1], rotation[1][1], rotation[2][1]).multiplyScalar(radii[1]),
+              new THREE.Vector3(rotation[0][2], rotation[1][2], rotation[2][2]).multiplyScalar(radii[2]),
+            )
+            const pos = placement.positions[ai]! as Vec3
+            m.setPosition(pos[0], pos[1], pos[2])
+            return (
+              <mesh
+                key={`atom-${a.opIndex}-${a.auIndex}-${a.moleculeId}-${ai}`}
+                matrix={m}
+                matrixAutoUpdate={false}
+              >
+                <sphereGeometry args={[1, 16, 16]} />
+                <meshStandardMaterial
+                  color={el}
+                  emissive={opTint}
+                  emissiveIntensity={strong ? 0.45 : emphasized ? 0.3 : 0.08}
+                  metalness={0.1}
+                  roughness={0.55}
+                  transparent
+                  opacity={strong ? 0.88 : emphasized ? 0.72 : 0.4}
+                />
+              </mesh>
+            )
+          }
+
           return (
             <mesh
               key={`atom-${a.opIndex}-${a.auIndex}-${a.moleculeId}-${ai}`}
@@ -288,8 +343,16 @@ function SceneBody({
               <sphereGeometry args={[r, 18, 18]} />
               <meshStandardMaterial
                 color={el}
-                emissive={opTint}
-                emissiveIntensity={strong ? 0.55 : emphasized ? 0.38 : 0.1}
+                emissive={colorMode === 'residue' ? '#000000' : opTint}
+                emissiveIntensity={
+                  colorMode === 'residue'
+                    ? 0
+                    : strong
+                      ? 0.55
+                      : emphasized
+                        ? 0.38
+                        : 0.1
+                }
                 metalness={0.15}
                 roughness={0.45}
                 transparent={!strong && visibility === 'all'}

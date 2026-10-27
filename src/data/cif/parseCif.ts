@@ -349,6 +349,9 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
         x === '_atom_site_label_alt_id' ||
         x === '_atom_site_disorder_assembly',
     )
+    const iUiso = h.findIndex((x) => x === '_atom_site_u_iso_or_equiv')
+    // Biso → Uiso = B/(8π²) when only B present
+    const iBiso = h.findIndex((x) => x === '_atom_site_b_iso_or_equiv')
 
     if (iX < 0 || iY < 0 || iZ < 0) continue
     if (h[iX] === '_atom_site_cartn_x') {
@@ -390,6 +393,14 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
         `A${raw.length + 1}`
       const typeSym = iType >= 0 ? row[iType] : undefined
       const residue = iComp >= 0 ? row[iComp] : undefined
+      let uIso: number | undefined
+      if (iUiso >= 0) {
+        const u = unquoteNumber(row[iUiso] ?? '')
+        if (u != null && u >= 0) uIso = u
+      } else if (iBiso >= 0) {
+        const b = unquoteNumber(row[iBiso] ?? '')
+        if (b != null && b >= 0) uIso = b / (8 * Math.PI * Math.PI)
+      }
       raw.push({
         label,
         element: elementFromLabel(label, typeSym),
@@ -397,6 +408,7 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
         residue,
         occupancy,
         altloc,
+        uIso,
         _alt: altloc,
       })
     }
@@ -405,16 +417,26 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
       warnings.push(`Skipped ${skippedOcc} atom site(s) with occupancy ≈ 0`)
     }
 
-    // Keep only the first disorder group / altloc when multiple are present.
+    // Prefer the disorder group with the highest total occupancy (else lexicographic).
     const alts = [
       ...new Set(raw.map((a) => a._alt).filter((x): x is string => !!x)),
     ]
     let atoms: CifAtomSite[] = raw
     if (alts.length > 1) {
-      const prefer = alts.sort()[0]!
-      atoms = raw.filter((a) => !a._alt || a._alt === prefer)
+      let best = alts[0]!
+      let bestScore = -1
+      for (const alt of alts) {
+        const group = raw.filter((a) => a._alt === alt)
+        const score = group.reduce((s, a) => s + (a.occupancy ?? 1), 0)
+        if (score > bestScore + 1e-9 || (Math.abs(score - bestScore) < 1e-9 && alt < best)) {
+          best = alt
+          bestScore = score
+        }
+      }
+      // Keep unmarked atoms + preferred altloc
+      atoms = raw.filter((a) => !a._alt || a._alt === best)
       warnings.push(
-        `Disorder altlocs ${alts.join(', ')}; keeping group "${prefer}" only`,
+        `Disorder altlocs ${alts.join(', ')}; keeping highest-occupancy group "${best}" (Σocc≈${bestScore.toFixed(2)})`,
       )
     }
 
@@ -425,10 +447,51 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
       residue: a.residue,
       occupancy: a.occupancy,
       altloc: a.altloc,
+      uIso: a.uIso,
     }))
     if (cleaned.length) return cleaned
   }
   return []
+}
+
+/** Attach anisotropic Uij from _atom_site_aniso_* loop onto matching labels. */
+function attachAnisoU(
+  atoms: CifAtomSite[],
+  loops: LoopTable[],
+  warnings: string[],
+): void {
+  for (const loop of loops) {
+    const h = loop.headers.map((x) => x.toLowerCase())
+    const iLabel = h.findIndex(
+      (x) => x === '_atom_site_aniso_label' || x === '_atom_site_aniso_id',
+    )
+    const i11 = h.findIndex((x) => x === '_atom_site_aniso_u_11')
+    const i22 = h.findIndex((x) => x === '_atom_site_aniso_u_22')
+    const i33 = h.findIndex((x) => x === '_atom_site_aniso_u_33')
+    const i12 = h.findIndex((x) => x === '_atom_site_aniso_u_12')
+    const i13 = h.findIndex((x) => x === '_atom_site_aniso_u_13')
+    const i23 = h.findIndex((x) => x === '_atom_site_aniso_u_23')
+    if (iLabel < 0 || i11 < 0 || i22 < 0 || i33 < 0) continue
+    const byLabel = new Map(atoms.map((a) => [a.label, a]))
+    let n = 0
+    for (const row of loop.rows) {
+      const lab = (row[iLabel] ?? '').trim()
+      const atom = byLabel.get(lab)
+      if (!atom) continue
+      const u11 = unquoteNumber(row[i11] ?? '')
+      const u22 = unquoteNumber(row[i22] ?? '')
+      const u33 = unquoteNumber(row[i33] ?? '')
+      if (u11 == null || u22 == null || u33 == null) continue
+      const u12 = unquoteNumber(row[i12] ?? '') ?? 0
+      const u13 = unquoteNumber(row[i13] ?? '') ?? 0
+      const u23 = unquoteNumber(row[i23] ?? '') ?? 0
+      atom.aniso = { u11, u22, u33, u12, u13, u23 }
+      if (atom.uIso == null) atom.uIso = (u11 + u22 + u33) / 3
+      n++
+    }
+    if (n) warnings.push(`Attached anisotropic Uij for ${n} atom site(s)`)
+    return
+  }
 }
 
 /** Parse a CIF string into cell / SG / operators / asymmetric atoms. */
@@ -455,6 +518,7 @@ export function parseCif(text: string): ParsedCif {
   const { number, name } = resolveSpaceGroup(pairs, warnings)
   const cifOperators = operatorsFromLoops(loops, warnings)
   const atoms = atomsFromLoops(loops, warnings)
+  attachAnisoU(atoms, loops, warnings)
 
   if (!atoms.length) {
     warnings.push('No fractional atom sites found (_atom_site_fract_*)')

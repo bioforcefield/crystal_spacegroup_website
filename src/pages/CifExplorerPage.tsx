@@ -10,7 +10,9 @@ import CifLoadPanel from '../components/cif/CifLoadPanel'
 import CifStructurePanel from '../components/cif/CifStructurePanel'
 import CifViewport from '../components/cif/CifViewport'
 import type {
+  CifColorMode,
   CifPlacementMode,
+  CifThermalMode,
   CifVisibility,
 } from '../components/cif/cifViewTypes'
 import {
@@ -42,6 +44,8 @@ export default function CifExplorerPage() {
   const [placementMode, setPlacementMode] =
     useState<CifPlacementMode>('nearest')
   const [showSymmetryElements, setShowSymmetryElements] = useState(true)
+  const [colorMode, setColorMode] = useState<CifColorMode>('operator')
+  const [thermalMode, setThermalMode] = useState<CifThermalMode>('off')
   const [resetToken, setResetToken] = useState(0)
   const [busy, setBusy] = useState(false)
   const [codeInput, setCodeInput] = useState('1100303')
@@ -288,6 +292,10 @@ export default function CifExplorerPage() {
         elementDemo={elementDemo}
         resetToken={resetToken}
         onResetView={() => setResetToken((t) => t + 1)}
+        colorMode={colorMode}
+        onColorModeChange={setColorMode}
+        thermalMode={thermalMode}
+        onThermalModeChange={setThermalMode}
       />
     </div>
   )

@@ -1,6 +1,11 @@
 import { Suspense, lazy, useState } from 'react'
 import CellParamsBadge from './CellParamsBadge'
-import type { CifPlacementMode, CifVisibility } from './cifViewTypes'
+import type {
+  CifColorMode,
+  CifPlacementMode,
+  CifThermalMode,
+  CifVisibility,
+} from './cifViewTypes'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
 import type { SpaceGroupDemo } from '../../data/types'
@@ -22,6 +27,10 @@ export interface CifViewportProps {
   elementDemo: SpaceGroupDemo | null
   resetToken: number
   onResetView: () => void
+  colorMode: CifColorMode
+  onColorModeChange: (m: CifColorMode) => void
+  thermalMode: CifThermalMode
+  onThermalModeChange: (m: CifThermalMode) => void
 }
 
 export default function CifViewport({
@@ -39,6 +48,10 @@ export default function CifViewport({
   elementDemo,
   resetToken,
   onResetView,
+  colorMode,
+  onColorModeChange,
+  thermalMode,
+  onThermalModeChange,
 }: CifViewportProps) {
   const [viewOpen, setViewOpen] = useState(false)
 
@@ -217,6 +230,49 @@ export default function CifViewport({
                   : ' · off'
                 : ''}
             </button>
+            <div className="segmented" role="group" aria-label="Atom coloring">
+              <button
+                type="button"
+                className={colorMode === 'operator' ? 'seg active' : 'seg'}
+                onClick={() => onColorModeChange('operator')}
+                title="Tint by symmetry operator"
+              >
+                By op
+              </button>
+              <button
+                type="button"
+                className={colorMode === 'residue' ? 'seg active' : 'seg'}
+                onClick={() => onColorModeChange('residue')}
+                title="Color by residue / component id when present"
+              >
+                Residue
+              </button>
+            </div>
+            <div className="segmented" role="group" aria-label="Thermal ellipsoids">
+              <button
+                type="button"
+                className={thermalMode === 'off' ? 'seg active' : 'seg'}
+                onClick={() => onThermalModeChange('off')}
+              >
+                No U
+              </button>
+              <button
+                type="button"
+                className={thermalMode === 'uiso' ? 'seg active' : 'seg'}
+                onClick={() => onThermalModeChange('uiso')}
+                title="Scale ball radius by Uiso when present"
+              >
+                Uiso
+              </button>
+              <button
+                type="button"
+                className={thermalMode === 'ellipsoid' ? 'seg active' : 'seg'}
+                onClick={() => onThermalModeChange('ellipsoid')}
+                title="Draw anisotropic ellipsoids when Uij present; else Uiso balls"
+              >
+                Ellipsoid
+              </button>
+            </div>
             <button
               type="button"
               className="btn"
@@ -264,6 +320,45 @@ export default function CifViewport({
                 onClick={() => onVisibilityChange('asymmetric')}
               >
                 AU
+              </button>
+            </div>
+            <div className="segmented" role="group" aria-label="Atom coloring">
+              <button
+                type="button"
+                className={colorMode === 'operator' ? 'seg active' : 'seg'}
+                onClick={() => onColorModeChange('operator')}
+              >
+                By op
+              </button>
+              <button
+                type="button"
+                className={colorMode === 'residue' ? 'seg active' : 'seg'}
+                onClick={() => onColorModeChange('residue')}
+              >
+                Residue
+              </button>
+            </div>
+            <div className="segmented" role="group" aria-label="Thermal ellipsoids">
+              <button
+                type="button"
+                className={thermalMode === 'off' ? 'seg active' : 'seg'}
+                onClick={() => onThermalModeChange('off')}
+              >
+                No U
+              </button>
+              <button
+                type="button"
+                className={thermalMode === 'uiso' ? 'seg active' : 'seg'}
+                onClick={() => onThermalModeChange('uiso')}
+              >
+                Uiso
+              </button>
+              <button
+                type="button"
+                className={thermalMode === 'ellipsoid' ? 'seg active' : 'seg'}
+                onClick={() => onThermalModeChange('ellipsoid')}
+              >
+                Ellipsoid
               </button>
             </div>
             <div className="cif-view-sheet-actions">
@@ -334,6 +429,8 @@ export default function CifViewport({
                 showSymmetryElements={
                   showSymmetryElements && canShowElements
                 }
+                colorMode={colorMode}
+                thermalMode={thermalMode}
               />
             </Suspense>
           ) : (

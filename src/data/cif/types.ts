@@ -3,6 +3,16 @@ import type { CifMetadata } from './metadata'
 
 import type { CellParams, Operator, Vec3 } from '../types'
 
+export interface CifAnisoU {
+  /** Crystal-frame anisotropic displacement Uij (Å²), Voigt order 11,22,33,12,13,23. */
+  u11: number
+  u22: number
+  u33: number
+  u12: number
+  u13: number
+  u23: number
+}
+
 export interface CifAtomSite {
   label: string
   element: string
@@ -14,6 +24,10 @@ export interface CifAtomSite {
   occupancy?: number
   /** Disorder altloc / group id when present. */
   altloc?: string
+  /** Isotropic U (Å²) when present. */
+  uIso?: number
+  /** Anisotropic Uij when present. */
+  aniso?: CifAnisoU
 }
 
 export interface ParsedCif {
@@ -47,6 +61,10 @@ export interface SymmetryCopyAtom {
   displayCartesian: Vec3
   /** Connected-component molecule id (0…M-1) within the expanded structure. */
   moleculeId: number
+  residue?: string
+  occupancy?: number
+  uIso?: number
+  aniso?: CifAnisoU
 }
 
 export interface SymmetryBond {
