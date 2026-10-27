@@ -57,6 +57,7 @@ import { r3cDemo } from './r3c'
 import { cmcmDemo } from './cmcm'
 import { pbcmDemo } from './pbcm'
 import { pa3Demo } from './pa3'
+import { HAND_EXTRA_DEMOS } from './handExtra'
 import { buildGeneratedDemo } from './generatedDemo'
 import { findGroup } from './spaceGroupCatalog'
 import type { SpaceGroupDemo } from './types'
@@ -133,6 +134,7 @@ const HAND_DEMOS: SpaceGroupDemo[] = [
   cmcmDemo,
   pbcmDemo,
   pa3Demo,
+  ...HAND_EXTRA_DEMOS,
 ]
 
 const handByNumber = new Map(HAND_DEMOS.map((d) => [d.meta.number, d]))

@@ -86,10 +86,12 @@ describe('registry smoke', () => {
 describe('allDemos suite (hand-polished)', () => {
   const demos = allDemos()
 
-  it('has the 57 golden demos', () => {
-    expect(demos.map((d) => d.meta.number).sort((a, b) => a - b)).toEqual([
-      1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 41, 43, 47, 52, 56, 57, 60, 61, 62, 63, 64, 65, 69, 70, 76, 80, 82, 86, 88, 92, 96, 114, 123, 138, 146, 147, 148, 161, 167, 176, 191, 194, 202, 205, 221, 225, 227, 229, 230,
+  it('has the hand-polished golden demos (57 + second wave)', () => {
+    const nums = demos.map((d) => d.meta.number).sort((a, b) => a - b)
+    expect(nums).toEqual([
+      1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 26, 29, 31, 33, 36, 41, 43, 47, 52, 56, 57, 60, 61, 62, 63, 64, 65, 69, 70, 75, 76, 77, 79, 80, 82, 86, 88, 92, 96, 114, 123, 136, 138, 146, 147, 148, 152, 154, 161, 167, 173, 176, 191, 194, 198, 202, 205, 216, 221, 225, 227, 229, 230,
     ])
+    expect(nums.length).toBe(71)
     expect(allHandDemos()).toEqual(demos)
   })
 
@@ -169,7 +171,7 @@ describe('generated catalog 1–230', () => {
   })
 
   it('hand overrides win over generated for hand-polished set', () => {
-    const handNums = [1, 2, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 29, 33, 36, 41, 43, 47, 52, 56, 57, 60, 61, 62, 63, 64, 65, 69, 70, 76, 80, 82, 86, 88, 92, 96, 114, 123, 138, 146, 147, 148, 161, 167, 176, 191, 194, 202, 205, 221, 225, 227, 229, 230]
+    const handNums = [1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 26, 29, 31, 33, 36, 41, 43, 47, 52, 56, 57, 60, 61, 62, 63, 64, 65, 69, 70, 75, 76, 77, 79, 80, 82, 86, 88, 92, 96, 114, 123, 136, 138, 146, 147, 148, 152, 154, 161, 167, 173, 176, 191, 194, 198, 202, 205, 216, 221, 225, 227, 229, 230]
     for (const n of handNums) {
       expect(getDemo(n)!.meta.blurb.startsWith('ITA No.')).toBe(false)
     }
@@ -349,12 +351,13 @@ describe('demoSource badges', () => {
   it('marks hand demos as hand and generated as generated', () => {
     expect(getDemo(14)!.demoSource).toBe('hand')
     expect(getDemo(61)!.demoSource).toBe('hand')
-    // 3 (P2) is generated — not in the hand-polished set
-    const g = getDemo(3)!
+    expect(getDemo(3)!.demoSource).toBe('hand') // P2 now hand-polished
+    const g = getDemo(6)! // P2/m still generated
     expect(g.demoSource).toBe('generated')
     expect(g.meta.blurb).toMatch(/Auto-generated/)
     expect(g.meta.blurb).toMatch(/Overlays:/)
     // Hand demos stay free of the auto-generated disclaimer
     expect(getDemo(14)!.meta.blurb).not.toMatch(/Auto-generated/)
+    expect(getDemo(3)!.meta.blurb).not.toMatch(/Auto-generated/)
   })
 })
