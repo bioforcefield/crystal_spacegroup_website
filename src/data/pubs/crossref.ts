@@ -192,9 +192,6 @@ export function buildCrossrefUrl(
   const params = new URLSearchParams()
   params.set('filter', filter)
   params.set('rows', String(query.rows ?? CROSSREF_ROWS))
-  // Offset + published sort (Crossref rejects sort with deep cursor pagination).
-  params.set('sort', 'published')
-  params.set('order', 'desc')
   params.set(
     'select',
     'DOI,title,author,published,published-print,published-online,container-title,publisher,type',
@@ -205,7 +202,16 @@ export function buildCrossrefUrl(
   const qParts: string[] = []
   if (preset.query?.trim()) qParts.push(preset.query.trim())
   if (query.query?.trim()) qParts.push(query.query.trim())
-  if (qParts.length) params.set('query', qParts.join(' '))
+  if (qParts.length) {
+    params.set('query', qParts.join(' '))
+    // Free-text + sort=published ignores the query (CSP looked empty). Use
+    // relevance ranking whenever a topic/search query is present.
+  } else {
+    // Newest-first browse when there is no text query.
+    // (Offset pagination; Crossref rejects this sort with deep cursors.)
+    params.set('sort', 'published')
+    params.set('order', 'desc')
+  }
 
   const base =
     opts.searchBase !== undefined
@@ -323,14 +329,29 @@ export function hintTagsFromTitle(title: string | null | undefined): PubTag[] {
  * Needed because the first newest-first page rarely mentions sparse keywords
  * (hydrate, CSP, ML, …); client-side title filtering alone looks empty.
  */
+/** Tags that refine the Crossref query (not client-only title chips). */
+export const TOPIC_HINT_TAGS: readonly PubTag[] = [
+  'hydrate',
+  'mof',
+  'drug',
+  'salt',
+  'mineral',
+  'ml',
+  'csp',
+] as const
+
 const HINT_CROSSREF_QUERY: Partial<Record<PubTag, string>> = {
   hydrate: 'hydrate',
   mof: 'MOF',
   drug: 'pharmaceutical',
   salt: 'cocrystal',
   mineral: 'mineral',
-  ml: '"machine learning"',
-  csp: '"crystal structure prediction"',
+  ml: 'machine learning',
+  csp: 'crystal structure prediction',
+}
+
+export function isTopicHintTag(tag: PubTag): boolean {
+  return TOPIC_HINT_TAGS.includes(tag)
 }
 
 export function crossrefQueryForHintTags(

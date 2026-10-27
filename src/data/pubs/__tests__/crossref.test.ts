@@ -104,6 +104,22 @@ describe('buildCrossrefUrl', () => {
     expect(url.startsWith('/crossref?')).toBe(true)
     expect(decodeURIComponent(url)).toContain('issn:1466-8033')
   })
+
+  it('drops published sort when a topic/search query is present', () => {
+    const url = buildCrossrefUrl(
+      {
+        preset: 'acs',
+        year: null,
+        query: 'crystal structure prediction',
+        now: new Date('2026-10-27'),
+      },
+      { searchBase: 'https://proxy.test' },
+    )
+    const u = new URL(url)
+    expect(u.searchParams.get('query')).toBe('crystal structure prediction')
+    expect(u.searchParams.get('sort')).toBeNull()
+    expect(u.searchParams.get('order')).toBeNull()
+  })
 })
 
 describe('date / author / hint parsers', () => {

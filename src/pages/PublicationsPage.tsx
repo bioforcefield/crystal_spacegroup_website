@@ -13,6 +13,7 @@ import {
   type CrossrefWork,
   crossrefQueryForHintTags,
   fetchCrossrefPage,
+  isTopicHintTag,
   recentYearOptions,
 } from '../data/pubs/crossref'
 import {
@@ -406,8 +407,13 @@ function RecentTitlesPanel() {
   }
 
   const visible = useMemo(() => {
-    if (!hintFilter.length) return works
-    return works.filter((w) => hintFilter.every((t) => w.hintTags.includes(t)))
+    // Topic chips (hydrate, CSP, …) already shaped the Crossref query — do not
+    // also require the title heuristic, or relevance hits get wiped.
+    const clientOnly = hintFilter.filter((t) => !isTopicHintTag(t))
+    if (!clientOnly.length) return works
+    return works.filter((w) =>
+      clientOnly.every((t) => w.hintTags.includes(t)),
+    )
   }, [works, hintFilter])
 
   const presetInfo = CROSSREF_PRESETS.find((p) => p.id === preset)
@@ -510,8 +516,11 @@ function RecentTitlesPanel() {
                 }`}
                 aria-pressed={hintFilter.includes(t)}
                 title={
-                  PUB_TAG_BLURBS[t] +
-                  ' · sends a Crossref topic query when useful, then filters titles'
+                  isTopicHintTag(t)
+                    ? PUB_TAG_BLURBS[t] +
+                      ' · runs a Crossref topic search (relevance ranked)'
+                    : PUB_TAG_BLURBS[t] +
+                      ' · filters loaded titles client-side'
                 }
                 onClick={() => toggleHint(t)}
               >
