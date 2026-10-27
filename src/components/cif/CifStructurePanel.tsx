@@ -17,6 +17,8 @@ export interface CifStructurePanelProps {
   onOpKeyDown: (e: KeyboardEvent<HTMLUListElement>) => void
   elementDemo: SpaceGroupDemo | null
   selected: Operator | null
+  /** Optional: load COD into the main 3D map (polymorph compare). */
+  onLoadCodId?: (id: string) => void
 }
 
 export default function CifStructurePanel({
@@ -28,6 +30,7 @@ export default function CifStructurePanel({
   onOpKeyDown,
   elementDemo,
   selected,
+  onLoadCodId,
 }: CifStructurePanelProps) {
   const summary = describeCifStructure(structure)
 
@@ -179,7 +182,7 @@ export default function CifStructurePanel({
         )}
       </section>
 
-      <CifXrayPanel structure={structure} />
+      <CifXrayPanel structure={structure} onLoadCodId={onLoadCodId} />
 
       <section className="ops cif-ops">
         <h2>Symmetry operators</h2>

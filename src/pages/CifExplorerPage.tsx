@@ -322,6 +322,10 @@ export default function CifExplorerPage() {
             onOpKeyDown={onOpKeyDown}
             elementDemo={elementDemo}
             selected={selected}
+            onLoadCodId={(id) => {
+              setCodeInput(id)
+              void loadByCode(id)
+            }}
           />
         )}
       </aside>

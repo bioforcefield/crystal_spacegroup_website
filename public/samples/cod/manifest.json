@@ -86,11 +86,25 @@
       "formula": "C Si"
     },
     {
+      "id": "1011195",
+      "label": "Wurtzite 2H",
+      "hm": "P 63 m c",
+      "ita": 186,
+      "formula": "S Zn"
+    },
+    {
       "id": "1100025",
       "label": "Carbocernaite",
       "hm": "P m c 21",
       "ita": 26,
       "formula": "C2 Ca O6 Sr"
+    },
+    {
+      "id": "1100043",
+      "label": "Sphalerite",
+      "hm": "F -4 3 m",
+      "ita": 216,
+      "formula": "S Zn"
     },
     {
       "id": "1100303",
@@ -104,6 +118,13 @@
       "label": "Barium titanate",
       "hm": "P 4 m m",
       "ita": 99,
+      "formula": "Ba O3 Ti"
+    },
+    {
+      "id": "1507757",
+      "label": "Barium titanate",
+      "hm": "P m -3 m",
+      "ita": 221,
       "formula": "Ba O3 Ti"
     },
     {
@@ -210,6 +231,13 @@
       "hm": "P 1 21 1",
       "ita": 4,
       "formula": "Br10 Re2 Te6"
+    },
+    {
+      "id": "2100187",
+      "label": "aragonite",
+      "hm": "P m c n",
+      "ita": 62,
+      "formula": "C Ca O3"
     },
     {
       "id": "2100301",
@@ -373,6 +401,20 @@
       "formula": "Sn"
     },
     {
+      "id": "9009083",
+      "label": "Rutile",
+      "hm": "P 42/m n m",
+      "ita": 136,
+      "formula": "O2 Ti"
+    },
+    {
+      "id": "9009086",
+      "label": "Anatase",
+      "hm": "I 41/a m d :1",
+      "ita": 141,
+      "formula": "O2 Ti"
+    },
+    {
       "id": "9011577",
       "label": "Graphite",
       "hm": "P 63/m m c",
@@ -385,6 +427,13 @@
       "hm": "P 1 21/n 1",
       "ita": 14,
       "formula": "C2 H8 K2 Mg O10"
+    },
+    {
+      "id": "9012601",
+      "label": "Quartz",
+      "hm": "P 31 2 1",
+      "ita": 152,
+      "formula": "O2 Si"
     }
   ]
 }

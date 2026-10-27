@@ -3,29 +3,24 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## CIF map — X-ray / PXRD (2026-10-27)
-- `/cif` structure panel: **X-ray · powder** section after ASU/meta
-- Experiment tags from CIF when present: λ, radiation type/probe, T, R/wR/GoF (`metadata.xray`)
-- Interactive simulated PXRD: wavelength presets (Cu/Mo/Co + CIF λ + custom), 2θ min/max, FWHM Lorentzian envelope, hover sticks (hkl/d/2θ/I), peak table
-- Helpers: `src/data/cif/xray/{formFactors,bragg,powder,envelope}.ts` + vitest; centering extinctions via morphology helpers
-- Teaching only — not Rietveld / not measured data
+## CIF map — X-ray ↔ polymorph compare (2026-10-27)
+- `/cif` **X-ray · powder**: teaching note that calculated PXRD fingerprints polymorphs / solvates / hydrates
+- **Compare · polymorph**: Form A = map structure; Form B overlay (COD chip / id / paste / upload)
+- Curated pairs (cached COD): diamond↔graphite, calcite↔aragonite, quartz↔cristobalite, rutile↔anatase, sphalerite↔wurtzite, BaTiO₃ tet↔cubic
+- Overlay SVG (A solid cyan, B dashed lime), shared λ/2θ/FWHM; strongest peaks A vs B; peak-shift table
+- Chips set Form B only; **Load pair into map** loads Form A via `onLoadCodId` + Form B overlay; **Open B in map**
+- Helpers: `polymorphPairs.ts`, `peakCompare.ts` + vitest; 62 same-origin COD samples
+- Honest: calculated vs calculated — not measured phase ID
 
-## BFDH interactive + disclaimer (2026-10-27)
-- `/morphology` BFDH: Note + amber Disclaimer; per-form rate sliders; Reset to BFDH
+## CIF map — X-ray / PXRD
+- Experiment tags + interactive simulated PXRD (prior)
 
-## Morphology phone fix + BFDH predictor
-- Mobile single-column; BFDH from COD/CIF
-
-## Morphology & kinetics teaching pages
-- `/morphology`, `/kinetics`
+## BFDH / morphology / kinetics
+- `/morphology`, `/kinetics` teaching pages
 
 ## Cloudflare COD proxy
-- Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif (+ `/search`, `/crossref`)
-- Pages bake `VITE_COD_PROXY` via deploy-gh-pages.sh env
+- Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif
+- Pages bake `VITE_COD_PROXY` via env on deploy
 
 ## Key paths
 - `npm test` · `VITE_COD_PROXY=https://crystal-cod-proxy.crystal-sg.workers.dev bash scripts/deploy-gh-pages.sh`
-
-## SHAs
-- main: `22f5925`
-- gh-pages: `2adca27` (VITE_COD_PROXY baked)
