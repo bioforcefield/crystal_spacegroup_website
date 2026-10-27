@@ -37,6 +37,7 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - Some exotic d-glide / off-origin loci may still be geometryLimited
 
 ## SHAs
-- main tip: 
-- gh-pages:  (243 files)
+- main tip: `78e310e` (feature tip `2498d99` + CONTINUITY)
+- Stage commits: 3c988d5 → a9c11be → 4aef6c9 → f07d994 → 29d0440 (+ 2498d99 metadata fix)
+- gh-pages: `7094d40` (243 files)
 - tests: 376
