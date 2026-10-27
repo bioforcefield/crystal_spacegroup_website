@@ -167,6 +167,31 @@ export default function IndexPage() {
         </div>
       </section>
 
+      <section className="pubs-spotlight" aria-labelledby="pubs-spotlight-title">
+        <div className="pubs-spotlight-inner">
+          <div className="pubs-spotlight-copy">
+            <div className="cif-spotlight-badges">
+              <span className="cif-spotlight-badge">Literature</span>
+              <span className="cif-spotlight-badge soft">COD</span>
+            </div>
+            <h2 id="pubs-spotlight-title">Publications by year &amp; tags</h2>
+            <p>
+              A curated COD browser organized by publication year — filter by
+              organic, inorganic, drug, hydrate, salt, mineral, or MOF, then open
+              the DOI or the structure in the CIF map.
+            </p>
+            <div className="cif-spotlight-cta">
+              <Link to="/pubs" className="btn btn-primary">
+                Browse publications
+              </Link>
+              <span className="cif-spotlight-hint">
+                teaching subset · not a full paper stream
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <main className="index-main">
         <section id="explore" className="index-section">
           <div className="section-head">
@@ -417,6 +442,8 @@ export default function IndexPage() {
               Suggest an improvement
             </a>
             <span className="muted"> — ideas &amp; discussion on GitHub</span>
+            <span className="sep"> · </span>
+            <Link to="/pubs">Publications</Link>
           </div>
         </div>
         <span className="footer-demos">

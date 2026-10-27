@@ -12,6 +12,7 @@ Live: https://bioforcefield.github.io/crystal_spacegroup_website/
 - BASE → IMAGE highlight with nearest-image or in-cell placement
 - Geometric element overlays where axis-aligned loci can be derived; honest “operators / limited geometry” note otherwise
 - ITA Vol. A primary diagrams + Birkbeck/UCL reference links per group
+- **Publications** (`/pubs`): curated COD literature by **year** + tags (organic / inorganic / drug / hydrate / salt / mineral / MOF) → DOI + Open in CIF map
 - **CIF symmetry map** (`/cif`): load by **COD code** (e.g. `1100303`), paste/upload a CIF (CSD via Access Structures), intact molecules + operator colors + lattice a/b/c on the cell
 
 ## Run locally
@@ -60,6 +61,8 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 | `src/data/cif/` | CIF parse + AU×ops expand |
 | `src/pages/SpaceGroupPage.tsx` | Demo chrome |
 | `src/pages/CifExplorerPage.tsx` | CIF map |
+| `src/pages/PublicationsPage.tsx` | COD pubs browser |
+| `src/data/pubs/` | Curated COD cards + tag filters |
 | `src/pages/IndexPage.tsx` | Catalog / primer / guide |
 | `public/ita-diagrams/` | ITA Vol. A plates |
 | `CONTINUITY.md` | Agent resume notes |
@@ -77,6 +80,13 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
   3. Rebuild Pages: `VITE_COD_PROXY="https://YOUR_WORKER.workers.dev/{id}.cif" npm run build:pages` then `scripts/deploy-gh-pages.sh` (must keep `.nojekyll`). Search base is derived by stripping `/{id}.cif`.
   4. Refresh teaching cache: `bash scripts/fetch-cod-samples.sh` (or Actions → **Refresh COD cache**).
 - **CSD**: no free anonymous CIF API; UI links to [CCDC Access Structures](https://www.ccdc.cam.ac.uk/structures/) for download, then upload/paste. We do not scrape CSD.
+
+## Publications (`/pubs`)
+
+- Curated COD subset (~60 entries) with year, journal, DOI, formula, space group, and teaching tags
+- Filter by year chips + multi-select tags (AND) + text search; cards link to DOI and `/cif?cod=`
+- Tags are curated + light heuristics (`src/data/pubs/tagHeuristics.ts`) — not a full COD classifier
+- No PDF hosting, no CSD scrape. Optional worker `GET /search?year=YYYY` for live COD year lists (capped)
 
 ## Stack
 

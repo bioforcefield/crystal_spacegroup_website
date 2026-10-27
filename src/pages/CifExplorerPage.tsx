@@ -1,11 +1,13 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type KeyboardEvent,
 } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import CifLoadPanel from '../components/cif/CifLoadPanel'
 import CifStructurePanel from '../components/cif/CifStructurePanel'
 import CifViewport from '../components/cif/CifViewport'
@@ -166,6 +168,26 @@ export default function CifExplorerPage() {
       setBusy(false)
     }
   }, [codeInput, loadText])
+
+  const [searchParams, setSearchParams] = useSearchParams()
+  const codAutoloadDone = useRef(false)
+
+  // Deep link: /cif?cod=1100303 → fill input and fetch once
+  useEffect(() => {
+    if (codAutoloadDone.current) return
+    const raw = searchParams.get('cod') ?? searchParams.get('id')
+    if (!raw) return
+    const id = raw.replace(/\D/g, '')
+    if (!/^\d{5,10}$/.test(id)) return
+    codAutoloadDone.current = true
+    setCodeInput(id)
+    void loadByCode(id)
+    // Drop the query so refresh doesn't re-trigger unexpectedly mid-session edits
+    const next = new URLSearchParams(searchParams)
+    next.delete('cod')
+    next.delete('id')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams, loadByCode])
 
   const loadPaste = useCallback(() => {
     if (!pasteText.trim()) {

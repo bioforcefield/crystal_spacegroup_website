@@ -31,17 +31,25 @@ function codSearchDevProxy(): Plugin {
       u.searchParams.get('smiles') ||
       ''
     ).trim()
-    const kind = text ? 'text' : smile ? 'smile' : null
-    const value = text || smile
+    const year = (u.searchParams.get('year') || '').trim()
+    const kind = text ? 'text' : smile ? 'smile' : year ? 'year' : null
+    const value = text || smile || year
     if (!kind) {
       res.statusCode = 400
       res.setHeader('content-type', 'application/json')
-      res.end(JSON.stringify({ error: 'Provide ?text=… or ?smile=…' }))
+      res.end(JSON.stringify({ error: 'Provide ?text=… or ?smile=… or ?year=YYYY' }))
+      return true
+    }
+    if (year && !/^\d{4}$/.test(year)) {
+      res.statusCode = 400
+      res.setHeader('content-type', 'application/json')
+      res.end(JSON.stringify({ error: 'year must be YYYY' }))
       return true
     }
     const listUrl = new URL(COD)
     if (kind === 'text') listUrl.searchParams.set('text', value)
-    else listUrl.searchParams.set('smarts', value)
+    else if (kind === 'smile') listUrl.searchParams.set('smarts', value)
+    if (year) listUrl.searchParams.set('year', year)
     listUrl.searchParams.set('format', 'lst')
     try {
       const listRes = await fetch(listUrl.toString(), {

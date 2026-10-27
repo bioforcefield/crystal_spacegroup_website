@@ -16,6 +16,7 @@
  *   /?id=1100303
  *   /search?text=urea
  *   /search?smile=c1ccccc1   (forwarded to COD as smarts= — SMILES/substructure)
+ *   /search?year=2020        (optional; combine with text/smile)
  */
 const COD_UPSTREAM = 'https://www.crystallography.net/cod'
 const SEARCH_TIMEOUT_MS = 20_000
@@ -58,7 +59,7 @@ async function handle(request) {
     (url.pathname.match(/(\d{5,10})(?:\.cif)?\/?$/) || [])[1]
   if (!id) {
     return new Response(
-      'crystal-cod-proxy: GET /{codId}.cif  or  GET /search?text=…  or  GET /search?smile=…\n',
+      'crystal-cod-proxy: GET /{codId}.cif  or  GET /search?text=…|smile=…|year=YYYY\n',
       {
         status: 400,
         headers: corsHeaders({ 'content-type': 'text/plain' }),
@@ -100,6 +101,14 @@ async function handleSearch(url, method) {
     url.searchParams.get('smiles') ||
     ''
   ).trim()
+  const yearRaw = (url.searchParams.get('year') || '').trim()
+  let year = null
+  if (yearRaw) {
+    if (!/^\d{4}$/.test(yearRaw)) {
+      return jsonResponse({ error: 'year must be a 4-digit YYYY' }, 400)
+    }
+    year = yearRaw
+  }
 
   // Prefer text if both provided (mutually exclusive preference).
   let kind = null
@@ -110,12 +119,16 @@ async function handleSearch(url, method) {
   } else if (smile) {
     kind = 'smile'
     value = smile
+  } else if (year) {
+    kind = 'year'
+    value = year
   }
 
   if (!kind) {
     return jsonResponse(
       {
-        error: 'Provide ?text=… (name/keyword) or ?smile=… (SMILES/substructure)',
+        error:
+          'Provide ?text=… (name/keyword), ?smile=… (SMILES/substructure), and/or ?year=YYYY',
       },
       400,
     )
@@ -127,7 +140,9 @@ async function handleSearch(url, method) {
   // 1) ID list first (small) — avoids multi-MB JSON for broad SMILES like c1ccccc1
   const listUrl = new URL(`${COD_UPSTREAM}/result.php`)
   if (kind === 'text') listUrl.searchParams.set('text', value)
-  else listUrl.searchParams.set('smarts', value) // COD SMILES/substructure API param
+  else if (kind === 'smile') listUrl.searchParams.set('smarts', value) // COD SMILES/substructure API param
+  // year-only or year+text/smile: COD accepts year=
+  if (year) listUrl.searchParams.set('year', year)
   listUrl.searchParams.set('format', 'lst')
 
   const listRes = await fetchWithTimeout(listUrl.toString(), SEARCH_TIMEOUT_MS)
