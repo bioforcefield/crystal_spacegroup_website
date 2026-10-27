@@ -317,7 +317,7 @@ export function hintTagsFromTitle(title: string | null | undefined): PubTag[] {
   ) {
     tags.push('ml')
   }
-  if (/crystal structure prediction|\bcsp\b|structure prediction/.test(t)) {
+  if (/crystal structure prediction|\bcsp\b/.test(t)) {
     tags.push('csp')
   }
   const seen = new Set<PubTag>()
@@ -325,11 +325,10 @@ export function hintTagsFromTitle(title: string | null | undefined): PubTag[] {
 }
 
 /**
- * Crossref free-text AND’d with ISSN filters when topic chips are on.
+ * Tags that refine the Crossref query (not client-only title chips).
  * Needed because the first newest-first page rarely mentions sparse keywords
  * (hydrate, CSP, ML, …); client-side title filtering alone looks empty.
  */
-/** Tags that refine the Crossref query (not client-only title chips). */
 export const TOPIC_HINT_TAGS: readonly PubTag[] = [
   'hydrate',
   'mof',
@@ -344,7 +343,7 @@ const HINT_CROSSREF_QUERY: Partial<Record<PubTag, string>> = {
   hydrate: 'hydrate',
   mof: 'MOF',
   drug: 'pharmaceutical',
-  salt: 'cocrystal',
+  salt: 'salt',
   mineral: 'mineral',
   ml: 'machine learning',
   csp: 'crystal structure prediction',
@@ -454,10 +453,15 @@ export async function fetchCrossrefPage(
   const page = parseCrossrefResponse(json)
   const rows = query.rows ?? CROSSREF_ROWS
   const offset = Math.max(0, query.offset ?? 0)
+  // Advance by upstream page size, not post-filter works.length — otherwise a
+  // page of mastheads sets nextOffset=null and Load more disappears.
+  const root = json && typeof json === 'object' ? (json as Record<string, unknown>) : null
+  const message = root
+    ? ((root.message ?? root) as Record<string, unknown>)
+    : null
+  const rawLen = Array.isArray(message?.items) ? message!.items.length : page.works.length
   const nextOffset =
-    offset + page.works.length < page.total && page.works.length > 0
-      ? offset + rows
-      : null
+    offset + rawLen < page.total && rawLen > 0 ? offset + rows : null
   return { ...page, nextOffset }
 }
 

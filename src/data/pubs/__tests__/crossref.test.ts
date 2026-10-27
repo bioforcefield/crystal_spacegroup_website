@@ -171,10 +171,14 @@ describe('date / author / hint parsers', () => {
     expect(
       hintTagsFromTitle('Advances in crystal structure prediction (CSP)'),
     ).toEqual(expect.arrayContaining(['csp']))
+    expect(
+      hintTagsFromTitle('Machine learning property structure prediction methods'),
+    ).not.toContain('csp')
   })
 
   it('crossrefQueryForHintTags adds topic queries for sparse chips', () => {
     expect(crossrefQueryForHintTags(['hydrate'])).toBe('hydrate')
+    expect(crossrefQueryForHintTags(['salt'])).toBe('salt')
     expect(crossrefQueryForHintTags(['ml', 'csp'])).toContain('machine learning')
     expect(crossrefQueryForHintTags(['ml', 'csp'])).toContain(
       'crystal structure prediction',
@@ -318,6 +322,43 @@ describe('fetch wiring (mocked)', () => {
       },
       { searchBase: 'https://proxy.test', fetchImpl },
     )
+    expect(page.nextOffset).toBe(20)
+  })
+
+  it('keeps nextOffset when upstream items are all filtered mastheads', async () => {
+    const { fetchCrossrefPage } = await import('../crossref')
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        message: {
+          'total-results': 100,
+          items: [
+            {
+              DOI: '10.1021/cgv025i001_mast',
+              title: ['Issue Publication Information'],
+              published: { 'date-parts': [[2025]] },
+            },
+            {
+              DOI: '10.1021/cgv025i001_mast2',
+              title: ['Issue Editorial Masthead'],
+              published: { 'date-parts': [[2025]] },
+            },
+          ],
+        },
+      }),
+    })) as unknown as typeof fetch
+
+    const page = await fetchCrossrefPage(
+      {
+        preset: 'acs',
+        year: 2025,
+        offset: 0,
+        rows: 20,
+        now: new Date('2026-10-27'),
+      },
+      { searchBase: 'https://proxy.test', fetchImpl },
+    )
+    expect(page.works).toHaveLength(0)
     expect(page.nextOffset).toBe(20)
   })
 })

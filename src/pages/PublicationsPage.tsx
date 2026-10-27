@@ -9,11 +9,11 @@ import {
 } from '../data/pubs/codPubs'
 import {
   CROSSREF_PRESETS,
+  TOPIC_HINT_TAGS,
   type CrossrefPublisherPreset,
   type CrossrefWork,
   crossrefQueryForHintTags,
   fetchCrossrefPage,
-  isTopicHintTag,
   recentYearOptions,
 } from '../data/pubs/crossref'
 import {
@@ -406,15 +406,9 @@ function RecentTitlesPanel() {
     )
   }
 
-  const visible = useMemo(() => {
-    // Topic chips (hydrate, CSP, …) already shaped the Crossref query — do not
-    // also require the title heuristic, or relevance hits get wiped.
-    const clientOnly = hintFilter.filter((t) => !isTopicHintTag(t))
-    if (!clientOnly.length) return works
-    return works.filter((w) =>
-      clientOnly.every((t) => w.hintTags.includes(t)),
-    )
-  }, [works, hintFilter])
+  // Topic chips all drive Crossref — never AND title heuristics on the result
+  // set (that was the empty hydrate/CSP trap).
+  const visible = works
 
   const presetInfo = CROSSREF_PRESETS.find((p) => p.id === preset)
 
@@ -426,10 +420,11 @@ function RecentTitlesPanel() {
     >
       <p className="pubs-note">
         Live Crossref metadata for crystallography journals (ISSN filters).
-        Topic chips (hydrate, CSP, machine learning, …) refine the Crossref
-        query so you are not stuck with whatever landed on the first page;
-        chips on each card are still <em>title hints</em>, not COD curation.
-        Open DOI goes to the publisher; no full text here.
+        Topic chips (hydrate, CSP, machine learning, …) run a Crossref search
+        ranked by relevance — not a filter of the newest-first page. Card chips
+        ending in “?” are still <em>title keyword hints</em>, not COD curation.
+        Organic / inorganic live on the Curated COD tab. Open DOI goes to the
+        publisher; no full text here.
       </p>
 
       <section className="pubs-filters" aria-label="Filter recent titles">
@@ -500,14 +495,14 @@ function RecentTitlesPanel() {
 
         <div className="pubs-filter-row">
           <span className="pubs-filter-label" id="pubs-hint-label">
-            Keyword hints
+            Topics
           </span>
           <div
             className="pubs-tag-chips"
             role="group"
             aria-labelledby="pubs-hint-label"
           >
-            {PUB_TAG_ORDER.map((t) => (
+            {TOPIC_HINT_TAGS.map((t) => (
               <button
                 key={t}
                 type="button"
@@ -516,11 +511,8 @@ function RecentTitlesPanel() {
                 }`}
                 aria-pressed={hintFilter.includes(t)}
                 title={
-                  isTopicHintTag(t)
-                    ? PUB_TAG_BLURBS[t] +
-                      ' · runs a Crossref topic search (relevance ranked)'
-                    : PUB_TAG_BLURBS[t] +
-                      ' · filters loaded titles client-side'
+                  PUB_TAG_BLURBS[t] +
+                  ' · Crossref topic search (relevance ranked; not curated COD tags)'
                 }
                 onClick={() => toggleHint(t)}
               >
@@ -534,7 +526,7 @@ function RecentTitlesPanel() {
               className="pubs-clear"
               onClick={() => setHintFilter([])}
             >
-              Clear hints
+              Clear topics
             </button>
           )}
         </div>
