@@ -1,0 +1,30 @@
+# Copy into .github/workflows/ to enable.
+# Requires a GitHub token/PAT with `workflow` scope to push this file the first time
+# (ordinary `repo` scope cannot create/update workflow files).
+#
+# Refresh curated same-origin COD CIF cache (teaching samples for GH Pages).
+name: Refresh COD cache
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 1 * *' # monthly
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch COD samples
+        run: bash scripts/fetch-cod-samples.sh
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- public/samples/cod; then
+            echo "No COD cache changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/samples/cod
+          git commit -m "chore: refresh COD teaching cache"
+          git push
