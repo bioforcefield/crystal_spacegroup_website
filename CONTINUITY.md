@@ -27,5 +27,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main tip: (pending commit)
-- gh-pages: (pending deploy)
+- main tip: `a122326`
+- gh-pages: `9d85af0` (239 files)
