@@ -2311,7 +2311,7 @@ a.csd-bar-row.ready:hover {
   border: 1px solid rgba(125, 211, 252, 0.28);
   background: rgba(7, 11, 20, 0.82);
   backdrop-filter: blur(8px);
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   line-height: 1.25;
   pointer-events: none;
   color: #e2e8f0;
@@ -2329,7 +2329,13 @@ a.csd-bar-row.ready:hover {
 .cif-cell-angles {
   flex: 1 1 100%;
   color: #94a3b8;
-  font-size: 0.68rem;
+  font-size: 0.88rem;
+}
+
+.cif-cell-origin {
+  flex: 1 1 100%;
+  color: #fbbf24;
+  font-size: 0.82rem;
 }
 
 @media (max-width: 900px) {
@@ -2337,8 +2343,8 @@ a.csd-bar-row.ready:hover {
     left: 0.4rem;
     bottom: 0.4rem;
     padding: 0.32rem 0.45rem;
-    font-size: 0.68rem;
-    max-width: min(96%, 18rem);
+    font-size: 0.85rem;
+    max-width: min(96%, 20rem);
   }
 }
 

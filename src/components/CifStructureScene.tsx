@@ -60,6 +60,7 @@ export function CellParamsBadge({ cell }: { cell: CellParams }) {
       {orthorhombic && (
         <span className="cif-cell-angles">α = β = γ = 90°</span>
       )}
+      <span className="cif-cell-origin">● O = origin (0,0,0)</span>
     </div>
   )
 }
@@ -102,8 +103,9 @@ function AxisLabels({ cell }: { cell: CellParams }) {
   const bEnd = fracToCart([0, 1, 0], cell)
   const cEnd = fracToCart([0, 0, 1], cell)
   // Labels just past each axis tip so they sit on the box, not over the molecule
-  const scale = Math.max(0.2, Math.min(cell.a, cell.b, cell.c) * 0.038)
-  const bump = (p: Vec3, q: Vec3, extra = 0.28): Vec3 => {
+  // ~1.6× earlier size (0.038 → 0.06) for desktop/phone readability
+  const scale = Math.max(0.34, Math.min(cell.a, cell.b, cell.c) * 0.06)
+  const bump = (p: Vec3, q: Vec3, extra = scale * 1.3): Vec3 => {
     const dx = q[0] - p[0]
     const dy = q[1] - p[1]
     const dz = q[2] - p[2]
@@ -138,6 +140,12 @@ function AxisLabels({ cell }: { cell: CellParams }) {
       {label(`a ${fmtLen(cell.a)}`, bump(o, aEnd), '#f87171')}
       {label(`b ${fmtLen(cell.b)}`, bump(o, bEnd), '#4ade80')}
       {label(`c ${fmtLen(cell.c)}`, bump(o, cEnd), '#60a5fa')}
+      {/* Origin marker: crystallographic (0,0,0), pushed away from the cell body diagonal */}
+      <mesh position={o}>
+        <sphereGeometry args={[scale * 0.22, 16, 16]} />
+        <meshBasicMaterial color="#fbbf24" />
+      </mesh>
+      {label('O (0,0,0)', bump(fracToCart([1, 1, 1], cell), o, scale * 1.1), '#fbbf24')}
     </group>
   )
 }
