@@ -228,13 +228,13 @@ function geometryNoteFor(
     orthorhombic:
       'Axis-aligned 2/2₁ and a/b/c/n/d glides are drawn; diagonal elements in uncommon settings may be missing.',
     tetragonal:
-      '4/4ₙ ‖ c and axis-aligned mirrors/glides are drawn; some diagonal glides may still be omitted.',
+      '4/4ₙ ‖ a,b,c and axis-aligned mirrors/glides are drawn; some diagonal glides may still be omitted.',
     trigonal:
       '3/3ₙ ‖ c (hex setting) and some diagonal c-glides are drawn; rhombohedral-axis special loci may be limited.',
     hexagonal:
       '6/6ₙ and 3 ‖ c plus axis-aligned mirrors/glides are drawn; a few diagonal planes may still be omitted.',
     cubic:
-      '〈100〉 axes, 〈111〉 body-diagonal 3-folds, and many diagonal mirrors/glides are drawn when detected; a minority of d-glide / off-origin loci may still be incomplete.',
+      '〈111〉 3-folds, 〈110〉 face-diagonal 2-folds, 4 ‖ a/b/c, and diagonal mirrors/glides are drawn when R matches; a few exotic screw/glide settings may still lack a locus.',
   }
   const base = bySystem[system] ?? 'Some geometric overlays could not be derived for this group.'
   const coverage =

@@ -5,7 +5,9 @@
  *  - inversions (R = −I)
  *  - axis-aligned 2 / 2₁ along a, b, c
  *  - 4 / 4ₙ and 3 / 3ₙ along c (tetragonal / hexagonal)
- *  - cubic 〈111〉 body-diagonal 3-folds
+ *  - cubic 〈111〉 body-diagonal 3-folds (per operator)
+ *  - face-diagonal 2-folds (cubic 〈110〉)
+ *  - 4 / 4ₙ ‖ a, b, and c
  *  - mirrors / a·b·c·n·d glides ⊥ a, b, c
  *  - diagonal (non-axis-aligned) mirrors / glides via corners
  *
@@ -497,8 +499,8 @@ export function deriveBodyDiagonalThreefolds(ops: Operator[]): ScrewAxisSpec[] {
       Math.sign(û[2]) || 1,
     ]
     const key = `${direction.join(',')}|${origin.map((c) => c.toFixed(2)).join(',')}`
-    if (seen.includes(key)) continue
-    seen.push(key)
+    const primaryForAxis = !seen.includes(key)
+    if (primaryForAxis) seen.push(key)
 
     const dirLabel = fmtDir(direction)
     out.push({
@@ -506,7 +508,7 @@ export function deriveBodyDiagonalThreefolds(ops: Operator[]): ScrewAxisSpec[] {
       direction,
       locus: `${dirLabel} through (${fmtFrac(origin[0])}, ${fmtFrac(origin[1])}, ${fmtFrac(origin[2])})`,
       opIndex: op.index,
-      primary: !out.some((a) => a.opIndex === op.index),
+      primary: primaryForAxis && !out.some((a) => a.opIndex === op.index),
       kind: '3',
     })
   }
@@ -551,6 +553,142 @@ function planeCorners(normal: Vec3, d: number): [Vec3, Vec3, Vec3, Vec3] {
   const c2 = add3(p0, add3(scale3(u, span / 2), scale3(v, span / 2)))
   const c3 = add3(p0, add3(scale3(u, -span / 2), scale3(v, span / 2)))
   return [c0, c1, c2, c3]
+}
+
+/**
+ * Face-diagonal 2-folds (common in cubic): e.g. R = [[0,-1,0],[-1,0,0],[0,0,-1]]
+ * (2 ‖ [1-10]), and cyclic permutations. Axis ‖ eigenvector (+1).
+ */
+export function deriveFaceDiagonalTwofolds(ops: Operator[]): ScrewAxisSpec[] {
+  const out: ScrewAxisSpec[] = []
+  for (const op of ops) {
+    const det = Math.round(det3local(op.R))
+    const tr = Math.round(trace3local(op.R))
+    // Proper 2-fold: det=1, tr=-1
+    if (det !== 1 || tr !== -1) continue
+    // Skip axis-aligned (already covered)
+    if (
+      matClose(op.R, TWO_A, EPS) ||
+      matClose(op.R, TWO_B, EPS) ||
+      matClose(op.R, TWO_C, EPS)
+    ) {
+      continue
+    }
+    const û = axisEigenvectorPlus1(op.R)
+    if (!û) continue
+    // Face diagonal: two |components| ≈ equal, one ≈ 0
+    const a = [Math.abs(û[0]), Math.abs(û[1]), Math.abs(û[2])]
+    const sorted = [...a].sort((x, y) => x - y)
+    if (sorted[0]! > 0.25) continue // body diagonal-ish
+    if (sorted[1]! < 0.4 || sorted[2]! < 0.4) continue
+    if (Math.abs(sorted[1]! - sorted[2]!) > 0.3) continue
+
+    const tau = dot3(op.t, û)
+    const tPerp = sub3(op.t, scale3(û, tau))
+    // For 180°: origin = t⊥/2
+    const origin: Vec3 = [
+      wrap01(tPerp[0] / 2),
+      wrap01(tPerp[1] / 2),
+      wrap01(tPerp[2] / 2),
+    ]
+    const direction: Vec3 = [
+      Math.abs(û[0]) < 0.25 ? 0 : Math.sign(û[0]) || 1,
+      Math.abs(û[1]) < 0.25 ? 0 : Math.sign(û[1]) || 1,
+      Math.abs(û[2]) < 0.25 ? 0 : Math.sign(û[2]) || 1,
+    ]
+    const isScrew = nearHalf(tau)
+    out.push({
+      origin,
+      direction,
+      locus: `${fmtDir(direction)} through (${fmtFrac(origin[0])}, ${fmtFrac(origin[1])}, ${fmtFrac(origin[2])})${isScrew ? ' · 2₁' : ' · 2'}`,
+      opIndex: op.index,
+      primary: !out.some((a) => a.opIndex === op.index),
+      kind: isScrew ? '21' : '2',
+    })
+  }
+  return out
+}
+
+/** 4 / 4ₙ ‖ a and ‖ b (tetragonal/cubic); ‖ c stays in deriveFourfoldC. */
+export function deriveFourfoldAB(ops: Operator[]): ScrewAxisSpec[] {
+  const out: ScrewAxisSpec[] = []
+  // R for 4 ‖ a: cycles y→z→-y… → [[1,0,0],[0,0,-1],[0,1,0]]
+  const FOUR_A: Mat3 = [
+    [1, 0, 0],
+    [0, 0, -1],
+    [0, 1, 0],
+  ]
+  const FOUR_A_INV: Mat3 = [
+    [1, 0, 0],
+    [0, 0, 1],
+    [0, -1, 0],
+  ]
+  // 4 ‖ b: [[0,0,1],[0,1,0],[-1,0,0]]
+  const FOUR_B: Mat3 = [
+    [0, 0, 1],
+    [0, 1, 0],
+    [-1, 0, 0],
+  ]
+  const FOUR_B_INV: Mat3 = [
+    [0, 0, -1],
+    [0, 1, 0],
+    [1, 0, 0],
+  ]
+
+  const tryAxis = (
+    forward: Mat3,
+    inverse: Mat3,
+    axis: 0 | 1,
+    dir: Vec3,
+  ) => {
+    for (const op of ops) {
+      const fw = matClose(op.R, forward, EPS)
+      const inv = matClose(op.R, inverse, EPS)
+      if (!fw && !inv) continue
+      const t = op.t
+      // Fixed coords in the plane ⊥ axis
+      let origin: Vec3
+      let parallel: number
+      if (axis === 0) {
+        // ‖ a: fixed y,z from (ty - tz)/2 style for 4 about x
+        // R: (x, -z, y) + t → y0 = (ty - tz)/2, z0 = (ty + tz)/2  (forward)
+        const ty = t[1]
+        const tz = t[2]
+        const y0 = wrap01(fw ? (ty - tz) / 2 : (ty + tz) / 2)
+        const z0 = wrap01(fw ? (ty + tz) / 2 : (tz - ty) / 2)
+        origin = [0, y0, z0]
+        parallel = t[0]
+      } else {
+        const tx = t[0]
+        const tz = t[2]
+        const x0 = wrap01(fw ? (tx + tz) / 2 : (tx - tz) / 2)
+        const z0 = wrap01(fw ? (tz - tx) / 2 : (tx + tz) / 2)
+        origin = [x0, 0, z0]
+        parallel = t[1]
+      }
+      let kind: ScrewAxisSpec['kind'] = '4'
+      const tp = wrap01(parallel)
+      if (nearHalf(tp)) kind = '42'
+      else if (Math.abs(tp - 0.25) < 0.08) kind = '41'
+      else if (Math.abs(tp - 0.75) < 0.08) kind = '43'
+      const axisName = axis === 0 ? 'a' : 'b'
+      out.push({
+        origin,
+        direction: dir,
+        locus:
+          axis === 0
+            ? `(x, ${fmtFrac(origin[1])}, ${fmtFrac(origin[2])}) · ${kind} ‖ ${axisName}`
+            : `(${fmtFrac(origin[0])}, y, ${fmtFrac(origin[2])}) · ${kind} ‖ ${axisName}`,
+        opIndex: op.index,
+        primary: !out.some((a) => a.opIndex === op.index),
+        kind,
+      })
+    }
+  }
+
+  tryAxis(FOUR_A, FOUR_A_INV, 0, [1, 0, 0])
+  tryAxis(FOUR_B, FOUR_B_INV, 1, [0, 1, 0])
+  return out
 }
 
 /**
@@ -636,7 +774,9 @@ export interface DerivedElements {
 export function deriveElements(ops: Operator[]): DerivedElements {
   const axes = [
     ...deriveTwofoldAxes(ops),
+    ...deriveFaceDiagonalTwofolds(ops),
     ...deriveFourfoldC(ops),
+    ...deriveFourfoldAB(ops),
     ...deriveThreefoldC(ops),
     ...deriveBodyDiagonalThreefolds(ops),
   ]
