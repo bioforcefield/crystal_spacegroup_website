@@ -3,22 +3,25 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Done (this batch) — CIF intact molecules + operators + cell params + COD/CSD codes
+## Done (this batch) — CIF symmetry-element overlays
 
-### CIF `/cif`
-- **Intact molecules**: min-image covalent bonds + unwrap (`src/data/cif/molecules.ts`).
-- **Symmetry operators**: ITA xyz / Seitz / class; color-matched; keyboard + phone chips; default **Molecules** mode.
-- **Lattice on 3D box**: a/b/c Å Billboard labels + corner `CellParamsBadge` (α/β/γ).
-- **Origin + label size (766d662 / pages f99172c)**: amber sphere + "O (0,0,0)" billboard at frac (0,0,0), offset away from cell centre; badge line "● O = origin". 3D text scale 0.038→0.06·min(a,b,c) (min 0.34); badge 0.72→0.95rem desktop, 0.68→0.85rem phone.
-- **Occupancy / disorder**: skip occ &lt; 0.05; one altloc group.
-- **Load by code**:
-  - **COD** `1100303`: cache `public/samples/cod/{id}.cif` → optional `VITE_COD_PROXY` → Vite `/cod-proxy` (dev/preview) → direct crystallography.net. CORS often blocks direct on GH Pages → UI open-link + paste. Optional Worker: `scripts/cod-cors-worker.js`.
-  - **CSD** `ACETAC01`: no anonymous stream (CCDC); link to Access Structures; upload/paste. No scraping.
+### CIF `/cif` — screws / glides / inversions / mirrors on the real cell
+- When the CIF resolves an ITA number (1–230), load the teaching demo via `getDemo(n)` and **substitute the CIF cell** (`demoWithCifCell`) so fractional loci use the structure’s a,b,c,α,β,γ — not the teaching metric.
+- Render with shared `SymmetryElements` (`soft` opacity ~0.72× so molecules stay readable).
+- Toolbar toggle **Symmetry elements · on/off** (default on when drawable loci exist; disabled if SG unknown or no loci). Phone-friendly min-height.
+- Class-color legend strip + honest `geometryLimited` note when body-diagonal etc. are missing.
+- Molecules, origin marker, lattice labels, operator list unchanged.
+- Verified path: sample acetic P21/c (14); COD 1100303 is P-1 (2) → inversions.
 
-Tests: **350** green.
+### Key files
+- `src/data/cif/demoWithCifCell.ts` (+ test)
+- `src/components/CifStructureScene.tsx`, `SymmetryElements.tsx` (`soft`)
+- `src/pages/CifExplorerPage.tsx`
+
+Tests: **353** green.
 
 ## Remaining gaps
-- Body-diagonal loci still geometryLimited.
+- Body-diagonal loci still geometryLimited (no invented loci).
 - CIF: no ellipsoids; Cartesian-only unsupported; no cross-op H-bond dimers.
 - Production COD arbitrary-id stream needs `VITE_COD_PROXY` worker or paste (bundled 1100303 works same-origin).
 
@@ -27,5 +30,5 @@ Tests: **350** green.
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main tip: `7652504` (feature `5478cd5`)
-- gh-pages: `ba33397` (239 files)
+- main tip: (pending commit)
+- gh-pages: (pending deploy)

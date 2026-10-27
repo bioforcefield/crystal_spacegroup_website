@@ -9,6 +9,10 @@ import { Link } from 'react-router-dom'
 import CifStructureScene, {
   type CifVisibility,
 } from '../components/CifStructureScene'
+import {
+  countDemoElements,
+  demoWithCifCell,
+} from '../data/cif/demoWithCifCell'
 import { expandStructure } from '../data/cif/expandStructure'
 import {
   CorsBlockedError,
@@ -33,6 +37,7 @@ export default function CifExplorerPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedOp, setSelectedOp] = useState(1)
   const [visibility, setVisibility] = useState<CifVisibility>('molecules')
+  const [showSymmetryElements, setShowSymmetryElements] = useState(true)
   const [resetToken, setResetToken] = useState(0)
   const [busy, setBusy] = useState(false)
   const [codeInput, setCodeInput] = useState('1100303')
@@ -169,6 +174,15 @@ export default function CifExplorerPage() {
     }
     return m
   }, [structure])
+
+  /** Teaching SG demo with CIF cell metric — loci in real a,b,c,α,β,γ. */
+  const elementDemo = useMemo(() => {
+    if (!structure?.spaceGroupNumber) return null
+    return demoWithCifCell(structure.spaceGroupNumber, structure.cell) ?? null
+  }, [structure])
+
+  const elementCount = elementDemo ? countDemoElements(elementDemo) : 0
+  const canShowElements = elementDemo != null && elementCount > 0
 
   const atomCountForOp = useCallback(
     (opIndex: number) =>
@@ -383,6 +397,11 @@ export default function CifExplorerPage() {
                   </dd>
                 </div>
               </dl>
+              {elementDemo?.geometryLimited && elementDemo.geometryNote && (
+                <p className="hint cif-geometry-note">
+                  Symmetry overlays: {elementDemo.geometryNote}
+                </p>
+              )}
               {structure.warnings.length > 0 && (
                 <ul className="cif-warnings">
                   {structure.warnings.map((w) => (
@@ -515,7 +534,34 @@ export default function CifExplorerPage() {
             <div className="legend chirality">
               Ball ≈ element · tint ≈ operator · bonds keep each molecule intact
               (min-image unwrap)
+              {canShowElements && showSymmetryElements
+                ? ' · overlays: screws / glides / inversions / mirrors (ITA loci on this cell)'
+                : ''}
             </div>
+            {elementDemo && showSymmetryElements && canShowElements && (
+              <div className="legend elements-legend" aria-label="Symmetry element classes">
+                {elementDemo.classLegendOrder
+                  .filter((id) => id !== 'identity')
+                  .map((id) => {
+                    const cls = elementDemo.symmetryClasses[id]
+                    if (!cls) return null
+                    return (
+                      <span key={id} className="legend-item">
+                        <span
+                          className="swatch"
+                          style={{ background: cls.color }}
+                        />
+                        {cls.label}
+                      </span>
+                    )
+                  })}
+                {elementDemo.geometryLimited && (
+                  <span className="legend-item muted" title={elementDemo.geometryNote}>
+                    limited geometry
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div className="toolbar-actions">
             <div className="segmented" role="group" aria-label="Copy visibility">
@@ -548,6 +594,27 @@ export default function CifExplorerPage() {
                 AU only
               </button>
             </div>
+            <button
+              type="button"
+              className={`btn${showSymmetryElements && canShowElements ? ' btn-primary' : ''}`}
+              onClick={() => setShowSymmetryElements((v) => !v)}
+              disabled={!structure || !canShowElements}
+              aria-pressed={showSymmetryElements && canShowElements}
+              title={
+                !structure
+                  ? 'Load a CIF first'
+                  : !elementDemo
+                    ? 'Needs a resolvable space-group number (1–230)'
+                    : elementCount === 0
+                      ? 'No drawable loci for this group yet (operators still listed)'
+                      : showSymmetryElements
+                        ? 'Hide screw / glide / inversion overlays'
+                        : 'Show screw / glide / inversion overlays'
+              }
+            >
+              Symmetry elements
+              {canShowElements ? (showSymmetryElements ? ' · on' : ' · off') : ''}
+            </button>
             <button
               type="button"
               className="btn"
@@ -588,6 +655,8 @@ export default function CifExplorerPage() {
                 selectedOp={selectedOp}
                 visibility={visibility}
                 resetToken={resetToken}
+                elementDemo={elementDemo}
+                showSymmetryElements={showSymmetryElements && canShowElements}
               />
             ) : (
               <div className="cif-empty">
@@ -606,6 +675,9 @@ export default function CifExplorerPage() {
           operators from ITA when the space group number is known
           {structure?.spaceGroupNumber != null
             ? ` · teaching demo: /sg/${structure.spaceGroupNumber}`
+            : ''}
+          {canShowElements && showSymmetryElements
+            ? ` · ${elementCount} symmetry loci on CIF cell`
             : ''}
         </footer>
       </main>

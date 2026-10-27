@@ -10,7 +10,8 @@ import {
   operatorColor,
 } from '../data/cif/operatorColors'
 import type { ExpandedStructure } from '../data/cif/types'
-import type { CellParams, Vec3 } from '../data/types'
+import type { CellParams, SpaceGroupDemo, Vec3 } from '../data/types'
+import SymmetryElements from './SymmetryElements'
 
 export type CifVisibility = 'molecules' | 'all' | 'selected' | 'asymmetric'
 
@@ -22,6 +23,9 @@ interface Props {
   resetToken: number
   /** When set, dim molecules that are not this id (optional focus). */
   selectedMolecule?: number | null
+  /** Teaching-style screw/glide/inversion overlays (demo cell already = CIF metric). */
+  elementDemo?: SpaceGroupDemo | null
+  showSymmetryElements?: boolean
 }
 
 function fmtLen(v: number): string {
@@ -157,6 +161,8 @@ function SceneBody({
   controlsRef,
   resetToken,
   selectedMolecule = null,
+  elementDemo = null,
+  showSymmetryElements = false,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const center = cellCenterCart(structure.cell)
 
@@ -225,6 +231,13 @@ function SceneBody({
       <group position={[-center[0], -center[1], -center[2]]}>
         <CellWire cell={structure.cell} />
         <AxisLabels cell={structure.cell} />
+        {showSymmetryElements && elementDemo && (
+          <SymmetryElements
+            demo={elementDemo}
+            selectedIndex={selectedOp}
+            soft
+          />
+        )}
 
         {visibleBonds.map((b, i) => {
           const A = structure.atoms[b.a]!

@@ -17,6 +17,11 @@ const FAINT_PLANE = 0.14
 interface Props {
   demo: SpaceGroupDemo
   selectedIndex: number
+  /**
+   * Soften overlays when drawn over dense molecular content (CIF explorer).
+   * Scales faint/emphasized opacities ~0.72× so atoms stay readable.
+   */
+  soft?: boolean
 }
 
 function cartAlong(
@@ -80,10 +85,12 @@ function ScrewAxisVisual({
   demo,
   axis,
   emphasized,
+  opacityScale = 1,
 }: {
   demo: SpaceGroupDemo
   axis: ScrewAxisSpec
   emphasized: boolean
+  opacityScale?: number
 }) {
   const kind = axis.kind ?? '21'
   const color =
@@ -96,7 +103,7 @@ function ScrewAxisVisual({
           : kind === '6' || kind === '63'
             ? classColor(demo, 'screw')
             : classColor(demo, 'screw')
-  const opacity = emphasized ? EMPH_LINE : FAINT
+  const opacity = (emphasized ? EMPH_LINE : FAINT) * opacityScale
   const lineWidth = emphasized ? 3.2 : 1.2
   const [p0, p1] = cartAlong(demo, axis.origin, axis.direction, 0, 1)
 
@@ -304,14 +311,16 @@ function InversionCenterVisual({
   demo,
   position,
   emphasized,
+  opacityScale = 1,
 }: {
   demo: SpaceGroupDemo
   position: Vec3
   emphasized: boolean
+  opacityScale?: number
 }) {
   const color = classColor(demo, 'inversion')
   const cart = fracToCart(position, demo.cell)
-  const opacity = emphasized ? 0.95 : FAINT
+  const opacity = (emphasized ? 0.95 : FAINT) * opacityScale
   const radius = emphasized ? 0.048 : 0.032
 
   return (
@@ -334,14 +343,16 @@ function GlidePlaneVisual({
   demo,
   plane,
   emphasized,
+  opacityScale = 1,
 }: {
   demo: SpaceGroupDemo
   plane: GlidePlaneSpec
   emphasized: boolean
+  opacityScale?: number
 }) {
   const color = classColor(demo, plane.classId)
-  const planeOpacity = emphasized ? EMPH_PLANE : FAINT_PLANE
-  const lineOpacity = emphasized ? EMPH_LINE : FAINT
+  const planeOpacity = (emphasized ? EMPH_PLANE : FAINT_PLANE) * opacityScale
+  const lineOpacity = (emphasized ? EMPH_LINE : FAINT) * opacityScale
   const n = plane.normalAxis
   const v = plane.planeValue
 
@@ -506,9 +517,14 @@ function GlidePlaneVisual({
   )
 }
 
-export default function SymmetryElements({ demo, selectedIndex }: Props) {
+export default function SymmetryElements({
+  demo,
+  selectedIndex,
+  soft = false,
+}: Props) {
   const selected = demo.operators.find((o) => o.index === selectedIndex)
   const classId = selected?.classId ?? 'identity'
+  const opacityScale = soft ? 0.72 : 1
 
   return (
     <group>
@@ -517,6 +533,7 @@ export default function SymmetryElements({ demo, selectedIndex }: Props) {
           key={c.locus}
           demo={demo}
           position={c.position}
+          opacityScale={opacityScale}
           emphasized={
             classId === 'inversion' &&
             (selectedIndex === demo.primaryInversionOp
@@ -542,6 +559,7 @@ export default function SymmetryElements({ demo, selectedIndex }: Props) {
             demo={demo}
             axis={axis}
             emphasized={emphasized}
+            opacityScale={opacityScale}
           />
         )
       })}
@@ -555,6 +573,7 @@ export default function SymmetryElements({ demo, selectedIndex }: Props) {
             demo={demo}
             plane={plane}
             emphasized={emphasized}
+            opacityScale={opacityScale}
           />
         )
       })}

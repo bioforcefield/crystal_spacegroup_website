@@ -2435,3 +2435,23 @@ button.linkish {
     flex: 1 1 100%;
   }
 }
+
+.cif-geometry-note {
+  margin: 0.4rem 0 0;
+  color: #fbbf24;
+}
+
+.cif-explorer .toolbar-actions .btn[aria-pressed='true'] {
+  border-color: #38bdf8;
+}
+
+@media (max-width: 720px) {
+  .cif-explorer .toolbar-actions {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .cif-explorer .toolbar-actions .btn {
+    min-height: 2.4rem;
+    font-size: 0.85rem;
+  }
+}
