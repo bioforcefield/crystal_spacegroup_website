@@ -10,7 +10,12 @@ import {
   wulffPolygon2D,
   type FaceSpec,
 } from '../data/morphology/wulff2d'
-import { rankBfdh, type BfdhResult } from '../data/morphology/bfdh'
+import {
+  applyFormRates,
+  rankBfdh,
+  uniqueFormRates,
+  type BfdhResult,
+} from '../data/morphology/bfdh'
 import { parseCif } from '../data/cif/parseCif'
 import {
   CorsBlockedError,
@@ -246,6 +251,16 @@ function runBfdhFromCifText(text: string): {
   return { result, label, cellLine }
 }
 
+function seedRates(faces2d: FaceSpec[]) {
+  const rates: Record<string, number> = {}
+  const enabled: Record<string, boolean> = {}
+  for (const u of uniqueFormRates(faces2d)) {
+    rates[u.form] = u.rate
+    enabled[u.form] = true
+  }
+  return { rates, enabled }
+}
+
 function BfdhPredictSection() {
   const [codId, setCodId] = useState('9008565')
   const [paste, setPaste] = useState('')
@@ -255,18 +270,27 @@ function BfdhPredictSection() {
   const [label, setLabel] = useState<string | null>(null)
   const [cellLine, setCellLine] = useState<string | null>(null)
   const [bfdh, setBfdh] = useState<BfdhResult | null>(null)
+  const [rates, setRates] = useState<Record<string, number>>({})
+  const [enabled, setEnabled] = useState<Record<string, boolean>>({})
+  const [seedKey, setSeedKey] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const applyText = (text: string, sourceNote: string) => {
     try {
       const { result, label: lab, cellLine: cell } = runBfdhFromCifText(text)
+      const seeded = seedRates(result.faces2d)
       setBfdh(result)
+      setRates(seeded.rates)
+      setEnabled(seeded.enabled)
+      setSeedKey((k) => k + 1)
       setLabel(lab)
       setCellLine(cell)
       setStatus(sourceNote)
       setError(null)
     } catch (e) {
       setBfdh(null)
+      setRates({})
+      setEnabled({})
       setError(e instanceof Error ? e.message : String(e))
       setStatus(null)
     }
@@ -282,6 +306,8 @@ function BfdhPredictSection() {
       setCodId(id.trim())
     } catch (e) {
       setBfdh(null)
+      setRates({})
+      setEnabled({})
       if (e instanceof CorsBlockedError) {
         setError(
           `${e.message} Try a teaching chip (cached), paste/upload a CIF, or use the COD proxy build.`,
@@ -307,24 +333,86 @@ function BfdhPredictSection() {
     ev.target.value = ''
   }
 
-  const outlineFaces = bfdh?.faces2d ?? []
+  const resetToBfdh = () => {
+    if (!bfdh) return
+    const seeded = seedRates(bfdh.faces2d)
+    setRates(seeded.rates)
+    setEnabled(seeded.enabled)
+    setSeedKey((k) => k + 1)
+  }
+
+  const formList = useMemo(
+    () => (bfdh ? uniqueFormRates(bfdh.faces2d) : []),
+    [bfdh],
+  )
+
+  const outlineFaces = useMemo(() => {
+    if (!bfdh) return []
+    return applyFormRates(bfdh.faces2d, rates, enabled)
+  }, [bfdh, rates, enabled])
+
   const outline = useMemo(
     () => (outlineFaces.length ? wulffPolygon2D(outlineFaces) : null),
     [outlineFaces],
   )
 
+  const activeLabels = outline ? activeFaceLabels(outline) : []
+  const r100 = rates['{100}']
+  const r010 = rates['{010}']
+  const orthoRatio =
+    r100 != null && r100 > 0 && r010 != null
+      ? r010 / r100
+      : outline?.aspect ?? 1
+  const habit = classifyHabit({
+    aspect: outline?.aspect || 1,
+    hasDiagonalFaces: activeLabels.some(
+      (l) => l !== '{100}' && l !== '{010}' && l !== '{001}',
+    ),
+    orthoRatio,
+  })
+
+  const ratesDirty = useMemo(() => {
+    if (!bfdh) return false
+    for (const u of uniqueFormRates(bfdh.faces2d)) {
+      if (Math.abs((rates[u.form] ?? u.rate) - u.rate) > 1e-6) return true
+      if (enabled[u.form] === false) return true
+    }
+    return false
+  }, [bfdh, rates, enabled])
+
   return (
     <section className="teach-section teach-interactive" aria-labelledby="morph-bfdh">
       <h2 id="morph-bfdh">Predict · BFDH from crystal</h2>
-      <p className="teach-caption">
-        Bravais–Friedel–Donnay–Harker ranks faces by lattice spacing with Harker
-        corrections from lattice centering. Relative growth{' '}
-        <strong>R ∝ 1/d<sub>DH</sub></strong>. This is a{' '}
-        <strong>geometric heuristic</strong> from the cell alone — not attachment
-        energy, not kinetic morphology, and not a full 3D Wulff for arbitrary
-        point groups. The outline is an <strong>ab-plane 2D teaching slice</strong>{' '}
-        of the ranked forms.
+      <p className="teach-note">
+        <strong>Note.</strong> BFDH (Bravais–Friedel–Donnay–Harker) ranks
+        morphological importance by Donnay–Harker lattice spacing{' '}
+        <strong>d<sub>DH</sub></strong>, with relative growth{' '}
+        <strong>R ∝ 1/d<sub>DH</sub></strong>. It uses only the unit cell and
+        lattice centering — a geometric ranking, not a surface-energy or kinetic
+        model.
       </p>
+
+      <aside className="teach-callout teach-callout-warn" role="note" aria-label="BFDH disclaimer">
+        <p className="teach-callout-title">Disclaimer</p>
+        <ul>
+          <li>
+            Teaching schematic only — not attachment-energy morphology, not
+            kinetic habit, and not an industrial crystallization prediction.
+          </li>
+          <li>
+            Harker corrections here cover <strong>lattice centering</strong>{' '}
+            (P/A/B/C/I/F/R). Screw and glide extinctions are not applied.
+          </li>
+          <li>
+            The outline is a <strong>2D ab-plane slice</strong> of ranked forms,
+            not a full 3D Wulff construction for arbitrary point groups.
+          </li>
+          <li>
+            Rankings can disagree with experiment (solvent, additives, transport,
+            and growth kinetics often dominate).
+          </li>
+        </ul>
+      </aside>
 
       <div className="teach-preset-row" role="group" aria-label="Cached COD samples">
         {BFDH_CHIPS.map((c) => (
@@ -411,22 +499,94 @@ function BfdhPredictSection() {
               <br />
               Centering <strong>{bfdh.centering}</strong> · {bfdh.note}
             </p>
+            <div className="teach-habit-badge" data-habit={habit.kind}>
+              {ratesDirty ? 'Adjusted · ' : 'BFDH · '}
+              {habit.label}
+            </div>
+            <p className="teach-habit-blurb">{habit.blurb}</p>
             <WulffOutline
               faces={outlineFaces}
-              habitLabel={`BFDH · ${bfdh.centering}`}
+              habitLabel={`${ratesDirty ? 'Adjusted' : 'BFDH'} · ${habit.label}`}
             />
             <p className="teach-caption">
               Outline faces:{' '}
-              <strong>
-                {outline
-                  ? activeFaceLabels(outline).join(' · ') || '—'
-                  : '—'}
-              </strong>
-              . Aspect ≈ {outline?.aspect.toFixed(2) ?? '—'}.
+              <strong>{activeLabels.join(' · ') || '—'}</strong>. Aspect ≈{' '}
+              {outline?.aspect.toFixed(2) ?? '—'}.
+              {outlineFaces.length < 3
+                ? ' Enable at least three half-planes to draw an outline.'
+                : null}
             </p>
           </div>
           <div className="teach-panel">
-            <h3 className="teach-subhead">Ranked forms (top)</h3>
+            <div className="teach-bfdh-controls-head">
+              <h3 className="teach-subhead">Interactive · rates from BFDH</h3>
+              <button
+                type="button"
+                className="teach-preset-btn"
+                onClick={resetToBfdh}
+                disabled={!ratesDirty}
+                title="Restore Donnay–Harker relative rates"
+              >
+                Reset to BFDH
+              </button>
+            </div>
+            <p className="teach-caption">
+              Sliders start at R ∝ 1/d<sub>DH</sub> for forms used in the 2D
+              slice. Drag to explore “what if” vs the pure BFDH guess; uncheck a
+              form to drop it from the outline.
+            </p>
+            <div key={seedKey} className="teach-bfdh-sliders">
+              {formList.map((u) => {
+                const val = rates[u.form] ?? u.rate
+                const on = enabled[u.form] !== false
+                const id = `bfdh-r-${u.form.replace(/[{}]/g, '')}`
+                return (
+                  <div key={u.form} className="teach-bfdh-slider-row">
+                    <label className="teach-check" htmlFor={`${id}-on`}>
+                      <input
+                        id={`${id}-on`}
+                        type="checkbox"
+                        checked={on}
+                        onChange={(e) =>
+                          setEnabled((prev) => ({
+                            ...prev,
+                            [u.form]: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span>{u.form}</span>
+                    </label>
+                    <label className="teach-slider-label" htmlFor={id}>
+                      R{u.form} · {val.toFixed(2)}
+                      <span className="teach-bfdh-seed">
+                        {' '}
+                        (BFDH {u.rate.toFixed(2)})
+                      </span>
+                    </label>
+                    <input
+                      id={id}
+                      type="range"
+                      min={0.3}
+                      max={Math.max(3, u.rate * 2.5)}
+                      step={0.05}
+                      value={val}
+                      disabled={!on}
+                      onChange={(e) =>
+                        setRates((prev) => ({
+                          ...prev,
+                          [u.form]: Number(e.target.value),
+                        }))
+                      }
+                      aria-valuemin={0.3}
+                      aria-valuemax={Math.max(3, u.rate * 2.5)}
+                      aria-valuenow={val}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+
+            <h3 className="teach-subhead">Ranked forms (BFDH)</h3>
             <div className="teach-table-wrap">
               <table className="teach-table">
                 <thead>
@@ -450,15 +610,16 @@ function BfdhPredictSection() {
               </table>
             </div>
             <p className="teach-caption">
-              Larger d<sub>DH</sub> → slower relative growth → more morphologically
-              important. n<sub>H</sub> is the Harker multiple required by centering.
+              Table values are the pure BFDH ranking. Larger d<sub>DH</sub> →
+              slower relative growth → more morphologically important.
+              n<sub>H</sub> is the centering Harker multiple.
             </p>
           </div>
         </div>
       ) : (
         <p className="teach-caption">
           Load a cached chip (works offline on Pages), a COD id via proxy, or
-          paste/upload a CIF to rank faces.
+          paste/upload a CIF to rank faces and open the interactive outline.
         </p>
       )}
     </section>
@@ -657,10 +818,9 @@ export default function MorphologyPage() {
 
       <footer className="teach-footer">
         <p>
-          Schematic 2D Wulff / relative-velocity model for teaching. BFDH
-          predictor uses cell + centering only. Not a full 3D equilibrium shape
-          for arbitrary point groups, and not a fitted industrial morphology
-          prediction.
+          Schematic 2D Wulff / relative-velocity model for teaching. The BFDH
+          tool ranks faces from the cell and lattice centering, then lets you
+          adjust those rates interactively — see the disclaimer on that section.
         </p>
         <p>
           <Link to="/kinetics">Crystal kinetics</Link>

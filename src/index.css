@@ -3990,6 +3990,85 @@ button.linkish {
 }
 
 
+
+.teach-note {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.teach-callout {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: color-mix(in oklab, var(--panel) 85%, #020617);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.teach-callout-warn {
+  border-color: color-mix(in oklab, #fbbf24 45%, var(--panel-border));
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in oklab, #fbbf24 10%, var(--panel)),
+      color-mix(in oklab, var(--panel) 92%, #020617)
+    );
+}
+
+.teach-callout-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.teach-callout ul {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.teach-callout li {
+  margin: 0.2rem 0;
+}
+
+.teach-bfdh-controls-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+
+.teach-bfdh-controls-head .teach-subhead {
+  margin: 0;
+}
+
+.teach-bfdh-sliders {
+  margin: 0.35rem 0 0.85rem;
+}
+
+.teach-bfdh-slider-row {
+  margin-bottom: 0.55rem;
+  min-width: 0;
+}
+
+.teach-bfdh-slider-row .teach-slider-label {
+  margin-top: 0.15rem;
+}
+
+.teach-bfdh-seed {
+  font-weight: 500;
+  color: var(--muted-soft);
+  font-size: 0.78rem;
+}
+
 .teach-bfdh-load {
   margin: 0.35rem 0 0.75rem;
 }

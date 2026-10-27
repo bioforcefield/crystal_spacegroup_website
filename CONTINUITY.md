@@ -3,6 +3,11 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+## BFDH interactive + disclaimer (2026-10-27)
+- `/morphology` BFDH: Note + amber Disclaimer callout (teaching only; centering Harker only; 2D ab slice; may disagree with experiment)
+- After load: per-form rate sliders seeded from R∝1/d_DH, include/exclude checkboxes, live Wulff + habit badge, **Reset to BFDH**
+- Helpers: `uniqueFormRates` / `applyFormRates` in `bfdh.ts`
+
 ## Morphology phone fix + BFDH predictor (2026-10-27)
 - `/morphology` mobile: teach-page/section padding, single-column ≤640px, SVG `max-width:100%`, teach-cards 1-col, site-topbar wrap — stops horizontal cut-off from `minmax(160px)` cards + tight padding
 - Shared teach CSS also helps `/kinetics`

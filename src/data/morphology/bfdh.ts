@@ -223,3 +223,37 @@ export function bfdhFaces2D(
 
   return out
 }
+
+/** Unique form labels in order of first appearance, with their shared rate. */
+export function uniqueFormRates(
+  faces: FaceSpec[],
+): { form: string; rate: number }[] {
+  const out: { form: string; rate: number }[] = []
+  const seen = new Set<string>()
+  for (const f of faces) {
+    if (seen.has(f.label)) continue
+    seen.add(f.label)
+    out.push({ form: f.label, rate: f.rate })
+  }
+  return out
+}
+
+/**
+ * Rebuild face specs with per-form rate overrides and optional form enable flags.
+ * Disabled forms are dropped; rates ≤ 0 fall back to a tiny epsilon so the
+ * half-plane math stays defined when a slider is dragged to the floor.
+ */
+export function applyFormRates(
+  faces: FaceSpec[],
+  ratesByForm: Record<string, number>,
+  enabledByForm?: Record<string, boolean>,
+): FaceSpec[] {
+  const out: FaceSpec[] = []
+  for (const f of faces) {
+    if (enabledByForm && enabledByForm[f.label] === false) continue
+    const r = ratesByForm[f.label]
+    const rate = Number.isFinite(r) && (r as number) > 0 ? (r as number) : f.rate
+    out.push({ ...f, rate: Math.max(rate, 1e-6) })
+  }
+  return out
+}
