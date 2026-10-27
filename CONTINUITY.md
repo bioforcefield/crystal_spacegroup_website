@@ -3,7 +3,7 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`  
 Plan canvas: https://cursor.com/canvas/store-47b63095-92bb-4ade-8ecd-d65e434f207d/99fd7be7-25b5-4ea5-9402-ecaaffb9adf8  
-Latest: feature `PENDING` · tip `PENDING` · `gh-pages` `PENDING`
+Latest: feature `dab6111` · tip `dab6111` · `gh-pages` `e1dc55a`
 
 ## Teaching core — complete (+ CSD 31–42)
 Hand-polished demos: **57** (was 47). CSD top 42 covered by hand where not already polished earlier.
