@@ -166,6 +166,8 @@ export function buildCrossrefFilter(
     const start = now.getFullYear() - (years - 1)
     parts.push(`from-pub-date:${start}-01-01`)
   }
+  // Prefer real articles over issue mastheads / front matter.
+  parts.push('type:journal-article')
   return parts.join(',')
 }
 

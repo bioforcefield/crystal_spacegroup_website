@@ -45,6 +45,7 @@ describe('buildCrossrefFilter', () => {
     })
     expect(f).toContain('issn:1528-7483')
     expect(f).toContain('from-pub-date:2024-01-01')
+    expect(f).toContain('type:journal-article')
     expect(f).not.toContain('until-pub-date')
   })
 
@@ -55,7 +56,7 @@ describe('buildCrossrefFilter', () => {
       now: new Date('2026-10-27T12:00:00Z'),
     })
     expect(f).toBe(
-      'issn:2052-2525,issn:2053-2296,from-pub-date:2025-01-01,until-pub-date:2025-12-31',
+      'issn:2052-2525,issn:2053-2296,from-pub-date:2025-01-01,until-pub-date:2025-12-31,type:journal-article',
     )
   })
 
