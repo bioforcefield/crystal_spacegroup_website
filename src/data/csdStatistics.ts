@@ -250,3 +250,8 @@ export function formatPercent(row: CsdFrequencyRow): string {
   if (row.percentLabel) return row.percentLabel
   return `${row.percent.toFixed(row.percent >= 10 ? 1 : 1)}%`
 }
+
+/** Look up a CSD top-frequency row by ITA number (undefined if outside the published top list). */
+export function csdFrequencyFor(itaNumber: number): CsdFrequencyRow | undefined {
+  return CSD_TOP_FREQUENCY.find((r) => r.number === itaNumber)
+}

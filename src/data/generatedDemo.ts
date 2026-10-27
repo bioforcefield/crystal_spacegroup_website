@@ -4,6 +4,7 @@
  */
 
 import itaJson from './itaSpaceGroups.json'
+import { csdFrequencyFor, formatPercent } from './csdStatistics'
 import {
   SPACE_GROUPS,
   type CrystalSystemId,
@@ -138,13 +139,21 @@ function polishOperators(ops: Operator[]): Operator[] {
  * Short teaching list: identity + one representative per class (priority order),
  * capped so high-Z groups (Fd-3m = 192) do not spam chips.
  */
+function opsWithInversionLocus(ops: Operator[], nInversions: number): number[] {
+  if (nInversions <= 0) return []
+  return ops.filter((o) => o.classId === 'inversion').map((o) => o.index)
+}
+
 export function pickOperatorFocusIndices(
   ops: Operator[],
   maxFocus = 12,
+  preferIndices?: ReadonlySet<number>,
 ): number[] | undefined {
   if (ops.length <= 16) return undefined
   const chosen: number[] = []
   const seenClass = new Set<SymmetryClassId>()
+  const hasLocus = (op: Operator) =>
+    preferIndices == null || preferIndices.has(op.index)
 
   const identity = ops.find((o) => o.index === 1) ?? ops[0]
   if (identity) {
@@ -155,15 +164,27 @@ export function pickOperatorFocusIndices(
   for (const classId of FOCUS_CLASS_PRIORITY) {
     if (chosen.length >= maxFocus) break
     if (seenClass.has(classId)) continue
-    const op = ops.find((o) => o.classId === classId && !chosen.includes(o.index))
+    const op =
+      ops.find(
+        (o) =>
+          o.classId === classId &&
+          !chosen.includes(o.index) &&
+          hasLocus(o),
+      ) ??
+      ops.find((o) => o.classId === classId && !chosen.includes(o.index))
     if (op) {
       chosen.push(op.index)
       seenClass.add(classId)
     }
   }
 
-  // Fill remaining slots with early non-chosen ops for browsing
-  for (const op of ops) {
+  // Prefer ops that already have drawable loci when filling
+  const rest = [...ops].sort((a, b) => {
+    const la = hasLocus(a) ? 0 : 1
+    const lb = hasLocus(b) ? 0 : 1
+    return la - lb || a.index - b.index
+  })
+  for (const op of rest) {
     if (chosen.length >= maxFocus) break
     if (!chosen.includes(op.index)) chosen.push(op.index)
   }
@@ -284,7 +305,20 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
     (rotationClasses &&
       derived.axes.length + derived.glides.length < Math.min(4, operators.length / 8))
 
-  const focus = pickOperatorFocusIndices(operators)
+  const locusOps = new Set<number>([
+    ...derived.axes.map((a) => a.opIndex),
+    ...derived.glides.map((g) => g.opIndex),
+    ...opsWithInversionLocus(operators, derived.inversions.length),
+  ])
+  const focus = pickOperatorFocusIndices(operators, 12, locusOps)
+
+  const csd = csdFrequencyFor(n)
+  const csdBit = csd
+    ? ` CSD rank #${csd.rank} (${formatPercent(csd)} of structures with a defined SG, Jan 2026).`
+    : ''
+  const overlayBit = geometryLimited
+    ? ' Some exotic loci are still listed as operators only.'
+    : ` Overlays: ${derived.axes.length} axis locus(i), ${derived.glides.length} plane(s), ${derived.inversions.length} inversion(s).`
 
   const demo: SpaceGroupDemo = {
     meta: {
@@ -294,7 +328,7 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
       pointGroup: pointGroupGuess(catalog.hm),
       lattice,
       multiplicity: raw.multiplicity,
-      blurb: `ITA No. ${n} · ${catalog.hm} — ${systemName}, ${lattice.toLowerCase()} lattice, Z=${raw.multiplicity} general positions. ${summary}. Generated from standard ITA general positions; click an operator to highlight BASE → IMAGE.`,
+      blurb: `ITA No. ${n} · ${catalog.hm} — ${systemName}, ${lattice.toLowerCase()} lattice, multiplicity ${raw.multiplicity}. ${summary}.${csdBit} Auto-generated from standard ITA general positions (not hand-tuned).${overlayBit} Click an operator to highlight BASE → IMAGE.`,
     },
     cell: teachingCell(catalog.system),
     seed: SEED,
@@ -313,6 +347,7 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
     geometryNote: geometryLimited
       ? geometryNoteFor(catalog.system, derived)
       : undefined,
+    demoSource: 'generated',
   }
 
   demoCache.set(n, demo)

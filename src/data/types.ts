@@ -154,4 +154,6 @@ export interface SpaceGroupDemo {
   geometryLimited?: boolean
   /** Short note shown when geometryLimited is true. */
   geometryNote?: string
+  /** Hand-authored teaching pack vs ITA-generated fallback. */
+  demoSource?: 'hand' | 'generated'
 }

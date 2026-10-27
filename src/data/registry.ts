@@ -149,21 +149,28 @@ function resolveNumber(id: string | number): number | undefined {
   return undefined
 }
 
+function withHandSource(demo: SpaceGroupDemo): SpaceGroupDemo {
+  if (!demo.demoSource) demo.demoSource = 'hand'
+  return demo
+}
+
 export function getDemo(id: string | number): SpaceGroupDemo | undefined {
   const n = resolveNumber(id)
   if (n !== undefined) {
-    return handByNumber.get(n) ?? buildGeneratedDemo(n)
+    const hand = handByNumber.get(n)
+    return hand ? withHandSource(hand) : buildGeneratedDemo(n)
   }
 
   const q = String(id).trim().toLowerCase()
   if (!q) return undefined
 
   const byHandSlug = handBySlug.get(slugifyHm(q))
-  if (byHandSlug) return byHandSlug
+  if (byHandSlug) return withHandSource(byHandSlug)
 
   const entry = findGroup(q)
   if (!entry) return undefined
-  return handByNumber.get(entry.number) ?? buildGeneratedDemo(entry.number)
+  const hand = handByNumber.get(entry.number)
+  return hand ? withHandSource(hand) : buildGeneratedDemo(entry.number)
 }
 
 /** Hand-polished demos only (for fast golden-suite tests). */

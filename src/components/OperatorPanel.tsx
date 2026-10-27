@@ -116,6 +116,21 @@ export default function OperatorPanel({
         <p className="eyebrow">Space group</p>
         <h1>
           {meta.number} · {meta.hm}
+          {demo.demoSource === 'generated' ? (
+            <span
+              className="demo-source-badge"
+              title="Built automatically from ITA general positions — not a hand-tuned teaching pack"
+            >
+              Generated
+            </span>
+          ) : demo.demoSource === 'hand' ? (
+            <span
+              className="demo-source-badge hand"
+              title="Hand-polished teaching demo"
+            >
+              Hand-tuned
+            </span>
+          ) : null}
         </h1>
         <p className="blurb">{meta.blurb}</p>
         {demo.geometryLimited && demo.geometryNote ? (

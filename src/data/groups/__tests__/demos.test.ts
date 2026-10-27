@@ -344,3 +344,17 @@ describe('deriveElements orthorhombic / tetragonal', () => {
     }
   })
 })
+
+describe('demoSource badges', () => {
+  it('marks hand demos as hand and generated as generated', () => {
+    expect(getDemo(14)!.demoSource).toBe('hand')
+    expect(getDemo(61)!.demoSource).toBe('hand')
+    // 3 (P2) is generated — not in the hand-polished set
+    const g = getDemo(3)!
+    expect(g.demoSource).toBe('generated')
+    expect(g.meta.blurb).toMatch(/Auto-generated/)
+    expect(g.meta.blurb).toMatch(/Overlays:/)
+    // Hand demos stay free of the auto-generated disclaimer
+    expect(getDemo(14)!.meta.blurb).not.toMatch(/Auto-generated/)
+  })
+})
