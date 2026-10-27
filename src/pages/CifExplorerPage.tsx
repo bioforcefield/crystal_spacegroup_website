@@ -8,6 +8,7 @@ import {
 import { Link } from 'react-router-dom'
 import CifStructureScene, {
   CellParamsBadge,
+  type CifPlacementMode,
   type CifVisibility,
 } from '../components/CifStructureScene'
 import {
@@ -38,6 +39,8 @@ export default function CifExplorerPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedOp, setSelectedOp] = useState(1)
   const [visibility, setVisibility] = useState<CifVisibility>('molecules')
+  const [placementMode, setPlacementMode] =
+    useState<CifPlacementMode>('nearest')
   const [showSymmetryElements, setShowSymmetryElements] = useState(true)
   const [resetToken, setResetToken] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -565,6 +568,34 @@ export default function CifExplorerPage() {
             )}
           </div>
           <div className="toolbar-actions">
+            <div
+              className="segmented"
+              role="group"
+              aria-label="Motif placement"
+            >
+              <button
+                type="button"
+                className={
+                  placementMode === 'nearest' ? 'seg active' : 'seg'
+                }
+                onClick={() => setPlacementMode('nearest')}
+                title="Place molecules near the selected element (may leave the cell)"
+              >
+                <span className="label-full">Nearest images</span>
+                <span className="label-short">Near</span>
+              </button>
+              <button
+                type="button"
+                className={
+                  placementMode === 'wrapped' ? 'seg active' : 'seg'
+                }
+                onClick={() => setPlacementMode('wrapped')}
+                title="Wrap every atom into the unit cell [0,1)³"
+              >
+                <span className="label-full">In cell</span>
+                <span className="label-short">Cell</span>
+              </button>
+            </div>
             <div className="segmented" role="group" aria-label="Copy visibility">
               <button
                 type="button"
@@ -655,6 +686,7 @@ export default function CifExplorerPage() {
                 structure={structure}
                 selectedOp={selectedOp}
                 visibility={visibility}
+                placementMode={placementMode}
                 resetToken={resetToken}
                 elementDemo={elementDemo}
                 showSymmetryElements={showSymmetryElements && canShowElements}
@@ -679,6 +711,9 @@ export default function CifExplorerPage() {
           {structure?.spaceGroupNumber != null
             ? ` · teaching demo: /sg/${structure.spaceGroupNumber}`
             : ''}
+          {placementMode === 'nearest'
+            ? ' · Nearest images may sit just outside the cell'
+            : ' · In cell wraps atoms into [0, 1)³'}
           {canShowElements && showSymmetryElements
             ? ` · ${elementCount} symmetry loci on CIF cell`
             : ''}

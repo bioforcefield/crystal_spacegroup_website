@@ -3,38 +3,33 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Done (this batch) — CIF symmetry-element overlays
+## Done (this batch) — CIF Near / Cell placement
 
-### CIF `/cif` — screws / glides / inversions / mirrors on the real cell
-- When the CIF resolves an ITA number (1–230), load the teaching demo via `getDemo(n)` and **substitute the CIF cell** (`demoWithCifCell`) so fractional loci use the structure’s a,b,c,α,β,γ — not the teaching metric.
-- Render with shared `SymmetryElements` (`soft` opacity ~0.72× so molecules stay readable).
-- Toolbar toggle **Symmetry elements · on/off** (default on when drawable loci exist; disabled if SG unknown or no loci). Phone-friendly min-height.
-- Class-color legend strip + honest `geometryLimited` note when body-diagonal etc. are missing.
-- Molecules, origin marker, lattice labels, operator list unchanged.
-- Verified path: sample acetic P21/c (14); COD 1100303 is P-1 (2) → inversions.
+### CIF `/cif` — Nearest images + In cell (mirror SG demos)
+- Same semantics as `/sg/{n}` Motif placement:
+  - **Near** (`nearest`, default): intact molecules keep relative geometry; each molecule is lattice-translated so its centroid sits near the selected symmetry element (may leave the cell). Uses `distToElement` from `nearestImages.ts`.
+  - **Cell** (`wrapped`): every atom at wrapped `[0,1)³` cartesian; bonds that stretch across faces after wrap are hidden.
+- Toolbar segmented control with full labels “Nearest images” / “In cell” and phone short labels **Near** / **Cell** (same `label-full`/`label-short` as SG demos).
+- Visibility chips (Molecules / All / BASE+IMAGE / AU) unchanged; Molecules remains default visibility.
+- Module: `src/data/cif/placement.ts` + tests; wired through `CifStructureScene` / `CifExplorerPage`.
 
-### Key files
-- `src/data/cif/demoWithCifCell.ts` (+ test)
-- `src/components/CifStructureScene.tsx`, `SymmetryElements.tsx` (`soft`)
-- `src/pages/CifExplorerPage.tsx`
+Tests: **359** green.
 
-Tests: **353** green.
+## Prior (same day)
+- CIF phone layout: lattice strip below canvas, wrapped toolbar.
+- Symmetry-element overlays on CIF cell via `demoWithCifCell`.
+- Intact molecules, operator list, origin marker, COD/CSD load-by-code.
 
 ## Remaining gaps
 - Body-diagonal loci still geometryLimited (no invented loci).
 - CIF: no ellipsoids; Cartesian-only unsupported; no cross-op H-bond dimers.
 - Production COD arbitrary-id stream needs `VITE_COD_PROXY` worker or paste (bundled 1100303 works same-origin).
+- Near placement uses per-molecule centroid→element (not full BASE/IMAGE pair search like motif seeds); good enough for CIF density.
 
 ## Key paths
-- CIF: `src/data/cif/*`, `CifExplorerPage.tsx`, `CifStructureScene.tsx`
+- CIF: `src/data/cif/*` (incl. `placement.ts`), `CifExplorerPage.tsx`, `CifStructureScene.tsx`
+- SG placement reference: `src/data/nearestImages.ts`, `SpaceGroupPage.tsx`
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main tip: `d0f9401` (feature `5e33203`)
-- gh-pages: `22df158` (239 files)
-
-## 2026-10-27 — CIF phone layout
-- ≤900px: in-scene lattice badge hidden; `CellParamsBadge variant="strip"` renders below the canvas (compact a/b/c · αβγ · origin line).
-- Desktop overlay badge fonts reduced (0.95→0.78rem).
-- CIF toolbar wraps (no sideways scroll): full-width view-mode segmented row, ≥40px buttons; canvas 56vh / min 280px.
-- main `16ee188`, gh-pages `fe7f27b`.
+- (fill after commit/deploy)

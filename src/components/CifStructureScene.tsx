@@ -10,8 +10,15 @@ import {
   operatorColor,
 } from '../data/cif/operatorColors'
 import type { ExpandedStructure } from '../data/cif/types'
+import {
+  bondVisibleInWrapped,
+  placeCifStructure,
+  type CifPlacementMode,
+} from '../data/cif/placement'
 import type { CellParams, SpaceGroupDemo, Vec3 } from '../data/types'
 import SymmetryElements from './SymmetryElements'
+
+export type { CifPlacementMode }
 
 export type CifVisibility = 'molecules' | 'all' | 'selected' | 'asymmetric'
 
@@ -20,6 +27,8 @@ interface Props {
   selectedOp: number
   /** molecules = intact (default); all = same atoms dimmed uniformly; selected = BASE+IMAGE; asymmetric = AU */
   visibility: CifVisibility
+  /** SG-style placement: nearest (Near) vs wrapped in-cell (Cell). Default nearest. */
+  placementMode?: CifPlacementMode
   resetToken: number
   /** When set, dim molecules that are not this id (optional focus). */
   selectedMolecule?: number | null
@@ -158,6 +167,7 @@ function SceneBody({
   structure,
   selectedOp,
   visibility,
+  placementMode = 'nearest',
   controlsRef,
   resetToken,
   selectedMolecule = null,
@@ -166,27 +176,46 @@ function SceneBody({
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const center = cellCenterCart(structure.cell)
 
-  const visibleAtoms = useMemo(() => {
-    if (visibility === 'asymmetric') {
-      return structure.atoms.filter((a) => a.opIndex === 1)
-    }
-    if (visibility === 'selected') {
-      return structure.atoms.filter(
-        (a) => a.opIndex === 1 || a.opIndex === selectedOp,
+  const placement = useMemo(
+    () =>
+      placeCifStructure(
+        structure,
+        placementMode,
+        selectedOp,
+        elementDemo ?? null,
+      ),
+    [structure, placementMode, selectedOp, elementDemo],
+  )
+
+  const visibleIndices = useMemo(() => {
+    const idxs: number[] = []
+    structure.atoms.forEach((a, i) => {
+      if (visibility === 'asymmetric' && a.opIndex !== 1) return
+      if (
+        visibility === 'selected' &&
+        a.opIndex !== 1 &&
+        a.opIndex !== selectedOp
       )
-    }
-    return structure.atoms
+        return
+      idxs.push(i)
+    })
+    return idxs
   }, [structure.atoms, visibility, selectedOp])
 
-  const visibleAtomSet = useMemo(() => new Set(visibleAtoms), [visibleAtoms])
+  const visibleIndexSet = useMemo(() => new Set(visibleIndices), [visibleIndices])
 
   const visibleBonds = useMemo(() => {
-    return structure.bonds.filter(
-      (b) =>
-        visibleAtomSet.has(structure.atoms[b.a]!) &&
-        visibleAtomSet.has(structure.atoms[b.b]!),
-    )
-  }, [structure.atoms, structure.bonds, visibleAtomSet])
+    return structure.bonds.filter((b) => {
+      if (!visibleIndexSet.has(b.a) || !visibleIndexSet.has(b.b)) return false
+      if (placementMode === 'wrapped') {
+        return bondVisibleInWrapped(
+          placement.positions[b.a]!,
+          placement.positions[b.b]!,
+        )
+      }
+      return true
+    })
+  }, [structure.bonds, visibleIndexSet, placementMode, placement.positions])
 
   const boundsRadius = useMemo(() => {
     const corners = cellCornersCart(structure.cell)
@@ -199,8 +228,8 @@ function SceneBody({
       )
       maxR = Math.max(maxR, d)
     }
-    for (const a of visibleAtoms) {
-      const p = a.displayCartesian
+    for (const i of visibleIndices) {
+      const p = placement.positions[i]!
       const d = Math.hypot(
         p[0] - center[0],
         p[1] - center[1],
@@ -209,7 +238,7 @@ function SceneBody({
       maxR = Math.max(maxR, d)
     }
     return Math.max(maxR, 1)
-  }, [structure.cell, center, visibleAtoms])
+  }, [structure.cell, center, visibleIndices, placement.positions])
 
   useEffect(() => {
     const ctrl = controlsRef.current
@@ -240,8 +269,6 @@ function SceneBody({
         )}
 
         {visibleBonds.map((b, i) => {
-          const A = structure.atoms[b.a]!
-          const B = structure.atoms[b.b]!
           const opMatch = b.opIndex === selectedOp
           const molFocus =
             selectedMolecule == null || b.moleculeId === selectedMolecule
@@ -256,7 +283,7 @@ function SceneBody({
           return (
             <Line
               key={`bond-${i}`}
-              points={[A.displayCartesian, B.displayCartesian]}
+              points={[placement.positions[b.a]!, placement.positions[b.b]!]}
               color={col}
               lineWidth={emphasized && !dim ? 2.4 : 1.15}
               transparent
@@ -265,7 +292,8 @@ function SceneBody({
           )
         })}
 
-        {visibleAtoms.map((a, i) => {
+        {visibleIndices.map((ai) => {
+          const a = structure.atoms[ai]!
           const isSel = a.opIndex === selectedOp
           const isBase = a.opIndex === 1
           const molFocus =
@@ -288,8 +316,8 @@ function SceneBody({
             (strong ? 1.12 : emphasized ? 1.0 : 0.82)
           return (
             <mesh
-              key={`atom-${a.opIndex}-${a.auIndex}-${a.moleculeId}-${i}`}
-              position={a.displayCartesian as Vec3}
+              key={`atom-${a.opIndex}-${a.auIndex}-${a.moleculeId}-${ai}`}
+              position={placement.positions[ai]! as Vec3}
             >
               <sphereGeometry args={[r, 18, 18]} />
               <meshStandardMaterial
