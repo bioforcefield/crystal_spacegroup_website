@@ -3606,3 +3606,347 @@ button.linkish {
     transition: none;
   }
 }
+
+/* —— Teaching pages: morphology & kinetics —— */
+.teach-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem 3rem;
+}
+
+.teach-hero {
+  margin-bottom: 1.25rem;
+}
+
+.teach-hero h1 {
+  margin: 0.25rem 0 0.55rem;
+  font-size: clamp(1.65rem, 3vw, 2.1rem);
+  letter-spacing: -0.02em;
+}
+
+.teach-lead {
+  color: var(--muted);
+  max-width: 46rem;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.teach-section {
+  margin: 1.5rem 0;
+  padding: 1.1rem 1.15rem 1.2rem;
+  border-radius: 14px;
+  border: 1px solid var(--panel-border);
+  background: color-mix(in oklab, var(--panel) 92%, transparent);
+}
+
+.teach-section h2 {
+  margin: 0 0 0.55rem;
+  font-size: 1.15rem;
+}
+
+.teach-subhead {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+}
+
+.teach-bullets {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.teach-bullets li + li {
+  margin-top: 0.45rem;
+}
+
+.teach-bullets strong {
+  color: var(--text);
+}
+
+.teach-caption {
+  margin: 0.35rem 0 0.75rem;
+  font-size: 0.88rem;
+  color: var(--muted-soft);
+  line-height: 1.45;
+}
+
+.teach-grid-2 {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.teach-panel {
+  min-width: 0;
+}
+
+.teach-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 420px;
+  margin: 0.35rem auto 0.5rem;
+  color: var(--muted);
+}
+
+.teach-wulff-svg {
+  max-width: 360px;
+}
+
+.teach-plot-frame {
+  fill: color-mix(in oklab, var(--bg) 70%, #020617);
+  stroke: color-mix(in oklab, var(--text) 14%, transparent);
+  stroke-width: 1;
+}
+
+.teach-axis-guide {
+  stroke: color-mix(in oklab, var(--text) 12%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.teach-axis-label {
+  fill: var(--muted-soft);
+  font-size: 11px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+
+.teach-face-label {
+  fill: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  opacity: 0.85;
+}
+
+.teach-crystal-poly {
+  fill: color-mix(in oklab, var(--accent) 28%, transparent);
+  stroke: var(--accent);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+
+.teach-bar-track {
+  fill: color-mix(in oklab, var(--text) 8%, transparent);
+}
+
+.teach-curve {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.teach-curve-a {
+  stroke: #38bdf8;
+}
+
+.teach-curve-b {
+  stroke: #a3e635;
+}
+
+.teach-curve-dot {
+  fill: #fef08a;
+  stroke: #0f172a;
+  stroke-width: 1;
+}
+
+.teach-slider-label {
+  display: block;
+  margin: 0.65rem 0 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.teach-page input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.teach-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.85rem;
+}
+
+.teach-preset-btn {
+  border: 1px solid var(--panel-border);
+  background: color-mix(in oklab, var(--panel) 80%, #020617);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.teach-preset-btn:hover,
+.teach-preset-btn:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.teach-habit-badge {
+  display: inline-block;
+  margin: 0 0 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid color-mix(in oklab, var(--accent) 35%, transparent);
+}
+
+.teach-habit-badge[data-habit='needle'] {
+  color: #fb7185;
+  background: rgba(251, 113, 133, 0.12);
+  border-color: rgba(251, 113, 133, 0.35);
+}
+
+.teach-habit-badge[data-habit='plate'] {
+  color: #f472b6;
+  background: rgba(244, 114, 182, 0.12);
+  border-color: rgba(244, 114, 182, 0.35);
+}
+
+.teach-habit-badge[data-habit='prism'] {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.teach-habit-badge[data-habit='octagon'] {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
+.teach-habit-blurb {
+  margin: 0 0 0.5rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.teach-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.teach-card {
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--panel-border);
+  background: color-mix(in oklab, var(--bg) 55%, var(--panel));
+}
+
+.teach-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.teach-card p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.teach-fieldset {
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
+.teach-fieldset legend {
+  padding: 0 0.25rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.teach-check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.35rem 0;
+  font-size: 0.88rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.teach-select {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.teach-footer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--panel-border);
+  color: var(--muted-soft);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.teach-footer a {
+  color: var(--accent);
+}
+
+.teach-spotlight {
+  margin: 0 1.25rem 1.1rem;
+}
+
+.teach-spotlight-inner {
+  padding: 1.15rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid var(--panel-border);
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in oklab, #f472b6 10%, var(--panel)),
+      color-mix(in oklab, #38bdf8 8%, var(--panel))
+    );
+}
+
+.teach-spotlight-copy h2 {
+  margin: 0.4rem 0 0.5rem;
+}
+
+.teach-spotlight-copy p {
+  color: var(--muted);
+  max-width: 42rem;
+}
+
+@media (max-width: 760px) {
+  .teach-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .teach-page {
+    padding: 1rem 0.85rem 2.5rem;
+  }
+  .teach-spotlight {
+    margin: 0 0.85rem 1.1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .teach-crystal-poly,
+  .teach-curve,
+  .teach-preset-btn {
+    transition: none;
+  }
+}

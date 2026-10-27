@@ -3,6 +3,12 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+## Morphology & kinetics teaching pages (2026-10-27)
+- `/morphology` (+ `/morph` redirect): 2D Wulff outline from R{100}/R{010}/R{110} sliders, habit badge, rate bars, presets
+- `/kinetics`: nucleation J / induction τ vs σ (γ slider), growth mechanism overlays, size vs time
+- Math: `src/data/morphology/`, `src/data/kinetics/` · pages lazy-loaded · nav + home spotlight
+- Teaching schematics only — not full 3D Wulff / not fitted industrial kinetics
+
 ## CIF map — ASU · 2D diagram (2026-10-27)
 - Structure panel shows **ASU · 2D** sketch: PCA projection of BASE (op 1) display coords + covalent bonds
 - Extended/ionic/too-large → formula text + honest fallback (no fake molecule ball)
@@ -19,5 +25,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · `VITE_COD_PROXY=… bash scripts/deploy-gh-pages.sh`
 
 ## SHAs
-- main: `29e2e32`
-- gh-pages: `cd3059a` (VITE_COD_PROXY baked)
+- main: (pending)
+- gh-pages: (pending)

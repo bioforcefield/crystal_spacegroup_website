@@ -14,6 +14,8 @@ Live: https://bioforcefield.github.io/crystal_spacegroup_website/
 - ITA Vol. A primary diagrams + Birkbeck/UCL reference links per group
 - **Publications** (`/pubs`): **Recent titles** (live Crossref metadata for ACS / IUCr / RSC / Wiley crystallography journals) + curated COD by **year** + tags → DOI (+ CIF map for COD)
 - **CIF symmetry map** (`/cif`): load by **COD code** (e.g. `1100303`), paste/upload a CIF (CSD via Access Structures), intact molecules + operator colors + lattice a/b/c on the cell
+- **Morphology** (`/morphology`): 2D Wulff / relative-velocity outline from face growth-rate sliders + habit labels
+- **Kinetics** (`/kinetics`): schematic nucleation rate / induction time vs σ, growth-mechanism overlays, size vs time
 
 ## Run locally
 
@@ -63,6 +65,10 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 | `src/pages/CifExplorerPage.tsx` | CIF map |
 | `src/pages/PublicationsPage.tsx` | Pubs browser (Crossref + curated COD) |
 | `src/data/pubs/` | Curated COD cards, Crossref client, tag filters |
+| `src/pages/MorphologyPage.tsx` | Crystal morphology teaching + 2D Wulff |
+| `src/data/morphology/` | Wulff polygon + habit helpers |
+| `src/pages/KineticsPage.tsx` | Nucleation / growth kinetics teaching plots |
+| `src/data/kinetics/` | Schematic rate models |
 | `src/pages/IndexPage.tsx` | Catalog / primer / guide |
 | `public/ita-diagrams/` | ITA Vol. A plates |
 | `CONTINUITY.md` | Agent resume notes |

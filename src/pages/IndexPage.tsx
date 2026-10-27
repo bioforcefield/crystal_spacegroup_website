@@ -193,6 +193,35 @@ export default function IndexPage() {
         </div>
       </section>
 
+
+      <section className="teach-spotlight" aria-labelledby="teach-spotlight-title">
+        <div className="teach-spotlight-inner">
+          <div className="teach-spotlight-copy">
+            <div className="cif-spotlight-badges">
+              <span className="cif-spotlight-badge">Growth</span>
+              <span className="cif-spotlight-badge soft">Interactive</span>
+            </div>
+            <h2 id="teach-spotlight-title">Morphology &amp; kinetics</h2>
+            <p>
+              Explore how relative face growth rates set crystal habit (2D Wulff
+              schematic), and how supersaturation drives nucleation and growth
+              mechanism curves — teaching plots with live sliders.
+            </p>
+            <div className="cif-spotlight-cta">
+              <Link to="/morphology" className="btn btn-primary">
+                Morphology
+              </Link>
+              <Link to="/kinetics" className="btn btn-primary">
+                Kinetics
+              </Link>
+              <span className="cif-spotlight-hint">
+                Wulff outline · nucleation · growth regimes
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <main className="index-main">
         <section id="explore" className="index-section">
           <div className="section-head">
@@ -206,7 +235,9 @@ export default function IndexPage() {
               <Link to="/sg/61">Pbca (61)</Link>, and{' '}
               <Link to="/sg/19">P212121 (19)</Link>.
               Real structures:{' '}
-              <Link to="/cif">CIF symmetry map</Link>.
+              <Link to="/cif">CIF symmetry map</Link>. Growth:{' '}
+              <Link to="/morphology">morphology</Link>,{' '}
+              <Link to="/kinetics">kinetics</Link>.
             </p>
           </div>
           <p className="explore-hint">Click a system to filter the index below.</p>
@@ -445,6 +476,10 @@ export default function IndexPage() {
             <span className="muted"> — ideas &amp; discussion on GitHub</span>
             <span className="sep"> · </span>
             <Link to="/pubs">Publications</Link>
+            <span className="sep"> · </span>
+            <Link to="/morphology">Morphology</Link>
+            <span className="sep"> · </span>
+            <Link to="/kinetics">Kinetics</Link>
           </div>
         </div>
         <span className="footer-demos">

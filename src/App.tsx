@@ -15,6 +15,8 @@ import { getDemo } from './data/registry'
 const SpaceGroupPage = lazy(() => import('./pages/SpaceGroupPage'))
 const CifExplorerPage = lazy(() => import('./pages/CifExplorerPage'))
 const PublicationsPage = lazy(() => import('./pages/PublicationsPage'))
+const MorphologyPage = lazy(() => import('./pages/MorphologyPage'))
+const KineticsPage = lazy(() => import('./pages/KineticsPage'))
 
 const SECTION_NAV = [
   { id: 'explore', label: 'Explore' },
@@ -78,6 +80,12 @@ function SiteChrome({
             </NavLink>
             <NavLink to="/pubs" className="nav-demo">
               Pubs
+            </NavLink>
+            <NavLink to="/morphology" className="nav-demo nav-demo-hide-xs">
+              Morph
+            </NavLink>
+            <NavLink to="/kinetics" className="nav-demo nav-demo-hide-xs">
+              Kinetics
             </NavLink>
             <NavLink to="/sg/14" className="nav-demo nav-demo-hide-xs">
               P21/c
@@ -143,6 +151,12 @@ function SiteChrome({
           <NavLink to="/pubs" className="nav-demo">
             Pubs
           </NavLink>
+          <NavLink to="/morphology" className="nav-demo">
+            Morph
+          </NavLink>
+          <NavLink to="/kinetics" className="nav-demo">
+            Kinetics
+          </NavLink>
         </nav>
       </header>
       {children}
@@ -193,6 +207,27 @@ function PubsRoute() {
   )
 }
 
+
+function MorphologyRoute() {
+  return (
+    <SiteChrome variant="index">
+      <Suspense fallback={<RouteFallback />}>
+        <MorphologyPage />
+      </Suspense>
+    </SiteChrome>
+  )
+}
+
+function KineticsRoute() {
+  return (
+    <SiteChrome variant="index">
+      <Suspense fallback={<RouteFallback />}>
+        <KineticsPage />
+      </Suspense>
+    </SiteChrome>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter basename={ROUTER_BASENAME || undefined}>
@@ -201,6 +236,9 @@ export default function App() {
         <Route path="/sg/:id" element={<DemoRoute />} />
         <Route path="/cif" element={<CifRoute />} />
         <Route path="/pubs" element={<PubsRoute />} />
+        <Route path="/morphology" element={<MorphologyRoute />} />
+        <Route path="/morph" element={<Navigate to="/morphology" replace />} />
+        <Route path="/kinetics" element={<KineticsRoute />} />
         <Route path="/pbca" element={<Navigate to="/sg/61" replace />} />
         <Route path="/c2c" element={<Navigate to="/sg/15" replace />} />
         <Route path="/p21c" element={<Navigate to="/sg/14" replace />} />
