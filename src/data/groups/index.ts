@@ -18,8 +18,13 @@ export {
   deriveElements,
   deriveInversions,
   deriveTwofoldOrScrewB,
+  deriveTwofoldAxes,
+  deriveFourfoldC,
+  deriveThreefoldC,
   deriveGlidesPerpB,
+  deriveAxisAlignedGlides,
+  isGeometryLimited,
   fracNear,
 } from './deriveElements'
 export type { DerivedElements } from './deriveElements'
-export { buildOperatorsFromTriplets } from './buildOperators'
+export { buildOperatorsFromTriplets, classify } from './buildOperators'

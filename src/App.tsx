@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import {
   BrowserRouter,
   Navigate,
@@ -10,9 +10,10 @@ import {
   useParams,
 } from 'react-router-dom'
 import IndexPage from './pages/IndexPage'
-import SpaceGroupPage from './pages/SpaceGroupPage'
-import CifExplorerPage from './pages/CifExplorerPage'
 import { getDemo } from './data/registry'
+
+const SpaceGroupPage = lazy(() => import('./pages/SpaceGroupPage'))
+const CifExplorerPage = lazy(() => import('./pages/CifExplorerPage'))
 
 const SECTION_NAV = [
   { id: 'explore', label: 'Explore' },
@@ -35,6 +36,14 @@ function scrollToSection(id: string) {
   window.location.assign(hashUrl)
 }
 
+function RouteFallback() {
+  return (
+    <div className="route-fallback" role="status">
+      Loading…
+    </div>
+  )
+}
+
 function SiteChrome({
   children,
   variant,
@@ -46,7 +55,31 @@ function SiteChrome({
   const onIndex = location.pathname === '/'
 
   if (variant === 'demo') {
-    return <>{children}</>
+    return (
+      <div className="demo-shell">
+        <header className="demo-topbar" aria-label="Demo navigation">
+          <Link to="/" className="site-brand demo-brand">
+            <span className="brand-mark" aria-hidden />
+            <span className="brand-text">Crystal Space Groups</span>
+          </Link>
+          <nav className="demo-nav" aria-label="Primary">
+            <NavLink to="/" end>
+              Home
+            </NavLink>
+            <NavLink to="/cif" className="nav-demo">
+              CIF map
+            </NavLink>
+            <NavLink to="/sg/14" className="nav-demo nav-demo-hide-xs">
+              P21/c
+            </NavLink>
+            <NavLink to="/sg/227" className="nav-demo nav-demo-hide-xs">
+              Fd-3m
+            </NavLink>
+          </nav>
+        </header>
+        {children}
+      </div>
+    )
   }
 
   return (
@@ -117,7 +150,19 @@ function DemoRoute() {
   }
   return (
     <SiteChrome variant="demo">
-      <SpaceGroupPage demo={demo} />
+      <Suspense fallback={<RouteFallback />}>
+        <SpaceGroupPage demo={demo} />
+      </Suspense>
+    </SiteChrome>
+  )
+}
+
+function CifRoute() {
+  return (
+    <SiteChrome variant="demo">
+      <Suspense fallback={<RouteFallback />}>
+        <CifExplorerPage />
+      </Suspense>
     </SiteChrome>
   )
 }
@@ -128,14 +173,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<IndexRoute />} />
         <Route path="/sg/:id" element={<DemoRoute />} />
-        <Route
-          path="/cif"
-          element={
-            <SiteChrome variant="demo">
-              <CifExplorerPage />
-            </SiteChrome>
-          }
-        />
+        <Route path="/cif" element={<CifRoute />} />
         <Route path="/pbca" element={<Navigate to="/sg/61" replace />} />
         <Route path="/c2c" element={<Navigate to="/sg/15" replace />} />
         <Route path="/p21c" element={<Navigate to="/sg/14" replace />} />

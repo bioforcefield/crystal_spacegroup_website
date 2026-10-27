@@ -83,9 +83,14 @@ export default function CifExplorerPage() {
     <div className="app layout-demo cif-explorer">
       <aside className="panel">
         <header className="panel-header">
-          <Link to="/" className="back-link">
-            ← All space groups
-          </Link>
+          <div className="panel-nav-row">
+            <Link to="/" className="back-link">
+              ← All space groups
+            </Link>
+            <Link to="/sg/14" className="back-link cif-jump">
+              Try P21/c
+            </Link>
+          </div>
           <p className="eyebrow">Application</p>
           <h1>CIF symmetry map</h1>
           <p className="blurb">

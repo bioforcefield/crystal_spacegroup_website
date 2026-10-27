@@ -46,17 +46,7 @@ function GroupChip({ g }: { g: SpaceGroupEntry }) {
 export default function IndexPage() {
   const [system, setSystem] = useState<SystemFilter>('all')
   const [query, setQuery] = useState('')
-  const [liveOnly, setLiveOnly] = useState(false)
-
-  const filtered = useMemo(() => {
-    const base = filterGroups(query, system)
-    return liveOnly ? base.filter((g) => g.status === 'ready') : base
-  }, [query, system, liveOnly])
-
-  const plannedHidden = useMemo(() => {
-    if (!liveOnly) return 0
-    return filterGroups(query, system).filter((g) => g.status !== 'ready').length
-  }, [query, system, liveOnly])
+  const filtered = useMemo(() => filterGroups(query, system), [query, system])
 
   useEffect(() => {
     const hash = window.location.hash.replace(/^#/, '')
@@ -121,6 +111,15 @@ export default function IndexPage() {
               <Link to="/cif" className="btn btn-ghost">
                 CIF symmetry map
               </Link>
+              <a
+                className="btn btn-ghost"
+                href="https://img.chem.ucl.ac.uk/sgp/large/sgp.htm"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Birkbeck / UCL space-group diagrams"
+              >
+                UCL diagrams ↗
+              </a>
             </div>
           </div>
           <div className="hero-motif" aria-hidden>
@@ -258,17 +257,8 @@ export default function IndexPage() {
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Filter space groups"
             />
-            <label className="live-toggle" data-on={liveOnly ? 'true' : 'false'}>
-              <input
-                type="checkbox"
-                checked={liveOnly}
-                onChange={(e) => setLiveOnly(e.target.checked)}
-              />
-              Live only
-            </label>
             <span className="index-count">
-              {filtered.length}
-              {liveOnly ? ` live` : ` of ${TOTAL_GROUPS}`}
+              {filtered.length} of {TOTAL_GROUPS}
               {system !== 'all' ? ` · ${systemInfo(system).name}` : ''}
             </span>
           </div>
@@ -276,13 +266,6 @@ export default function IndexPage() {
             {filtered.map((g) => (
               <GroupChip key={g.number} g={g} />
             ))}
-            {liveOnly && plannedHidden > 0 ? (
-              <p className="planned-summary">
-                {plannedHidden} more group{plannedHidden === 1 ? '' : 's'} in this
-                filter are planned. Turn off <strong>Live only</strong> to browse
-                the full list.
-              </p>
-            ) : null}
             {filtered.length === 0 ? (
               <p className="empty-hint">No groups match that filter.</p>
             ) : null}

@@ -9,10 +9,10 @@ import type {
   Vec3,
 } from '../data/types'
 
-const FAINT = 0.12
+const FAINT = 0.22
 const EMPH_LINE = 0.95
 const EMPH_PLANE = 0.26
-const FAINT_PLANE = 0.08
+const FAINT_PLANE = 0.14
 
 interface Props {
   demo: SpaceGroupDemo

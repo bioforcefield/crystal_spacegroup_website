@@ -1,6 +1,6 @@
 /**
  * Build SpaceGroupDemo from gemmi/ITA general-position JSON + catalog meta.
- * Hand-polished demos (1, 2, 4, 5, 9, 14, 15, 19, 29, 33, 60, 61, 62) stay as overrides in registry.ts.
+ * Hand-polished demos stay as overrides in registry.ts.
  */
 
 import itaJson from './itaSpaceGroups.json'
@@ -11,6 +11,7 @@ import {
 import {
   buildOperatorsFromTriplets,
   deriveElements,
+  isGeometryLimited,
   type DerivedElements,
 } from './groups'
 import { CLASS_PALETTE_ORDER, SYMMETRY_CLASSES } from './symmetryPalette'
@@ -46,6 +47,22 @@ const catalogByNumber = new Map(SPACE_GROUPS.map((g) => [g.number, g]))
 const demoCache = new Map<number, SpaceGroupDemo>()
 
 const SEED: Vec3 = [0.17, 0.23, 0.31]
+
+/** Prefer these classes when building a short teaching focus list. */
+const FOCUS_CLASS_PRIORITY: SymmetryClassId[] = [
+  'identity',
+  'inversion',
+  'twofold',
+  'screw',
+  'threefold',
+  'fourfold',
+  'mirror',
+  'a-glide',
+  'b-glide',
+  'c-glide',
+  'n-glide',
+  'd-glide',
+]
 
 function teachingCell(system: CrystalSystemId): CellParams {
   switch (system) {
@@ -116,14 +133,63 @@ function polishOperators(ops: Operator[]): Operator[] {
   })
 }
 
+/**
+ * Short teaching list: identity + one representative per class (priority order),
+ * capped so high-Z groups (Fd-3m = 192) do not spam chips.
+ */
+export function pickOperatorFocusIndices(
+  ops: Operator[],
+  maxFocus = 12,
+): number[] | undefined {
+  if (ops.length <= 16) return undefined
+  const chosen: number[] = []
+  const seenClass = new Set<SymmetryClassId>()
+
+  const identity = ops.find((o) => o.index === 1) ?? ops[0]
+  if (identity) {
+    chosen.push(identity.index)
+    seenClass.add(identity.classId)
+  }
+
+  for (const classId of FOCUS_CLASS_PRIORITY) {
+    if (chosen.length >= maxFocus) break
+    if (seenClass.has(classId)) continue
+    const op = ops.find((o) => o.classId === classId && !chosen.includes(o.index))
+    if (op) {
+      chosen.push(op.index)
+      seenClass.add(classId)
+    }
+  }
+
+  // Fill remaining slots with early non-chosen ops for browsing
+  for (const op of ops) {
+    if (chosen.length >= maxFocus) break
+    if (!chosen.includes(op.index)) chosen.push(op.index)
+  }
+
+  return chosen.sort((a, b) => a - b)
+}
+
+function classSummary(ops: Operator[]): string {
+  const counts = new Map<string, number>()
+  for (const op of ops) {
+    if (op.classId === 'identity' && op.index === 1) continue
+    const label = SYMMETRY_CLASSES[op.classId]?.label ?? op.classId
+    counts.set(label, (counts.get(label) ?? 0) + 1)
+  }
+  const parts = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([label, n]) => `${n}× ${label}`)
+  return parts.length ? parts.join(', ') : 'identity only'
+}
+
 function makeLocusFn(
   ops: Operator[],
   derived: DerivedElements,
 ): (opIndex: number) => string | null {
-  const axisByOp = new Map(derived.axesB.map((a) => [a.opIndex, a.locus]))
-  const glideByOp = new Map(
-    derived.glidesPerpB.map((g) => [g.opIndex, g.locus]),
-  )
+  const axisByOp = new Map(derived.axes.map((a) => [a.opIndex, a.locus]))
+  const glideByOp = new Map(derived.glides.map((g) => [g.opIndex, g.locus]))
   const invOps = ops.filter((o) => o.classId === 'inversion')
   const invLocus = new Map<number, string>()
   for (let i = 0; i < invOps.length; i++) {
@@ -147,6 +213,22 @@ function makeLocusFn(
   }
 }
 
+function geometryNoteFor(
+  system: CrystalSystemId,
+  derived: DerivedElements,
+): string {
+  const bits: string[] = []
+  if (derived.axes.length === 0 && derived.glides.length === 0) {
+    bits.push('axis-aligned geometric overlays are limited for this group')
+  } else {
+    bits.push('some non-axis-aligned elements (e.g. body diagonals) are not drawn')
+  }
+  if (system === 'cubic' || system === 'trigonal') {
+    bits.push('operator list and colours remain complete')
+  }
+  return `Operators only / limited geometry — ${bits.join('; ')}.`
+}
+
 /** Build (and cache) a generated demo for ITA number 1–230. */
 export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
   if (n < 1 || n > 230) return undefined
@@ -158,9 +240,6 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
   if (!raw || !catalog) return undefined
 
   const operators = polishOperators(buildOperatorsFromTriplets(raw.triplets))
-  if (operators.length !== raw.multiplicity) {
-    // Still ship; tests will catch mismatches.
-  }
 
   const derived = deriveElements(operators)
   const present = new Set(operators.map((o) => o.classId))
@@ -173,6 +252,24 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
 
   const systemName =
     catalog.system.charAt(0).toUpperCase() + catalog.system.slice(1)
+  const lattice = latticeLabel(raw.lattice || catalog.hm.charAt(0))
+  const summary = classSummary(operators)
+  const limited = isGeometryLimited(derived, operators)
+  // Also mark limited when cubic/trigonal with many ops but few derived axes
+  // relative to rotation classes (body diagonals missing).
+  const rotationClasses = operators.some(
+    (o) =>
+      o.classId === 'threefold' ||
+      o.classId === 'fourfold' ||
+      (o.classId === 'twofold' &&
+        !derived.axes.some((a) => a.opIndex === o.index)),
+  )
+  const geometryLimited =
+    limited ||
+    (rotationClasses &&
+      derived.axes.length + derived.glides.length < Math.min(4, operators.length / 8))
+
+  const focus = pickOperatorFocusIndices(operators)
 
   const demo: SpaceGroupDemo = {
     meta: {
@@ -180,22 +277,27 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
       hm: catalog.hm,
       system: catalog.system,
       pointGroup: pointGroupGuess(catalog.hm),
-      lattice: latticeLabel(raw.lattice || catalog.hm.charAt(0)),
+      lattice,
       multiplicity: raw.multiplicity,
-      blurb: `ITA No. ${n} · ${catalog.hm} — ${systemName}. Generated from standard general positions.`,
+      blurb: `ITA No. ${n} · ${catalog.hm} — ${systemName}, ${lattice.toLowerCase()} lattice, Z=${raw.multiplicity} general positions. ${summary}. Generated from standard ITA general positions; click an operator to highlight BASE → IMAGE.`,
     },
     cell: teachingCell(catalog.system),
     seed: SEED,
     operators,
     symmetryClasses: SYMMETRY_CLASSES,
     classLegendOrder,
-    screwAxes: derived.axesB,
+    screwAxes: derived.axes,
     inversionCenters: derived.inversions,
-    glidePlanes: derived.glidesPerpB,
+    glidePlanes: derived.glides,
     elementLocusForOp: makeLocusFn(operators, derived),
     defaultProjection: catalog.system === 'monoclinic' ? 'b' : 'c',
     primaryInversionOp: primaryInversion,
     shortName: catalog.hm,
+    operatorFocusIndices: focus,
+    geometryLimited: geometryLimited || undefined,
+    geometryNote: geometryLimited
+      ? geometryNoteFor(catalog.system, derived)
+      : undefined,
   }
 
   demoCache.set(n, demo)

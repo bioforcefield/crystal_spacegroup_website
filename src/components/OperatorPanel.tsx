@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react'
-import { useMemo, useState } from 'react'
+import type { CSSProperties, KeyboardEvent } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { isImproper, operatorClass } from '../data/math'
 import type { Operator, SpaceGroupDemo } from '../data/types'
@@ -85,18 +85,44 @@ export default function OperatorPanel({
   const alpha = demo.cell.alphaDeg
   const beta = demo.cell.betaDeg
   const gamma = demo.cell.gammaDeg
+  const listRef = useRef<HTMLUListElement>(null)
+
+  const onListKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
+    e.preventDefault()
+    const idxs = listedOps.map((o) => o.index)
+    if (idxs.length === 0) return
+    const cur = idxs.indexOf(selectedIndex)
+    let next = cur
+    if (e.key === 'ArrowDown') next = cur < 0 ? 0 : Math.min(idxs.length - 1, cur + 1)
+    if (e.key === 'ArrowUp') next = cur < 0 ? 0 : Math.max(0, cur - 1)
+    if (e.key === 'Home') next = 0
+    if (e.key === 'End') next = idxs.length - 1
+    const idx = idxs[next]
+    if (idx != null) onSelect(idx)
+  }
 
   return (
     <aside className="panel">
       <header className="panel-header">
-        <Link to="/" className="back-link">
-          ← All space groups
-        </Link>
+        <div className="panel-nav-row">
+          <Link to="/" className="back-link">
+            ← All space groups
+          </Link>
+          <Link to="/cif" className="back-link cif-jump">
+            CIF map
+          </Link>
+        </div>
         <p className="eyebrow">Space group</p>
         <h1>
           {meta.number} · {meta.hm}
         </h1>
         <p className="blurb">{meta.blurb}</p>
+        {demo.geometryLimited && demo.geometryNote ? (
+          <p className="geometry-note panel-geometry-note" role="note">
+            {demo.geometryNote}
+          </p>
+        ) : null}
         <div className="ref-links">
           <a
             className="ucl-diagram-link"
@@ -219,7 +245,14 @@ export default function OperatorPanel({
               : `Show all ${demo.operators.length} operators`}
           </button>
         )}
-        <ul className="op-list">
+        <ul
+          className="op-list"
+          role="listbox"
+          aria-label="General-position operators"
+          tabIndex={0}
+          ref={listRef}
+          onKeyDown={onListKeyDown}
+        >
           {listedOps.map((op) => {
             const active = op.index === selectedIndex
             const cls = operatorClass(demo, op)
@@ -234,6 +267,8 @@ export default function OperatorPanel({
                     } as CSSProperties
                   }
                   onClick={() => onSelect(op.index)}
+                  role="option"
+                  aria-selected={active}
                   aria-pressed={active}
                 >
                   <span className="op-index">{op.index}</span>

@@ -1,4 +1,11 @@
-import { useCallback, useMemo, useState, type CSSProperties } from 'react'
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+} from 'react'
 import OperatorPanel from '../components/OperatorPanel'
 import SpaceGroupDiagram2D from '../components/SpaceGroupDiagram2D'
 import UnitCellScene from '../components/UnitCellScene'
@@ -16,6 +23,8 @@ export default function SpaceGroupPage({ demo }: Props) {
   const [resetToken, setResetToken] = useState(0)
   const [placementMode, setPlacementMode] = useState<PlacementMode>('nearest')
   const [showAllSites, setShowAllSites] = useState(true)
+  /** On narrow screens: which pane is primary. Desktop ignores this. */
+  const [mobilePane, setMobilePane] = useState<'3d' | '2d'>('3d')
 
   const handleSelect = useCallback((index: number) => {
     setSelectedIndex(index)
@@ -32,8 +41,25 @@ export default function SpaceGroupPage({ demo }: Props) {
     return demo.operators.filter((o) => set.has(o.index))
   }, [demo.operators, focus, showAllChips, selectedIndex])
 
+  const chipListRef = useRef<HTMLDivElement>(null)
+
+  const onChipKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+    e.preventDefault()
+    const idxs = chipOps.map((o) => o.index)
+    if (idxs.length === 0) return
+    const cur = idxs.indexOf(selectedIndex)
+    let next = cur
+    if (e.key === 'ArrowRight') next = cur < 0 ? 0 : Math.min(idxs.length - 1, cur + 1)
+    if (e.key === 'ArrowLeft') next = cur < 0 ? 0 : Math.max(0, cur - 1)
+    if (e.key === 'Home') next = 0
+    if (e.key === 'End') next = idxs.length - 1
+    const idx = idxs[next]
+    if (idx != null) handleSelect(idx)
+  }
+
   return (
-    <div className="app layout-demo">
+    <div className={`app layout-demo mobile-pane-${mobilePane}`}>
       <OperatorPanel
         demo={demo}
         selectedIndex={selectedIndex}
@@ -77,7 +103,7 @@ export default function SpaceGroupPage({ demo }: Props) {
               )}
               {demo.screwAxes.length > 0 && (
                 <>
-                  <span className="chip element">‖</span> 2 / 2₁
+                  <span className="chip element">‖</span> 2 / 2₁ / n-fold
                   <span className="sep">·</span>
                 </>
               )}
@@ -87,10 +113,34 @@ export default function SpaceGroupPage({ demo }: Props) {
                   <span className="sep">·</span>
                 </>
               )}
-              selected element emphasized; others faint
+              {demo.geometryLimited
+                ? 'limited geometry overlays'
+                : 'selected element emphasized; others faint'}
             </div>
           </div>
           <div className="toolbar-actions">
+            <div
+              className="segmented mobile-pane-toggle"
+              role="group"
+              aria-label="View pane"
+            >
+              <button
+                type="button"
+                className={mobilePane === '3d' ? 'seg active' : 'seg'}
+                onClick={() => setMobilePane('3d')}
+                title="Show 3D unit cell"
+              >
+                3D
+              </button>
+              <button
+                type="button"
+                className={mobilePane === '2d' ? 'seg active' : 'seg'}
+                onClick={() => setMobilePane('2d')}
+                title="Show 2D projection diagram"
+              >
+                2D
+              </button>
+            </div>
             <div
               className="segmented"
               role="group"
@@ -153,10 +203,18 @@ export default function SpaceGroupPage({ demo }: Props) {
             </button>
           </div>
         </div>
+        {demo.geometryLimited && demo.geometryNote && (
+          <p className="geometry-note" role="note">
+            {demo.geometryNote}
+          </p>
+        )}
         <div
           className="mobile-op-strip"
           role="listbox"
           aria-label="General-position operators"
+          tabIndex={0}
+          ref={chipListRef}
+          onKeyDown={onChipKeyDown}
         >
           {focus && focus.length > 0 && (
             <button

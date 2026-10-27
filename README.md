@@ -1,38 +1,69 @@
 # Crystal Space Groups
 
-Interactive educational website for crystallographic space groups.
+Interactive teaching site for all **230 crystallographic space groups**: linked 3D unit-cell demos, 2D projections, ITA Vol. A diagram plates, and a client-side **CIF symmetry map**.
 
-## Session 1 demo
+Live: https://bioforcefield.github.io/crystal_spacegroup_website/
 
-Space group **61 · Pbca** with:
+## Features
 
-- 3D orthorhombic unit cell (React Three Fiber)
-- Chiral L-shaped markers (enantiomorph for improper ops)
-- Clickable operators color-coded by class (identity, 2₁ screw, inversion, a/b/c-glide)
-- BASE ↔ IMAGE highlight with connector
+- **230 demos** (`/sg/{1–230}`) built from gemmi ITA general positions
+- **57 hand-polished** teaching demos (CSD top groups + textbook core) with curated loci and blurbs
+- Color-coded operators (identity, screws, inversions, mirrors, a/b/c/n/d-glides, n-folds)
+- BASE → IMAGE highlight with nearest-image or in-cell placement
+- Geometric element overlays where axis-aligned loci can be derived; honest “operators / limited geometry” note otherwise
+- ITA Vol. A primary diagrams + Birkbeck/UCL reference links per group
+- **CIF symmetry map** (`/cif`): upload a CSD/COD `.cif` (or load the sample) and color each symmetry copy by operator
 
 ## Run locally
 
 ```bash
-cd crystal_spacegroup_website   # or this folder
 npm install
-npm run dev
+npm run dev          # Vite dev server (usually http://localhost:5173/)
+npm test             # vitest
+npm run build        # production → dist/
+npm run build:pages  # same with Pages base path
+npm run preview
 ```
 
-Open the URL Vite prints (usually http://localhost:5173/).
+Optional: regenerate ITA JSON from gemmi
 
 ```bash
-npm run build    # production build → dist/
-npm run preview  # serve the build
+.venv/bin/python scripts/export_ita_groups.py
+npm run gen:ita
 ```
 
-## Stack
+## Deploy to GitHub Pages (**important**)
 
-Vite + React + TypeScript + Three.js (`@react-three/fiber`, `@react-three/drei`)
+Publish **only** the Vite `dist/` output as an **orphan** `gh-pages` branch. Never force-push from the dirty working tree or repo root (that would publish `node_modules`).
+
+```bash
+npm run build:pages
+TMP=$(mktemp -d)
+cp -a dist/. "$TMP/"
+# expect ~230+ files under ita-diagrams/, assets/, index.html — not node_modules
+( cd "$TMP" && git init && git checkout -b gh-pages \
+    && git add -A && git commit -m "Pages deploy" \
+    && git remote add origin git@github.com:bioforcefield/crystal_spacegroup_website.git \
+    && git push -f origin gh-pages )
+rm -rf "$TMP"
+```
+
+Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, commit, force-push.
 
 ## Layout
 
-- `src/data/pbca.ts` — Pbca operators and symmetry classes
-- `src/components/UnitCellScene.tsx` — 3D cell + markers
-- `src/components/OperatorPanel.tsx` — operator list
-- `src/components/ChiralMotif.tsx` — asymmetric motif mesh
+| Path | Role |
+|------|------|
+| `src/data/*Demo.ts` / hand `src/data/*.ts` | Per-group teaching data |
+| `src/data/generatedDemo.ts` | Fallback demos for non-hand groups |
+| `src/data/groups/` | Triplet parse, det/trace classify, element derivation |
+| `src/data/cif/` | CIF parse + AU×ops expand |
+| `src/pages/SpaceGroupPage.tsx` | Demo chrome |
+| `src/pages/CifExplorerPage.tsx` | CIF map |
+| `src/pages/IndexPage.tsx` | Catalog / primer / guide |
+| `public/ita-diagrams/` | ITA Vol. A plates |
+| `CONTINUITY.md` | Agent resume notes |
+
+## Stack
+
+Vite + React + TypeScript + Three.js (`@react-three/fiber`, `@react-three/drei`) + react-router

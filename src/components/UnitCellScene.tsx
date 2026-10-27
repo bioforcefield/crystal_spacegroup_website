@@ -270,6 +270,7 @@ const _qa = new THREE.Quaternion()
 const _qb = new THREE.Quaternion()
 const _qm = new THREE.Quaternion()
 
+/** Remount with key={token} so each selection starts a fresh flight. */
 function GhostAnimator({
   fromPos,
   toPos,
@@ -286,22 +287,13 @@ function GhostAnimator({
   token: number
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  const [active, setActive] = useState(false)
+  // Initialized from token on mount (parent remounts via key=token).
+  const [active, setActive] = useState(() => token > 0)
   const progress = useRef(0)
   const startPos = useRef(fromPos)
   const endPos = useRef(toPos)
   const startOri = useRef(orientationFromR(fromR))
   const endOri = useRef(orientationFromR(toR))
-
-  useEffect(() => {
-    if (token === 0) return
-    startPos.current = fromPos
-    endPos.current = toPos
-    startOri.current = orientationFromR(fromR)
-    endOri.current = orientationFromR(toR)
-    progress.current = 0
-    setActive(true)
-  }, [token, fromPos, toPos, fromR, toR])
 
   useFrame((_, dt) => {
     if (!active || !groupRef.current) return
@@ -335,7 +327,7 @@ function GhostAnimator({
     if (t >= 1) setActive(false)
   })
 
-  if (!active && token === 0) return null
+  if (token === 0) return null
 
   return (
     <group ref={groupRef} visible={active}>
@@ -586,6 +578,7 @@ function SceneContent({
           )
         })}
         <GhostAnimator
+          key={animateToken}
           fromPos={baseCartesian}
           toPos={imageCartesian}
           fromR={identity.operator.R}

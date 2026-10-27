@@ -458,13 +458,16 @@ export default function SpaceGroupDiagram2D({
   showAllSites = true,
   placementMode = 'nearest',
 }: Props) {
-  const [projDir, setProjDir] = useState<ProjectionDir>(demo.defaultProjection)
   const plotRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 440, h: 300 })
-
-  useEffect(() => {
+  const demoKey = demo.meta.number
+  const [projDir, setProjDir] = useState<ProjectionDir>(demo.defaultProjection)
+  const [seenDemoKey, setSeenDemoKey] = useState(demoKey)
+  // Adjust state during render when the demo changes (React-recommended pattern).
+  if (seenDemoKey !== demoKey) {
+    setSeenDemoKey(demoKey)
     setProjDir(demo.defaultProjection)
-  }, [demo.defaultProjection, demo.meta.number])
+  }
 
   useEffect(() => {
     const el = plotRef.current

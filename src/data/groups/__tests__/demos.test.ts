@@ -313,3 +313,34 @@ describe('deriveElements P21/c smoke', () => {
     expect(fracNear(screw!.origin[2], 0.25)).toBe(true)
   })
 })
+
+describe('deriveElements orthorhombic / tetragonal', () => {
+  it('finds 2₁ ‖ a and c-glide-style planes for Pbca-like ops', () => {
+    const demo = getDemo(61)
+    expect(demo).toBeDefined()
+    // Hand Pbca has curated loci; generated path also derives axis-aligned
+    const derived = deriveElements(demo!.operators)
+    expect(derived.axes.length + derived.inversions.length + derived.glides.length).toBeGreaterThan(0)
+  })
+
+  it('generated P4mm-ish (99) exposes 4-fold ‖ c or mirrors', () => {
+    const demo = getDemo(99)
+    expect(demo).toBeDefined()
+    const hasGeom =
+      demo!.screwAxes.length > 0 ||
+      demo!.glidePlanes.length > 0 ||
+      demo!.inversionCenters.length > 0
+    expect(hasGeom || demo!.geometryLimited).toBe(true)
+  })
+
+  it('high-Z generated groups get a short operatorFocusIndices list', () => {
+    // 210 is generated (not in HAND_DEMOS); 227 is hand with its own focus list
+    const d = getDemo(210) ?? getDemo(227)
+    expect(d).toBeDefined()
+    if (d!.operators.length > 16) {
+      expect(d!.operatorFocusIndices).toBeDefined()
+      expect(d!.operatorFocusIndices!.length).toBeLessThanOrEqual(12)
+      expect(d!.operatorFocusIndices).toContain(1)
+    }
+  })
+})

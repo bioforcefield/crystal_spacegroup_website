@@ -146,4 +146,11 @@ export interface SpaceGroupDemo {
    * operator indices for teaching; remaining ops behind an expand control.
    */
   operatorFocusIndices?: number[]
+  /**
+   * True when geometric overlays are incomplete (e.g. body-diagonal 3-folds
+   * not derived). UI should show an honest "operators / limited geometry" note.
+   */
+  geometryLimited?: boolean
+  /** Short note shown when geometryLimited is true. */
+  geometryNote?: string
 }

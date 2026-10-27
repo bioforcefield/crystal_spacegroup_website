@@ -1983,3 +1983,199 @@ a.csd-bar-row.ready:hover {
 .cif-empty code {
   color: var(--accent);
 }
+
+/* —— Demo shell topbar (CIF reachable from every demo / phone) —— */
+.demo-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.demo-shell > .app.layout-demo {
+  flex: 1;
+  min-height: 0;
+}
+
+.demo-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--panel-border);
+  background: rgba(7, 11, 20, 0.92);
+  backdrop-filter: blur(10px);
+  z-index: 30;
+}
+
+.demo-brand {
+  font-size: 0.88rem;
+  gap: 0.4rem;
+}
+
+.demo-brand .brand-text {
+  white-space: nowrap;
+}
+
+.demo-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.demo-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.32rem 0.65rem;
+  border-radius: 999px;
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.demo-nav a:hover,
+.demo-nav a.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.demo-nav a.nav-demo {
+  color: #bae6fd;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+}
+
+.panel-nav-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+
+.panel-nav-row .back-link {
+  margin-bottom: 0;
+}
+
+.cif-jump {
+  color: #bae6fd !important;
+}
+
+.geometry-note {
+  margin: 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #fde68a;
+  background: rgba(250, 204, 21, 0.08);
+  border-bottom: 1px solid rgba(250, 204, 21, 0.22);
+}
+
+.panel-geometry-note {
+  margin: 0.45rem 0 0.65rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(250, 204, 21, 0.28);
+  border-radius: 8px;
+  border-bottom: 1px solid rgba(250, 204, 21, 0.28);
+}
+
+.route-fallback {
+  display: grid;
+  place-items: center;
+  min-height: 40vh;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Mobile pane toggle: hidden on wide layouts */
+.mobile-pane-toggle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .demo-topbar {
+    padding: 0.35rem 0.55rem;
+    position: sticky;
+    top: 0;
+  }
+
+  .demo-brand .brand-text {
+    max-width: 9.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .demo-nav a {
+    padding: 0.3rem 0.55rem;
+    font-size: 0.75rem;
+    min-height: 2.15rem; /* touch target */
+  }
+
+  .nav-demo-hide-xs {
+    display: none;
+  }
+
+  .mobile-pane-toggle {
+    display: inline-flex;
+  }
+
+  /* Default: show 3D, keep 2D below but scrollable; toggle can focus one */
+  .app.layout-demo.mobile-pane-3d .viewport-body .canvas-wrap {
+    display: block;
+  }
+
+  .app.layout-demo.mobile-pane-3d .diagram2d {
+    display: flex;
+  }
+
+  .app.layout-demo.mobile-pane-2d .viewport-body .canvas-wrap {
+    display: none;
+  }
+
+  .app.layout-demo.mobile-pane-2d .diagram2d {
+    display: flex;
+    height: min(58vh, 420px);
+    min-height: 260px;
+  }
+
+  .app.layout-demo .op-chip {
+    min-height: 2.5rem; /* touch */
+  }
+
+  .cif-file-label.btn {
+    min-height: 2.75rem;
+    width: 100%;
+  }
+
+  .cif-explorer .btn.btn-ghost {
+    min-height: 2.5rem;
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .demo-brand .brand-text {
+    max-width: 6.5rem;
+  }
+}
+
+#root:has(.demo-shell) {
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  #root:has(.demo-shell) {
+    overflow: auto;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .demo-shell {
+    height: auto;
+    min-height: 100%;
+  }
+}
