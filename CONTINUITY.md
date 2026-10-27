@@ -2,6 +2,8 @@
 
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
+Tip: `main` **9d56c48**, `gh-pages` **20a7bc4** (465 tests).
+Pages note: orphan deploy must include `.nojekyll` or GH Pages Jekyll fails on large sample trees.
 
 ## Done — Deferred leftovers pass (stages 1–4)
 
