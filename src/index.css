@@ -1146,13 +1146,13 @@ button {
 
 .hero-cell-stage {
   width: 100%;
-  max-width: 280px;
+  max-width: 340px;
   transform-style: preserve-3d;
 }
 
 .hero-cell {
   width: 100%;
-  max-width: 280px;
+  max-width: 340px;
   margin: 0 auto;
   display: block;
   filter: drop-shadow(0 12px 30px rgba(14, 165, 233, 0.18));
@@ -1199,13 +1199,13 @@ button {
 @keyframes hero-cell-tilt {
   0%,
   100% {
-    transform: rotateX(4deg) rotateY(-8deg) rotateZ(0deg);
+    transform: scale(1.14) rotateX(4deg) rotateY(-8deg) rotateZ(0deg);
   }
   35% {
-    transform: rotateX(-3deg) rotateY(10deg) rotateZ(1.5deg);
+    transform: scale(1.14) rotateX(-3deg) rotateY(10deg) rotateZ(1.5deg);
   }
   70% {
-    transform: rotateX(6deg) rotateY(-4deg) rotateZ(-1deg);
+    transform: scale(1.14) rotateX(6deg) rotateY(-4deg) rotateZ(-1deg);
   }
 }
 
@@ -1269,6 +1269,10 @@ button {
   .hero-atom-label-i,
   .cif-orb {
     animation: none !important;
+  }
+
+  .hero-cell-orbit {
+    transform: scale(1.14);
   }
 }
 
@@ -2241,7 +2245,7 @@ a.csd-bar-row.ready:hover {
 
   .hero-cell,
   .hero-cell-stage {
-    max-width: 200px;
+    max-width: 240px;
   }
 
 }
