@@ -24,5 +24,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: (pending commit)
-- gh-pages: (pending deploy)
+- main: `cb5a157`
+- gh-pages: `5410f06` (VITE_COD_PROXY baked)
