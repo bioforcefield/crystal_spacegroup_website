@@ -3,29 +3,35 @@
 Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Done (latest) — Review #2 High fix: CIF ops before ITA demo
-- **Bug:** `resolveOperators` preferred ITA teaching-demo operators whenever an SG number was known, even when the CIF already listed `_symmetry_equiv_pos_as_xyz`. Wrong for non-standard settings / alternate origins (common in CSD/COD) — packing would not match the AU.
-- **Fix:** CIF symops win; ITA demo only when the CIF omits a symmetry loop (with warning). `operatorSource` on `ExpandedStructure`. `elementsDemoForStructure` keeps Near/overlays on the **same** operators (deriveElements for CIF source; hand loci for demo source).
-- Z′ computed for `nOps >= 1` (P1: Z′ = Z).
-- Tests 367. See review report in agent handoff for Med/Low backlog.
+## Done — Review #2 “sensible next sprint” (5 stages)
 
-## Prior (same day)
-- CIF metadata panel (name, Z′, resolution, literature)
-- Near/Cell placement, phone lattice strip, symmetry overlays, COD/CSD load
+### Stage 1 — Non-axis loci / teaching honesty (`3c988d5`)
+- `deriveBodyDiagonalThreefolds` + `deriveDiagonalGlides`
+- classify: pure 6 → `sixfold`; −6 → `sixfold` (not threefold/screw)
+- Per-system `geometryLimited` notes
 
-## Remaining gaps (from review #2)
-- Body-diagonal loci still geometryLimited
-- −6 classified under `threefold` classId (label says −6)
-- Z′ = Z/ops pitfalls on special positions / incomplete CIF op lists
-- No cross-op H-bond dimers; no ellipsoids; Cartesian-only unsupported
-- Production COD CORS needs `VITE_COD_PROXY`
-- Oversized pages (`CifExplorerPage` ~770, `SpaceGroupDiagram2D` ~810); SymmetryElements chunk ~1MB
-- Hand vs generated demo polish gap (~57 hand / 173 generated)
+### Stage 2 — Split CIF UI (`a9c11be`)
+- `CifLoadPanel` / `CifStructurePanel` / `CifViewport`; page ~290 lines
+- Lazy `CifStructureScene`; vite `r3f` manualChunk
+
+### Stage 3 — Z′ + special positions (`4aef6c9`)
+- Prefer CIF Z′ tags; `Z′ = Z/N_ops` note; warnings for non-integer / incomplete ops
+
+### Stage 4 — Shared Near/Cell (`f07d994`)
+- `latticeNeighbors.ts` shared by SG + CIF placement + molecules
+
+### Stage 5 — Phone View sheet (this tip)
+- ≤900px View drawer; Molecules + Near/Cell one-tap; lattice strip not over canvas
 
 ## Key paths
-- CIF: `src/data/cif/*` (esp. `expandStructure.ts`, `demoWithCifCell.ts`), `CifExplorerPage.tsx`
+- CIF UI: `src/components/cif/*`, `src/pages/CifExplorerPage.tsx`
+- Loci: `src/data/groups/deriveElements.ts`, `buildOperators.ts`
+- Placement: `src/data/latticeNeighbors.ts`, `nearestImages.ts`, `cif/placement.ts`
 - `npm test` · `npm run build:pages` · `scripts/deploy-gh-pages.sh`
 
-## SHAs
-- main tip: `8e630ca` (fix `a122326`)
-- gh-pages: `29fece8` (239 files)
+## Deferred
+- Full 3D screen-reader a11y
+- CIF residue clustering / ellipsoids / occupancy filter
+- Production COD CORS needs `VITE_COD_PROXY`
+- Hand vs generated demo polish gap (~57 hand / 173 generated)
+- Some exotic d-glide / off-origin loci may still be geometryLimited
