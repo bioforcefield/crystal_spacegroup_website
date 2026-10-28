@@ -1,7 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { iso, objectMap, screwEase, screwPose, SCREW_PRIMER } from '../primerGeometry'
+import {
+  iso,
+  objectMap,
+  screwEase,
+  screwPose,
+  SCREW_PRIMER,
+  INVERSION_PRIMER,
+  INVERSION_TIP_OBJECT,
+  inversionScale,
+  inversionJunction,
+  inversionTipScreen,
+} from '../primerGeometry'
 import { PRIMER_ENDPOINT_TRANSFORMS } from '../../../components/SymmetryPrimer'
 
 const root = resolve(__dirname, '../../../..')
@@ -94,6 +105,58 @@ describe('2₁ screw ghost endpoints (animation authoritative)', () => {
   })
 })
 
+describe('inversion center (InvGhost: object-space homothety)', () => {
+  it('inversionScale: 1 → 0 → −1', () => {
+    expect(inversionScale(0)).toBe(1)
+    expect(inversionScale(1)).toBe(-1)
+    expect(inversionScale(0.5)).toBeCloseTo(0, 9)
+  })
+  it('B/I junctions are opposite through the center', () => {
+    const b = inversionJunction(1)
+    const i = inversionJunction(-1)
+    expect(b.x).toBeCloseTo(INVERSION_PRIMER.center.x + INVERSION_PRIMER.offset.x, 9)
+    expect(b.y).toBeCloseTo(INVERSION_PRIMER.center.y + INVERSION_PRIMER.offset.y, 9)
+    expect(i.x).toBeCloseTo(INVERSION_PRIMER.center.x - INVERSION_PRIMER.offset.x, 9)
+    expect(i.y).toBeCloseTo(INVERSION_PRIMER.center.y - INVERSION_PRIMER.offset.y, 9)
+    expect((b.x + i.x) / 2).toBeCloseTo(INVERSION_PRIMER.center.x, 9)
+    expect((b.y + i.y) / 2).toBeCloseTo(INVERSION_PRIMER.center.y, 9)
+  })
+  it('tip rays B→I pass through ⊙ (midpoint = center)', () => {
+    for (const tip of Object.values(INVERSION_TIP_OBJECT)) {
+      const b = inversionTipScreen(tip, 1)
+      const i = inversionTipScreen(tip, -1)
+      expect((b.x + i.x) / 2).toBeCloseTo(INVERSION_PRIMER.center.x, 9)
+      expect((b.y + i.y) / 2).toBeCloseTo(INVERSION_PRIMER.center.y, 9)
+      // Full inversion of tip object coords: iso(−r) = −iso(r)
+      const [px, py] = iso(tip.x, tip.y, tip.z)
+      expect(i.x).toBeCloseTo(INVERSION_PRIMER.center.x - INVERSION_PRIMER.offset.x - px, 9)
+      expect(i.y).toBeCloseTo(INVERSION_PRIMER.center.y - INVERSION_PRIMER.offset.y - py, 9)
+    }
+  })
+  it('full inversion (x,y,z)→(−x,−y,−z) is improper (det −1)', () => {
+    // Homothety scale −1 on R³ has determinant (−1)³ = −1
+    const cols = [
+      [-1, 0, 0],
+      [0, -1, 0],
+      [0, 0, -1],
+    ]
+    expect(det3(cols)).toBeCloseTo(-1, 9)
+  })
+  it('component wires InvGhost + objectScale; old CSS rotor gone', () => {
+    const tsx = read('src/components/SymmetryPrimer.tsx')
+    const css = read('src/index.css')
+    expect(tsx).toMatch(/function InvGhost/)
+    expect(tsx).toMatch(/primer-inv-ghost/)
+    expect(tsx).toMatch(/objectScale=\{pose\.s\}/)
+    expect(tsx).toMatch(/objectScale=\{-1\}/)
+    expect(tsx).toMatch(/inversionScale\(e\)/)
+    expect(tsx).not.toMatch(/primer-inv-rotor/)
+    expect(css).not.toMatch(/@keyframes primer-inv\b/)
+    expect(css).not.toMatch(/primer-inv-rotor/)
+    expect(css).toMatch(/\.primer-inv-ghost/)
+  })
+})
+
 describe('2-fold static ↔ CSS keyframes', () => {
   it('B/I = rotate 0°/180° about (60,36), matching @keyframes primer-twofold', () => {
     const css = read('src/index.css')
@@ -115,8 +178,9 @@ describe('wiring & regression guards', () => {
     expect(idx).toMatch(/import SymmetryPrimer from '..\/components\/SymmetryPrimer'/)
     expect(idx).toMatch(/<SymmetryPrimer \/>/)
   })
-  it('PoseGhost stays gone and static ends never set enantiomorph={true}', () => {
+  it('PoseGhost stays gone; CSS enantiomorph={true} stays unused (InvGhost uses objectScale)', () => {
     expect(tsx).not.toMatch(/PoseGhost/)
     expect(tsx).not.toMatch(/enantiomorph=\{true\}/)
+    expect(tsx).toMatch(/objectScale/)
   })
 })

@@ -1,6 +1,6 @@
 /**
  * Source contracts for home-page Symmetry operations primer animations.
- * Geometric CSS movers + ScrewGhost are authoritative; static B/I match their endpoints.
+ * Geometric CSS movers + ScrewGhost + InvGhost are authoritative; static B/I match their endpoints.
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -20,14 +20,16 @@ describe('SymmetryPrimer animation contracts', () => {
       expect(tsx).toMatch(`data-primer={d.id}`)
     }
     expect(tsx).toMatch(/primer-identity-pulse/)
-    expect(tsx).toMatch(/primer-inv-rotor/)
+    expect(tsx).toMatch(/primer-inv-ghost/)
     expect(tsx).toMatch(/primer-twofold-rotor/)
     expect(tsx).toMatch(/primer-screw-ghost/)
     expect(tsx).toMatch(/primer-mirror-rotor/)
     expect(tsx).toMatch(/primer-glide-ghost/)
     expect(tsx).toMatch(/function ScrewGhost/)
+    expect(tsx).toMatch(/function InvGhost/)
     expect(tsx).not.toMatch(/function PoseGhost/)
     expect(tsx).not.toMatch(/primer-pose-ghost/)
+    expect(tsx).not.toMatch(/primer-inv-rotor/)
   })
 
   it('uses an isometric chiral L MotifGlyph (no flat near/far badges)', () => {
@@ -39,6 +41,7 @@ describe('SymmetryPrimer animation contracts', () => {
     expect(tsx).toMatch(/True isometric chiral L/)
     expect(tsx).toMatch(/yawDeg/)
     expect(tsx).toMatch(/objectMap/)
+    expect(tsx).toMatch(/objectScale/)
     expect(tsx).toMatch(/#fca5a5/)
     expect(tsx).toMatch(/#86efac/)
     expect(tsx).toMatch(/#93c5fd/)
@@ -58,7 +61,26 @@ describe('SymmetryPrimer animation contracts', () => {
     expect(css).toMatch(/@media \(prefers-reduced-motion:\s*reduce\)/)
     expect(css).toMatch(/\.primer-card \.primer-mover/)
     expect(css).toMatch(/primer-static-end/)
+    expect(css).toMatch(/primer-inv-ghost/)
     expect(tsx).toMatch(/prefers-reduced-motion/)
+  })
+
+  it('inversion is JS InvGhost (objectScale 1→−1), improper, distinct from 2-fold', () => {
+    expect(tsx).toMatch(/function InvGhost/)
+    expect(tsx).toMatch(/inversionScale/)
+    expect(tsx).toMatch(/objectScale=\{pose\.s\}/)
+    expect(tsx).toMatch(/objectScale=\{-1\}/)
+    expect(tsx).toMatch(/Distinct from a 2-fold/)
+    expect(tsx).toMatch(/INVERSION_TIP_OBJECT/)
+    expect(css).not.toMatch(/@keyframes primer-inv\b/)
+    expect(css).not.toMatch(/primer-inv-rotor/)
+    expect(css).toMatch(/\.primer-inv-ghost/)
+    const invCase = tsx.split("case 'inversion':")[1].split("case 'twofold':")[0]
+    expect(invCase).toMatch(/InvGhost/)
+    expect(invCase).toMatch(/inversionTipScreen/)
+    expect(invCase).not.toMatch(/enantiomorph=\{true\}/)
+    expect(invCase).not.toMatch(/StaticEndpoint/)
+    expect(invCase).not.toMatch(/primer-inv-rotor/)
   })
 
   it('2-fold is top-down lens only (axis ⊥ page, no vertical stroke)', () => {
@@ -109,18 +131,17 @@ describe('SymmetryPrimer animation contracts', () => {
     expect(tsx).not.toMatch(/url\(#arrow\)/)
   })
 
-  it('improper ops use geometric CSS scales; static ends share those transforms', () => {
-    expect(css).toMatch(/@keyframes primer-inv/)
-    expect(css).toMatch(/scale\(-1, -1\)/)
+  it('mirror/glide keep geometric CSS scales; inversion uses InvGhost objectScale', () => {
     expect(css).toMatch(/@keyframes primer-mirror/)
     expect(css).toMatch(/scale\(-1, 1\)/)
     expect(css).toMatch(/@keyframes primer-glide/)
     expect(css).toMatch(/scale\(1, -1\)/)
-    expect(PRIMER_ENDPOINT_TRANSFORMS.inversion.I).toContain('scale(-1,-1)')
     expect(PRIMER_ENDPOINT_TRANSFORMS.glide.I).toContain('scale(1,-1)')
     expect(tsx).toMatch(/function StaticEndpoint/)
     expect(tsx).toMatch(/PRIMER_ENDPOINT_TRANSFORMS/)
-    // Static improper ends must not use Motif enantiomorph={true} (that fought the CSS movers)
+    // inversion no longer in PRIMER_ENDPOINT_TRANSFORMS
+    expect(PRIMER_ENDPOINT_TRANSFORMS).not.toHaveProperty('inversion')
+    // Static improper ends must not use Motif enantiomorph={true}
     const invCase = tsx.split("case 'inversion':")[1].split("case 'twofold':")[0]
     expect(invCase).not.toMatch(/enantiomorph=\{true\}/)
     const glideCase = tsx.split("case 'glide':")[1]
@@ -128,22 +149,17 @@ describe('SymmetryPrimer animation contracts', () => {
   })
 })
 
-describe('Static endpoints match CSS / ScrewGhost keyframes', () => {
+describe('Static endpoints match CSS / ghost keyframes', () => {
   const css = read('src/index.css')
 
-  it('inversion B/I transforms match primer-inv from/to', () => {
-    expect(css).toMatch(
-      /@keyframes primer-inv[\s\S]*?from\s*\{[\s\S]*?translate\(60px, 36px\) scale\(1, 1\) translate\(-26px, -10px\)/,
-    )
-    expect(css).toMatch(
-      /@keyframes primer-inv[\s\S]*?to\s*\{[\s\S]*?translate\(60px, 36px\) scale\(-1, -1\) translate\(-26px, -10px\)/,
-    )
-    expect(PRIMER_ENDPOINT_TRANSFORMS.inversion.B).toBe(
-      'translate(60,36) scale(1,1) translate(-26,-10)',
-    )
-    expect(PRIMER_ENDPOINT_TRANSFORMS.inversion.I).toBe(
-      'translate(60,36) scale(-1,-1) translate(-26,-10)',
-    )
+  it('inversion B/I match InvGhost ends (s=+1 / s=−1), not CSS scale', () => {
+    const tsx = read('src/components/SymmetryPrimer.tsx')
+    expect(tsx).toMatch(/inversionJunction\(1\)/)
+    expect(tsx).toMatch(/inversionJunction\(-1\)/)
+    expect(tsx).toMatch(/objectScale=\{1\}/)
+    expect(tsx).toMatch(/objectScale=\{-1\}/)
+    expect(css).not.toMatch(/@keyframes primer-inv\b/)
+    expect(PRIMER_ENDPOINT_TRANSFORMS).not.toHaveProperty('inversion')
   })
 
   it('mirror B/I transforms match primer-mirror from/to', () => {

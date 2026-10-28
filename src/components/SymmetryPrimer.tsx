@@ -2,7 +2,18 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { SYMMETRY_CLASSES } from '../data/pbca'
-import { iso, objectMap, screwEase, screwPose, SCREW_PRIMER } from '../data/primer/primerGeometry'
+import {
+  iso,
+  objectMap,
+  screwEase,
+  screwPose,
+  SCREW_PRIMER,
+  INVERSION_PRIMER,
+  INVERSION_TIP_OBJECT,
+  inversionScale,
+  inversionJunction,
+  inversionTipScreen,
+} from '../data/primer/primerGeometry'
 
 type DemoId =
   | 'identity'
@@ -33,7 +44,7 @@ const DEMOS: DemoSpec[] = [
     title: 'Inversion center',
     subtitle: '−x, −y, −z (about a point)',
     color: SYMMETRY_CLASSES.inversion.color,
-    body: 'Point reflection through a center (⊙). Improper — the isometric L becomes its enantiomorph.',
+    body: 'Point reflection through a center (⊙): every tip of the isometric L passes through ⊙ to −r. Improper — enantiomorph. Distinct from a 2-fold (proper 180° spin that keeps the same hand).',
   },
   {
     id: 'twofold',
@@ -80,16 +91,20 @@ function shade(hex: string, factor: number): string {
  * Face-shaded beams + distinct tips (ball / triangle / square).
  * - enantiomorph: improper mirror (x → −x) after yaw
  * - yawDeg: proper rotation about +Y (0 = foot toward viewer; 180 = foot away)
+ * - objectScale: central homothety in object space (InvGhost: 1→0→−1); negative ⇒ improper
  */
 function MotifGlyph({
   fill,
   enantiomorph = false,
   yawDeg = 0,
+  objectScale = 1,
 }: {
   fill: string
   enantiomorph?: boolean
   /** Proper rotation about the stem / screw axis (degrees). */
   yawDeg?: number
+  /** Object-space scale about the junction (1 = identity; −1 = full inversion). */
+  objectScale?: number
 }) {
   const lit = shade(fill, 1.15)
   const mid = fill
@@ -104,8 +119,9 @@ function MotifGlyph({
 
   const P = (x: number, y: number, z: number) => {
     const [X, Y, Z] = objectMap(x, y, z, yawDeg, enantiomorph)
-    return iso(X, Y, Z)
+    return iso(X * objectScale, Y * objectScale, Z * objectScale)
   }
+  const flipped = enantiomorph || objectScale < 0
 
   const stemFront = [P(-t, 0, t), P(t, 0, t), P(t, ly, t), P(-t, ly, t)]
   const stemRight = [P(t, 0, t), P(t, 0, -t), P(t, ly, -t), P(t, ly, t)]
@@ -182,8 +198,9 @@ function MotifGlyph({
   return (
     <g
       className="primer-iso-l"
-      data-iso-enantiomorph={enantiomorph ? 'flipped' : 'same'}
+      data-iso-enantiomorph={flipped ? 'flipped' : 'same'}
       data-iso-yaw={Math.round(yawDeg)}
+      data-iso-scale={objectScale}
     >
       {poly(stemRight, dim)}
       {poly(armSide, dim)}
@@ -225,6 +242,7 @@ function Motif({
   orient = '',
   enantiomorph = false,
   yawDeg = 0,
+  objectScale = 1,
 }: {
   x: number
   y: number
@@ -235,16 +253,18 @@ function Motif({
   orient?: string
   enantiomorph?: boolean
   yawDeg?: number
+  objectScale?: number
 }) {
   const tf = orient ? `translate(${x},${y}) ${orient}` : `translate(${x},${y})`
+  const flipped = enantiomorph || objectScale < 0
   return (
     <g
       transform={tf}
       className={className}
       opacity={opacity}
-      data-enantiomorph={enantiomorph ? 'flipped' : 'same'}
+      data-enantiomorph={flipped ? 'flipped' : 'same'}
     >
-      <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} />
+      <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} objectScale={objectScale} />
       {label ? (
         <text x={0} y={20} textAnchor="middle" fill={fill} fontSize={8} fontWeight={700}>
           {label}
@@ -259,15 +279,18 @@ function MotifLocal({
   className,
   enantiomorph = false,
   yawDeg = 0,
+  objectScale = 1,
 }: {
   fill: string
   className?: string
   enantiomorph?: boolean
   yawDeg?: number
+  objectScale?: number
 }) {
+  const flipped = enantiomorph || objectScale < 0
   return (
-    <g className={className} data-enantiomorph={enantiomorph ? 'flipped' : 'same'}>
-      <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} />
+    <g className={className} data-enantiomorph={flipped ? 'flipped' : 'same'}>
+      <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} objectScale={objectScale} />
     </g>
   )
 }
@@ -279,10 +302,6 @@ function MotifLocal({
  * so they match the restored geometric movers — not the other way around.
  */
 export const PRIMER_ENDPOINT_TRANSFORMS = {
-  inversion: {
-    B: 'translate(60,36) scale(1,1) translate(-26,-10)',
-    I: 'translate(60,36) scale(-1,-1) translate(-26,-10)',
-  },
   mirror: {
     B: 'translate(60,36) scale(1,1) translate(-26,0)',
     I: 'translate(60,36) scale(-1,1) translate(-26,0)',
@@ -408,6 +427,79 @@ function ScrewGhost({ color }: { color: string }) {
   )
 }
 
+
+/**
+ * Inversion mover: central homothety in object space, s: 1 → 0 → −1 about ⊙.
+ * Junction offset scales with s; MotifGlyph objectScale={s}. At s=0 the L collapses
+ * onto the center; at s=−1 it is the 3D-inverted enantiomorph (improper, det −1).
+ * Distinct from 2-fold (proper 180° spin). Pauses off-screen / reduced-motion.
+ */
+function InvGhost({ color }: { color: string }) {
+  const gRef = useRef<SVGGElement>(null)
+  const { center, offset } = INVERSION_PRIMER
+  const [pose, setPose] = useState<{ s: number; opacity: number; active: boolean }>({
+    s: 1,
+    opacity: 1,
+    active: true,
+  })
+
+  useEffect(() => {
+    const el = gRef.current
+    if (!el) return
+    const card = el.closest('.primer-card')
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    let raf = 0
+    let start = performance.now()
+    const PERIOD = 3200
+
+    const tick = (now: number) => {
+      const inview = !card || card.classList.contains('is-inview')
+      const still = reduce?.matches || !inview
+      if (still) {
+        setPose({ s: 1, opacity: 0, active: false })
+        raf = requestAnimationFrame(tick)
+        return
+      }
+      const u = ((now - start) % PERIOD) / PERIOD
+      let p: number
+      let opacity = 1
+      if (u < 0.7) {
+        p = u / 0.7
+      } else if (u < 0.82) {
+        p = 1
+      } else if (u < 0.92) {
+        p = 1
+        opacity = 1 - (u - 0.82) / 0.1
+      } else {
+        p = 0
+        opacity = (u - 0.92) / 0.08
+      }
+      const e = screwEase(p)
+      const s = inversionScale(e)
+      setPose({ s, opacity, active: true })
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  const jx = center.x + pose.s * offset.x
+  const jy = center.y + pose.s * offset.y
+
+  return (
+    <g
+      ref={gRef}
+      className="primer-mover primer-inv-ghost"
+      transform={`translate(${jx},${jy})`}
+      opacity={pose.opacity}
+      data-inv-active={pose.active ? '1' : '0'}
+      data-inv-scale={pose.s}
+    >
+      <MotifLocal fill={color} objectScale={pose.s} />
+    </g>
+  )
+}
+
 function DemoArt({ id, color }: { id: DemoId; color: string }) {
   switch (id) {
     case 'identity':
@@ -422,46 +514,75 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           </g>
         </svg>
       )
-    case 'inversion':
+    case 'inversion': {
+      const { center } = INVERSION_PRIMER
+      const jB = inversionJunction(1)
+      const jI = inversionJunction(-1)
+      const tipKeys = ['stem', 'arm', 'foot'] as const
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
-          {/* Static B/I = CSS primer-inv keyframe from/to (same MotifLocal + scale) */}
-          <StaticEndpoint
-            transform={PRIMER_ENDPOINT_TRANSFORMS.inversion.B}
-            fill={color}
-            label="B"
-            labelX={34}
-            labelY={46}
-            className="primer-marker"
-          />
-          <StaticEndpoint
-            transform={PRIMER_ENDPOINT_TRANSFORMS.inversion.I}
-            fill={color}
-            label="I"
-            labelX={86}
-            labelY={66}
-            className="primer-marker primer-static-end"
-          />
-          <circle cx={60} cy={36} r={4} fill="none" stroke={color} strokeWidth={1.6} />
-          <circle cx={60} cy={36} r={1.4} fill={color} />
-          <line
-            x1={42}
-            y1={28}
-            x2={78}
-            y2={44}
-            stroke={color}
-            strokeWidth={1}
-            strokeDasharray="3 2"
-            opacity={0.45}
-            className="primer-guide-path"
-          />
-          {/* Continuous point inversion about (60,36) via CSS scale(-1,-1) */}
-          <g className="primer-mover primer-inv-rotor">
-            <MotifLocal fill={color} />
+          {/* Tip→⊙→image rays (static B↔I); every tip passes through the center */}
+          {tipKeys.map((k) => {
+            const tip = INVERSION_TIP_OBJECT[k]
+            const b = inversionTipScreen(tip, 1)
+            const i = inversionTipScreen(tip, -1)
+            return (
+              <line
+                key={k}
+                x1={b.x}
+                y1={b.y}
+                x2={i.x}
+                y2={i.y}
+                stroke={color}
+                strokeWidth={1}
+                strokeDasharray="3 2"
+                opacity={0.4}
+                className="primer-guide-path"
+              />
+            )
+          })}
+          {/* Static B/I = InvGhost ends (s=+1 / s=−1); animation authoritative */}
+          <g className="primer-marker" opacity={0.35} transform={`translate(${jB.x},${jB.y})`}>
+            <MotifLocal fill={color} objectScale={1} />
           </g>
+          <text
+            className="primer-marker"
+            x={jB.x}
+            y={jB.y + 20}
+            textAnchor="middle"
+            fill={color}
+            fontSize={8}
+            fontWeight={700}
+            opacity={0.35}
+          >
+            B
+          </text>
+          <g
+            className="primer-marker primer-static-end"
+            opacity={0.35}
+            transform={`translate(${jI.x},${jI.y})`}
+          >
+            <MotifLocal fill={color} objectScale={-1} />
+          </g>
+          <text
+            className="primer-marker primer-static-end"
+            x={jI.x}
+            y={jI.y + 20}
+            textAnchor="middle"
+            fill={color}
+            fontSize={8}
+            fontWeight={700}
+            opacity={0.35}
+          >
+            I
+          </text>
+          <circle cx={center.x} cy={center.y} r={4} fill="none" stroke={color} strokeWidth={1.6} />
+          <circle cx={center.x} cy={center.y} r={1.4} fill={color} />
+          <InvGhost color={color} />
         </svg>
       )
+    }
     case 'twofold':
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>

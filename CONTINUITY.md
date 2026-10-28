@@ -3,14 +3,15 @@
 Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Primer animations (2026-10-28) — course-correct
+## Primer animations (2026-10-28) — InvGhost inversion
 - Home `#primer`: isometric chiral L. **Animations are authoritative**; static B/I match their endpoints (not PoseGhost→markers).
-- Movers: CSS `primer-inv` / `primer-twofold` / `primer-mirror` / `primer-glide` + JS `ScrewGhost`. No `PoseGhost`.
-- `PRIMER_ENDPOINT_TRANSFORMS` + `StaticEndpoint` share CSS keyframe from/to transforms for improper ops; 2-fold static I = `rotate(180 60 36)` of the B Motif; 2₁ B/I = yaw 0 / 180 Motif (same as ScrewGhost ends).
+- Movers: JS `InvGhost` + CSS `primer-twofold` / `primer-mirror` / `primer-glide` + JS `ScrewGhost`. No `PoseGhost`. No CSS `primer-inv`.
+- **Inversion**: object-space central homothety `s: 1→0→−1` about ⊙ (`MotifGlyph.objectScale`); tips pass through center; end pose enantiomorph (det −1). Distinct from 2-fold.
+- `PRIMER_ENDPOINT_TRANSFORMS` + `StaticEndpoint` for mirror/glide/twofold only; inversion B/I = `inversionJunction(±1)` + `objectScale ±1`.
 - **2-fold**: top-down lens, CSS rotate 180° about (60,36), hand kept, no slide.
 - **2₁**: side view, orbit + yaw 0→180 + +½ along axis, hand kept.
-- **Improper** (inversion/mirror/glide): continuous CSS scale through center/plane (hand flips). Captions kept.
-- Pause off-screen; reduced-motion → static B/I. Contracts assert CSS keyframes ≡ `PRIMER_ENDPOINT_TRANSFORMS`.
+- Geometry: `src/data/primer/primerGeometry.ts` (`INVERSION_PRIMER`, `inversionScale`, tip rays).
+- Pause off-screen; reduced-motion → static B/I.
 
 ## Visitor counter (2026-10-28)
 - Footer chip `(N)` (number only) via `VisitCounter` in `SiteCopyright` (index shell) + demo `viewport-footer` (SG / CIF).
@@ -49,5 +50,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `aa9b33a` · primer course-correct: restore geometric movers; static ≡ anim ends
-- gh-pages: `47f06a2` (COD/visits; CNAME; 739 tests)
+- main: `PENDING` · InvGhost inversion (objectScale 1→−1); tip rays; 763 tests
+- gh-pages: `PENDING`

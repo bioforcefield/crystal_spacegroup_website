@@ -2004,22 +2004,15 @@ button {
 }
 
 /*
- * 2. Inversion (improper) — continuous point inversion about (60,36):
- * translate(center) scale(s,s) translate(-startRel) with s: 1 → −1.
- * Isometric chiral L; end pose is enantiomorphic (not a badge swap).
+ * 2. Inversion (improper) — JS-driven InvGhost in SymmetryPrimer.tsx:
+ * object-space central homothety s: 1 → 0 → −1 about ⊙ (60,36). Tips pass
+ * through the center; end pose is the 3D-inverted enantiomorph (det −1).
+ * Distinct from 2-fold (proper 180°). Reduced-motion & off-screen handled
+ * inside InvGhost (opacity 0); markers remain for the end poses.
  */
-@keyframes primer-inv {
-  from {
-    transform: translate(60px, 36px) scale(1, 1) translate(-26px, -10px);
-  }
-  to {
-    transform: translate(60px, 36px) scale(-1, -1) translate(-26px, -10px);
-  }
-}
-
-.primer-card.is-inview .primer-inv-rotor {
+.primer-inv-ghost {
   transform-origin: 0 0;
-  animation: primer-inv 2.8s ease-in-out infinite alternate;
+  will-change: transform, opacity;
 }
 
 /*
@@ -2130,7 +2123,7 @@ button {
     animation: none !important;
   }
 
-  .primer-card .primer-inv-rotor,
+  .primer-card .primer-inv-ghost,
   .primer-card .primer-twofold-rotor,
   .primer-card .primer-screw-ghost,
   .primer-card .primer-mirror-rotor,
