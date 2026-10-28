@@ -45,5 +45,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `8bf36b1` (teaching AU clearance)
-- gh-pages: `4ee4567` (VITE_COD_PROXY baked; CNAME crystalspacegroups.com)
+- main: `d409a38` (visits counter + SQLite DO migration)
+- gh-pages: `4aafc7a` (VITE_COD_PROXY + VITE_VISITS_URL baked; CNAME crystalspacegroups.com)
