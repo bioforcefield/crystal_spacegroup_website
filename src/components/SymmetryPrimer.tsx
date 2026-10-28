@@ -202,10 +202,11 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeWidth={2}
             strokeLinecap="round"
           />
-          <Motif x={38} y={30} fill={color} label="B" />
-          <Motif x={82} y={42} fill={color} label="I" />
+          {/* Pure 2-fold: B and I at the same height (no shift along the axis; see screw card for +½). */}
+          <Motif x={38} y={36} fill={color} label="B" />
+          <Motif x={82} y={36} fill={color} label="I" />
           <path
-            d="M44 48 Q60 58 76 48"
+            d="M44 50 Q60 62 76 50"
             fill="none"
             stroke={color}
             strokeWidth={1.2}
