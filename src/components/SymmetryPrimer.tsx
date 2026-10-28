@@ -243,6 +243,46 @@ function MotifGlyph({
   )
 }
 
+/** Screen-space pose shared by static B/I markers and the animated ghost. */
+export type PrimerPose = {
+  x: number
+  y: number
+  yawDeg: number
+  /** In-page spin (degrees); used by 2-fold (axis ⊥ page). */
+  spinDeg: number
+  enantiomorph: boolean
+}
+
+/**
+ * Documented B → I endpoints. Static markers and PoseGhost both read these so
+ * animation t=0 / t=1 always match the faded B / I images.
+ */
+export const PRIMER_POSES: Record<
+  Exclude<DemoId, 'identity'>,
+  { B: PrimerPose; I: PrimerPose }
+> = {
+  inversion: {
+    B: { x: 34, y: 26, yawDeg: 0, spinDeg: 0, enantiomorph: false },
+    I: { x: 86, y: 46, yawDeg: 0, spinDeg: 0, enantiomorph: true },
+  },
+  twofold: {
+    B: { x: 38, y: 36, yawDeg: 0, spinDeg: 0, enantiomorph: false },
+    I: { x: 82, y: 36, yawDeg: 0, spinDeg: 180, enantiomorph: false },
+  },
+  screw: {
+    B: { x: 36, y: 22, yawDeg: 0, spinDeg: 0, enantiomorph: false },
+    I: { x: 84, y: 50, yawDeg: 180, spinDeg: 0, enantiomorph: false },
+  },
+  mirror: {
+    B: { x: 34, y: 36, yawDeg: 0, spinDeg: 0, enantiomorph: false },
+    I: { x: 86, y: 36, yawDeg: 0, spinDeg: 0, enantiomorph: true },
+  },
+  glide: {
+    B: { x: 32, y: 22, yawDeg: 0, spinDeg: 0, enantiomorph: false },
+    I: { x: 88, y: 50, yawDeg: 0, spinDeg: 0, enantiomorph: true },
+  },
+}
+
 function Motif({
   x,
   y,
@@ -250,9 +290,9 @@ function Motif({
   label,
   className,
   opacity = 1,
-  orient = '',
   enantiomorph = false,
   yawDeg = 0,
+  spinDeg = 0,
 }: {
   x: number
   y: number
@@ -260,10 +300,11 @@ function Motif({
   label?: string
   className?: string
   opacity?: number
-  orient?: string
   enantiomorph?: boolean
   yawDeg?: number
+  spinDeg?: number
 }) {
+  const orient = spinDeg ? `rotate(${spinDeg})` : ''
   const tf = orient ? `translate(${x},${y}) ${orient}` : `translate(${x},${y})`
   return (
     <g
@@ -271,6 +312,8 @@ function Motif({
       className={className}
       opacity={opacity}
       data-enantiomorph={enantiomorph ? 'flipped' : 'same'}
+      data-spin={Math.round(spinDeg)}
+      data-yaw={Math.round(yawDeg)}
     >
       <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} />
       {label ? (
@@ -282,21 +325,31 @@ function Motif({
   )
 }
 
-function MotifLocal({
+function MotifFromPose({
+  pose,
   fill,
+  label,
   className,
-  enantiomorph = false,
-  yawDeg = 0,
+  opacity = 1,
 }: {
+  pose: PrimerPose
   fill: string
+  label?: string
   className?: string
-  enantiomorph?: boolean
-  yawDeg?: number
+  opacity?: number
 }) {
   return (
-    <g className={className} data-enantiomorph={enantiomorph ? 'flipped' : 'same'}>
-      <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} />
-    </g>
+    <Motif
+      x={pose.x}
+      y={pose.y}
+      fill={fill}
+      label={label}
+      className={className}
+      opacity={opacity}
+      enantiomorph={pose.enantiomorph}
+      yawDeg={pose.yawDeg}
+      spinDeg={pose.spinDeg}
+    />
   )
 }
 
@@ -315,14 +368,147 @@ function CellFrame() {
   )
 }
 
+function easeInOut(p: number): number {
+  return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
+}
+
+/** Motion phase 0–1 plus opacity for hold / fade / reset loops. */
+function loopPhase(u: number): { e: number; opacity: number } {
+  let p: number
+  let opacity = 1
+  if (u < 0.7) {
+    p = u / 0.7
+  } else if (u < 0.82) {
+    p = 1
+  } else if (u < 0.92) {
+    p = 1
+    opacity = 1 - (u - 0.82) / 0.1
+  } else {
+    p = 0
+    opacity = (u - 0.92) / 0.08
+  }
+  return { e: easeInOut(p), opacity }
+}
+
+type Interpolator = (e: number) => PrimerPose
+
+/** Inversion: lerp through center; flip enantiomorph past the midpoint. */
+function lerpInversion(e: number): PrimerPose {
+  const { B, I } = PRIMER_POSES.inversion
+  return {
+    x: B.x + (I.x - B.x) * e,
+    y: B.y + (I.y - B.y) * e,
+    yawDeg: 0,
+    spinDeg: 0,
+    enantiomorph: e >= 0.5,
+  }
+}
+
+/** 2-fold: orbit about (60,36) with in-page spin 0→180; hand kept. */
+function lerpTwofold(e: number): PrimerPose {
+  const { B, I } = PRIMER_POSES.twofold
+  const cx = 60
+  const cy = 36
+  const ang = Math.PI * e
+  const dx = B.x - cx
+  const dy = B.y - cy
+  const x = cx + dx * Math.cos(ang) - dy * Math.sin(ang)
+  const y = cy + dx * Math.sin(ang) + dy * Math.cos(ang)
+  return {
+    x,
+    y,
+    yawDeg: 0,
+    spinDeg: I.spinDeg * e,
+    enantiomorph: false,
+  }
+}
+
+/** 2₁: orbit about vertical axis x=60 + yaw 0→180 + +½ along axis. */
+function lerpScrew(e: number): PrimerPose {
+  const { B, I } = PRIMER_POSES.screw
+  const ang = Math.PI * e
+  const radius = B.x < 60 ? 60 - B.x : B.x - 60
+  const x = 60 - radius * Math.cos(ang)
+  const y = B.y + (I.y - B.y) * e
+  return {
+    x,
+    y,
+    yawDeg: I.yawDeg * e,
+    spinDeg: 0,
+    enantiomorph: false,
+  }
+}
+
+/** Mirror: cross vertical plane; flip enantiomorph at the plane. */
+function lerpMirror(e: number): PrimerPose {
+  const { B, I } = PRIMER_POSES.mirror
+  return {
+    x: B.x + (I.x - B.x) * e,
+    y: B.y,
+    yawDeg: 0,
+    spinDeg: 0,
+    enantiomorph: e >= 0.5,
+  }
+}
+
 /**
- * 2₁ mover: true screw = 180° about the vertical axis + ½ translation along it.
- * Position orbits from left→right of the axis while yaw 0→180 (proper; hand kept).
- * Pauses when the card is off-screen or prefers-reduced-motion.
+ * Glide: reflect across y=36 (flip hand), then translate along the plane.
+ * End pose matches static I (enantiomorph, no CSS scale).
  */
-function ScrewGhost({ color }: { color: string }) {
+function lerpGlide(e: number): PrimerPose {
+  const { B, I } = PRIMER_POSES.glide
+  if (e < 0.4) {
+    const t = e / 0.4
+    const yMid = 36
+    // Reflect B across y=36 → (B.x, 2*36 - B.y) = (32, 50)
+    const yRef = 2 * yMid - B.y
+    return {
+      x: B.x,
+      y: B.y + (yRef - B.y) * t,
+      yawDeg: 0,
+      spinDeg: 0,
+      enantiomorph: t >= 0.5,
+    }
+  }
+  const t = (e - 0.4) / 0.6
+  const yRef = 2 * 36 - B.y
+  return {
+    x: B.x + (I.x - B.x) * t,
+    y: yRef,
+    yawDeg: 0,
+    spinDeg: 0,
+    enantiomorph: true,
+  }
+}
+
+const INTERPOLATORS: Record<Exclude<DemoId, 'identity'>, Interpolator> = {
+  inversion: lerpInversion,
+  twofold: lerpTwofold,
+  screw: lerpScrew,
+  mirror: lerpMirror,
+  glide: lerpGlide,
+}
+
+/**
+ * Ghost driven by the same Motif / PrimerPose model as static B and I.
+ * t=0 → B, t=1 → I (position, yaw, spin, enantiomorph). No CSS scale/rotate
+ * approximations that fight the isometric end pose.
+ */
+function PoseGhost({
+  demo,
+  fill,
+  periodMs = 3000,
+}: {
+  demo: Exclude<DemoId, 'identity'>
+  fill: string
+  periodMs?: number
+}) {
   const gRef = useRef<SVGGElement>(null)
-  const [pose, setPose] = useState({ x: 36, y: 22, yaw: 0, opacity: 1, active: true })
+  const interp = INTERPOLATORS[demo]
+  const start = PRIMER_POSES[demo].B
+  const [pose, setPose] = useState<PrimerPose>(start)
+  const [opacity, setOpacity] = useState(1)
+  const [active, setActive] = useState(true)
 
   useEffect(() => {
     const el = gRef.current
@@ -330,57 +516,41 @@ function ScrewGhost({ color }: { color: string }) {
     const card = el.closest('.primer-card')
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
     let raf = 0
-    let start = performance.now()
-    const PERIOD = 3400
+    let t0 = performance.now()
 
     const tick = (now: number) => {
       const inview = !card || card.classList.contains('is-inview')
       const still = reduce?.matches || !inview
       if (still) {
-        setPose({ x: 36, y: 22, yaw: 0, opacity: 0, active: false })
+        setPose(start)
+        setOpacity(0)
+        setActive(false)
         raf = requestAnimationFrame(tick)
         return
       }
-      const u = ((now - start) % PERIOD) / PERIOD
-      // Motion phase 0–0.72: screw; hold; fade; reset
-      let p: number
-      let opacity = 1
-      if (u < 0.7) {
-        p = u / 0.7
-      } else if (u < 0.82) {
-        p = 1
-      } else if (u < 0.92) {
-        p = 1
-        opacity = 1 - (u - 0.82) / 0.1
-      } else {
-        p = 0
-        opacity = (u - 0.92) / 0.08
-      }
-      // Ease in-out
-      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
-      // Orbit in the horizontal plane about axis x=60: angle 0→π (left → right)
-      // Start at screen-left of axis; after 180° about vertical, on the right.
-      const ang = Math.PI * e
-      const radius = 24
-      const x = 60 - radius * Math.cos(ang)
-      const y = 22 + 28 * e // +½ along axis (down the card)
-      const yaw = 180 * e
-      setPose({ x, y, yaw, opacity, active: true })
+      const u = ((now - t0) % periodMs) / periodMs
+      const { e, opacity: op } = loopPhase(u)
+      setPose(interp(e))
+      setOpacity(op)
+      setActive(true)
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [])
+  }, [interp, periodMs, start])
 
   return (
     <g
       ref={gRef}
-      className="primer-mover primer-screw-ghost"
-      transform={`translate(${pose.x},${pose.y})`}
-      opacity={pose.opacity}
-      data-screw-active={pose.active ? '1' : '0'}
+      className={`primer-mover primer-pose-ghost primer-${demo}-ghost`}
+      opacity={opacity}
+      data-pose-active={active ? '1' : '0'}
+      data-pose-demo={demo}
+      data-enantiomorph={pose.enantiomorph ? 'flipped' : 'same'}
+      data-yaw={Math.round(pose.yawDeg)}
+      data-spin={Math.round(pose.spinDeg)}
     >
-      <MotifLocal fill={color} enantiomorph={false} yawDeg={pose.yaw} />
+      <MotifFromPose pose={pose} fill={fill} />
     </g>
   )
 }
@@ -392,56 +562,45 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
           <g className="primer-mover primer-identity-pulse" transform="translate(60,34)">
-            <MotifLocal fill={color} />
+            <MotifGlyph fill={color} />
             <text x={0} y={20} textAnchor="middle" fill={color} fontSize={8} fontWeight={700}>
               BASE
             </text>
           </g>
         </svg>
       )
-    case 'inversion':
+    case 'inversion': {
+      const { B, I } = PRIMER_POSES.inversion
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
-          <Motif
-            x={34}
-            y={26}
-            fill={color}
-            label="B"
-            opacity={0.35}
-            enantiomorph={false}
-            className="primer-marker"
-          />
-          {/* Improper end: enantiomorph of the isometric L */}
-          <Motif
-            x={86}
-            y={46}
+          <MotifFromPose pose={B} fill={color} label="B" opacity={0.35} className="primer-marker" />
+          <MotifFromPose
+            pose={I}
             fill={color}
             label="I"
             opacity={0.35}
-            enantiomorph={true}
-            className="primer-marker primer-static-end primer-hand-flipped"
+            className="primer-marker primer-static-end"
           />
           <circle cx={60} cy={36} r={4} fill="none" stroke={color} strokeWidth={1.6} />
           <circle cx={60} cy={36} r={1.4} fill={color} />
           <line
-            x1={42}
-            y1={28}
-            x2={78}
-            y2={44}
+            x1={B.x}
+            y1={B.y}
+            x2={I.x}
+            y2={I.y}
             stroke={color}
             strokeWidth={1}
             strokeDasharray="3 2"
             opacity={0.45}
             className="primer-guide-path"
           />
-          {/* Continuous point inversion about (60,36) via CSS scale(-1,-1) */}
-          <g className="primer-mover primer-inv-rotor">
-            <MotifLocal fill={color} />
-          </g>
+          <PoseGhost demo="inversion" fill={color} periodMs={2800} />
         </svg>
       )
-    case 'twofold':
+    }
+    case 'twofold': {
+      const { B, I } = PRIMER_POSES.twofold
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
@@ -455,24 +614,12 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             stroke={color}
             strokeWidth={1.6}
           />
-          <Motif
-            x={38}
-            y={36}
-            fill={color}
-            label="B"
-            opacity={0.35}
-            enantiomorph={false}
-            className="primer-marker"
-          />
-          {/* Proper: same enantiomorph, 180° in the page plane (axis ⊥ page) */}
-          <Motif
-            x={82}
-            y={36}
+          <MotifFromPose pose={B} fill={color} label="B" opacity={0.35} className="primer-marker" />
+          <MotifFromPose
+            pose={I}
             fill={color}
             label="I"
             opacity={0.35}
-            enantiomorph={false}
-            orient="rotate(180)"
             className="primer-marker primer-static-end"
           />
           <path
@@ -498,12 +645,12 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
               <path d="M0 0 L10 5 L0 10 z" fill={color} />
             </marker>
           </defs>
-          <g className="primer-mover primer-twofold-rotor">
-            <Motif x={38} y={36} fill={color} enantiomorph={false} />
-          </g>
+          <PoseGhost demo="twofold" fill={color} periodMs={3000} />
         </svg>
       )
-    case 'screw':
+    }
+    case 'screw': {
+      const { B, I } = PRIMER_POSES.screw
       return (
         <svg viewBox="0 0 120 78" className="primer-svg primer-screw" aria-hidden>
           <CellFrame />
@@ -516,7 +663,6 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeWidth={2.4}
             strokeLinecap="round"
           />
-          {/* ITA-ish 2₁ half-arrow ticks */}
           <path
             d="M60 22 L67 19 M60 22 L67 25"
             fill="none"
@@ -533,25 +679,12 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {/* B: yaw 0 (foot toward). I: yaw 180 (foot away) — same enantiomorph, proper 2₁ */}
-          <Motif
-            x={36}
-            y={22}
-            fill={color}
-            label="B"
-            opacity={0.35}
-            enantiomorph={false}
-            yawDeg={0}
-            className="primer-marker"
-          />
-          <Motif
-            x={84}
-            y={50}
+          <MotifFromPose pose={B} fill={color} label="B" opacity={0.35} className="primer-marker" />
+          <MotifFromPose
+            pose={I}
             fill={color}
             label="I"
             opacity={0.35}
-            enantiomorph={false}
-            yawDeg={180}
             className="primer-marker primer-static-end"
           />
           <text x={10} y={74} fill={color} fontSize={7} fontWeight={600} opacity={0.9}>
@@ -569,10 +702,12 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <text x={68} y={16} fill={color} fontSize={9} fontWeight={700}>
             +½
           </text>
-          <ScrewGhost color={color} />
+          <PoseGhost demo="screw" fill={color} periodMs={3400} />
         </svg>
       )
-    case 'mirror':
+    }
+    case 'mirror': {
+      const { B, I } = PRIMER_POSES.mirror
       return (
         <svg viewBox="0 0 120 78" className="primer-svg" aria-hidden>
           <CellFrame />
@@ -585,36 +720,23 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeWidth={1.8}
             strokeDasharray="4 3"
           />
-          <Motif
-            x={34}
-            y={36}
-            fill="#38bdf8"
-            label="B"
-            opacity={0.35}
-            enantiomorph={false}
-            yawDeg={0}
-            className="primer-marker"
-          />
-          {/* Improper: enantiomorph, foot still toward — unlike screw I (yaw 180, same hand) */}
-          <Motif
-            x={86}
-            y={36}
+          <MotifFromPose pose={B} fill="#38bdf8" label="B" opacity={0.35} className="primer-marker" />
+          <MotifFromPose
+            pose={I}
             fill="#fde68a"
             label="I"
             opacity={0.35}
-            enantiomorph={true}
-            yawDeg={0}
             className="primer-marker primer-static-end"
           />
           <text x={10} y={74} fill="#fde68a" fontSize={7} fontWeight={600} opacity={0.9}>
             improper — hand flips
           </text>
-          <g className="primer-mover primer-mirror-rotor">
-            <MotifLocal fill="#38bdf8" enantiomorph={false} />
-          </g>
+          <PoseGhost demo="mirror" fill="#38bdf8" periodMs={2500} />
         </svg>
       )
-    case 'glide':
+    }
+    case 'glide': {
+      const { B, I } = PRIMER_POSES.glide
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
@@ -627,23 +749,13 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeWidth={2}
             strokeDasharray="6 3"
           />
-          <Motif
-            x={32}
-            y={22}
-            fill={color}
-            label="B"
-            opacity={0.35}
-            enantiomorph={false}
-            className="primer-marker"
-          />
-          <Motif
-            x={88}
-            y={50}
+          <MotifFromPose pose={B} fill={color} label="B" opacity={0.35} className="primer-marker" />
+          <MotifFromPose
+            pose={I}
             fill={color}
             label="I"
             opacity={0.35}
-            enantiomorph={true}
-            className="primer-marker primer-static-end primer-hand-flipped"
+            className="primer-marker primer-static-end"
           />
           <path
             d="M38 28 H72"
@@ -669,11 +781,10 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <text x={50} y={26} fill={color} fontSize={8} fontWeight={700}>
             glide →
           </text>
-          <g className="primer-mover primer-glide-ghost">
-            <MotifLocal fill={color} />
-          </g>
+          <PoseGhost demo="glide" fill={color} periodMs={3000} />
         </svg>
       )
+    }
   }
 }
 

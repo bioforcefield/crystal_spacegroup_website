@@ -1986,7 +1986,7 @@ button {
   animation: primer-dash 1.6s linear infinite;
 }
 
-/* 1. Identity — soft pulse/glow on BASE */
+/* 1. Identity — soft pulse/glow on BASE (only remaining CSS mover) */
 @keyframes primer-identity {
   0%,
   100% {
@@ -2004,108 +2004,14 @@ button {
 }
 
 /*
- * 2. Inversion (improper) — continuous point inversion about (60,36):
- * translate(center) scale(s,s) translate(-startRel) with s: 1 → −1.
- * Isometric chiral L; end pose is enantiomorphic (not a badge swap).
+ * 2–6. Inversion / 2-fold / 2₁ / mirror / glide — JS PoseGhost in SymmetryPrimer.tsx.
+ * Ghost is the same isometric Motif as static B/I (PRIMER_POSES); endpoints match
+ * yaw / spin / enantiomorph. No CSS scale(-1) / rotate approximations.
  */
-@keyframes primer-inv {
-  from {
-    transform: translate(60px, 36px) scale(1, 1) translate(-26px, -10px);
-  }
-  to {
-    transform: translate(60px, 36px) scale(-1, -1) translate(-26px, -10px);
-  }
-}
-
-.primer-card.is-inview .primer-inv-rotor {
+.primer-pose-ghost {
   transform-origin: 0 0;
-  animation: primer-inv 2.8s ease-in-out infinite alternate;
-}
-
-/*
- * 3. 2-fold (proper) — top-down / axis ⊥ page through lens at (60,36).
- * In-plane 180°; L ends upside-down; no axial translation. Loop: hold → fade → reset.
- */
-@keyframes primer-twofold {
-  0% {
-    transform: rotate(0deg);
-    opacity: 1;
-  }
-  55% {
-    transform: rotate(180deg);
-    opacity: 1;
-  }
-  72% {
-    transform: rotate(180deg);
-    opacity: 1;
-  }
-  85% {
-    transform: rotate(180deg);
-    opacity: 0;
-  }
-  86% {
-    transform: rotate(0deg);
-    opacity: 0;
-  }
-  100% {
-    transform: rotate(0deg);
-    opacity: 1;
-  }
-}
-
-.primer-card.is-inview .primer-twofold-rotor {
-  transform-origin: 60px 36px;
-  animation: primer-twofold 3s ease-in-out infinite;
-}
-
-/*
- * 4. 2₁ screw (proper) — JS-driven ScrewGhost in SymmetryPrimer.tsx:
- * yaw 0→180 about the vertical axis + translate +½ along it (same enantiomorph).
- * No CSS scaleX(-1). Static B yaw=0 / I yaw=180. Reduced-motion & off-screen
- * handled inside ScrewGhost (opacity 0); markers remain for the end poses.
- */
-.primer-screw-ghost {
-  transform-origin: 0 0;
-  will-change: transform, opacity;
-}
-
-/*
- * 5. Mirror (improper) — continuous scaleX(-1) about the vertical plane x=60.
- * Isometric L becomes its enantiomorph (static I uses enantiomorph={true}).
- */
-@keyframes primer-mirror {
-  from {
-    transform: translate(60px, 36px) scale(1, 1) translate(-26px, 0);
-  }
-  to {
-    transform: translate(60px, 36px) scale(-1, 1) translate(-26px, 0);
-  }
-}
-
-.primer-card.is-inview .primer-mirror-rotor {
-  transform-origin: 0 0;
-  animation: primer-mirror 2.5s ease-in-out infinite alternate;
-}
-
-/*
- * 6. Glide (improper) — scaleY(-1) about plane y=36, then translate along plane.
- * Improper end pose (enantiomorph) after the reflection phase.
- */
-@keyframes primer-glide {
-  0% {
-    transform: translate(32px, 36px) scale(1, 1) translate(0, -14px);
-  }
-  40% {
-    transform: translate(32px, 36px) scale(1, -1) translate(0, -14px);
-  }
-  100% {
-    transform: translate(88px, 36px) scale(1, -1) translate(0, -14px);
-  }
-}
-
-.primer-card.is-inview .primer-glide-ghost {
-  transform-origin: 0 0;
-  animation: primer-glide 3s ease-in-out infinite alternate;
+  will-change: opacity;
+  pointer-events: none;
 }
 
 /* Off-screen: hide movers; show static B/I markers */
@@ -2130,12 +2036,8 @@ button {
     animation: none !important;
   }
 
-  .primer-card .primer-inv-rotor,
-  .primer-card .primer-twofold-rotor,
-  .primer-card .primer-screw-ghost,
-  .primer-card .primer-mirror-rotor,
-  .primer-card .primer-glide-ghost {
-    opacity: 0;
+  .primer-card .primer-pose-ghost {
+    opacity: 0 !important;
   }
 
   .primer-card .primer-marker,
