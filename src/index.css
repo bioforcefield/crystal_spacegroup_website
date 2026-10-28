@@ -2003,51 +2003,29 @@ button {
   animation: primer-identity 2.4s ease-in-out infinite;
 }
 
-/* 2. Inversion — travel through ⊙; flip to mirrored past center */
-@keyframes primer-inv-travel {
-  0% {
-    transform: translate(34px, 26px);
+/*
+ * 2. Inversion (improper) — continuous point inversion about (60,36):
+ * translate(center) scale(s,s) translate(-startRel) with s: 1 → −1.
+ * Same chiral L; end pose is enantiomorphic (not a glyph swap).
+ */
+@keyframes primer-inv {
+  from {
+    transform: translate(60px, 36px) scale(1, 1) translate(-26px, -10px);
   }
-  100% {
-    transform: translate(86px, 46px);
-  }
-}
-
-@keyframes primer-inv-proper {
-  0%,
-  42% {
-    opacity: 1;
-  }
-  55%,
-  100% {
-    opacity: 0;
+  to {
+    transform: translate(60px, 36px) scale(-1, -1) translate(-26px, -10px);
   }
 }
 
-@keyframes primer-inv-mirror {
-  0%,
-  45% {
-    opacity: 0;
-  }
-  58%,
-  100% {
-    opacity: 1;
-  }
+.primer-card.is-inview .primer-inv-rotor {
+  transform-origin: 0 0;
+  animation: primer-inv 2.8s ease-in-out infinite alternate;
 }
 
-.primer-card.is-inview .primer-inv-travel {
-  animation: primer-inv-travel 2.8s ease-in-out infinite alternate;
-}
-
-.primer-card.is-inview .primer-inv-proper {
-  animation: primer-inv-proper 2.8s ease-in-out infinite alternate;
-}
-
-.primer-card.is-inview .primer-inv-mirror {
-  animation: primer-inv-mirror 2.8s ease-in-out infinite alternate;
-}
-
-/* 3. 2-fold — 180° about axis x=60 at constant height (no axial shift) */
+/*
+ * 3. 2-fold (proper) — CSS rotate 180° about (60,36).
+ * Vertical stroke + lens: axis treated as ⊥ page; L ends upside-down (handedness kept).
+ */
 @keyframes primer-twofold {
   from {
     transform: rotate(0deg);
@@ -2062,7 +2040,7 @@ button {
   animation: primer-twofold 2.6s ease-in-out infinite alternate;
 }
 
-/* 4. 2₁ screw — helix projection: 180° + +½ slide along axis */
+/* 4. 2₁ screw — same 180° orientation change + +½ slide along axis */
 @keyframes primer-screw {
   0% {
     transform: translate(36px, 24px) rotate(0deg);
@@ -2080,117 +2058,48 @@ button {
   animation: primer-screw 2.8s ease-in-out infinite alternate;
 }
 
-/* 5. Mirror — reflect across vertical plane (handedness flips) */
-@keyframes primer-mirror-travel {
+/*
+ * 5. Mirror (improper) — continuous scaleX(-1) about the vertical plane x=60.
+ * Same L becomes its mirror image; constant height.
+ */
+@keyframes primer-mirror {
+  from {
+    transform: translate(60px, 36px) scale(1, 1) translate(-26px, 0);
+  }
+  to {
+    transform: translate(60px, 36px) scale(-1, 1) translate(-26px, 0);
+  }
+}
+
+.primer-card.is-inview .primer-mirror-rotor {
+  transform-origin: 0 0;
+  animation: primer-mirror 2.5s ease-in-out infinite alternate;
+}
+
+/*
+ * 6. Glide (improper) — scaleY(-1) about plane y=36, then translate along plane.
+ * Improper end pose (enantiomorph) after the reflection phase.
+ */
+@keyframes primer-glide {
   0% {
-    transform: translate(34px, 36px);
-  }
-  100% {
-    transform: translate(86px, 36px);
-  }
-}
-
-@keyframes primer-mirror-proper {
-  0%,
-  42% {
-    opacity: 1;
-  }
-  55%,
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes primer-mirror-image {
-  0%,
-  45% {
-    opacity: 0;
-  }
-  58%,
-  100% {
-    opacity: 1;
-  }
-}
-
-.primer-card.is-inview .primer-mirror-travel {
-  animation: primer-mirror-travel 2.5s ease-in-out infinite alternate;
-}
-
-.primer-card.is-inview .primer-mirror-proper {
-  animation: primer-mirror-proper 2.5s ease-in-out infinite alternate;
-}
-
-.primer-card.is-inview .primer-mirror-image {
-  animation: primer-mirror-image 2.5s ease-in-out infinite alternate;
-}
-
-/* 6. Glide — reflect across plane, then translate along it */
-@keyframes primer-glide-ghost {
-  0% {
-    transform: translate(32px, 22px);
+    transform: translate(32px, 36px) scale(1, 1) translate(0, -14px);
   }
   40% {
-    transform: translate(32px, 50px);
+    transform: translate(32px, 36px) scale(1, -1) translate(0, -14px);
   }
   100% {
-    transform: translate(88px, 50px);
-  }
-}
-
-@keyframes primer-glide-proper {
-  0%,
-  28% {
-    opacity: 1;
-  }
-  40%,
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes primer-glide-image {
-  0%,
-  30% {
-    opacity: 0;
-  }
-  42%,
-  100% {
-    opacity: 1;
+    transform: translate(88px, 36px) scale(1, -1) translate(0, -14px);
   }
 }
 
 .primer-card.is-inview .primer-glide-ghost {
-  animation: primer-glide-ghost 3s ease-in-out infinite alternate;
+  transform-origin: 0 0;
+  animation: primer-glide 3s ease-in-out infinite alternate;
 }
 
-.primer-card.is-inview .primer-glide-proper {
-  animation: primer-glide-proper 3s ease-in-out infinite alternate;
-}
-
-.primer-card.is-inview .primer-glide-image {
-  animation: primer-glide-image 3s ease-in-out infinite alternate;
-}
-
-/* Off-screen / reduced motion: static end poses (B + I markers visible) */
+/* Off-screen: hide movers; show static B/I markers */
 .primer-card:not(.is-inview) .primer-mover {
   animation: none !important;
-}
-
-.primer-card:not(.is-inview) .primer-inv-travel,
-.primer-card:not(.is-inview) .primer-mirror-travel {
-  transform: translate(86px, 46px);
-  opacity: 0;
-}
-
-.primer-card:not(.is-inview)[data-primer='mirror'] .primer-mirror-travel {
-  transform: translate(86px, 36px);
-  opacity: 0;
-}
-
-.primer-card:not(.is-inview) .primer-twofold-rotor,
-.primer-card:not(.is-inview) .primer-screw-ghost,
-.primer-card:not(.is-inview) .primer-glide-ghost,
-.primer-card:not(.is-inview) .primer-identity-pulse {
   opacity: 0;
 }
 
@@ -2206,20 +2115,14 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
   .primer-card .primer-mover,
-  .primer-card .primer-glide-path,
-  .primer-card .primer-inv-proper,
-  .primer-card .primer-inv-mirror,
-  .primer-card .primer-mirror-proper,
-  .primer-card .primer-mirror-image,
-  .primer-card .primer-glide-proper,
-  .primer-card .primer-glide-image {
+  .primer-card .primer-glide-path {
     animation: none !important;
   }
 
-  .primer-card .primer-inv-travel,
+  .primer-card .primer-inv-rotor,
   .primer-card .primer-twofold-rotor,
   .primer-card .primer-screw-ghost,
-  .primer-card .primer-mirror-travel,
+  .primer-card .primer-mirror-rotor,
   .primer-card .primer-glide-ghost {
     opacity: 0;
   }

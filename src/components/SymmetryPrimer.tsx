@@ -64,60 +64,67 @@ const DEMOS: DemoSpec[] = [
   },
 ]
 
-function Motif({
-  x,
-  y,
-  mirrored = false,
-  fill,
-  label,
-  className,
-  opacity = 1,
-}: {
-  x: number
-  y: number
-  mirrored?: boolean
-  fill: string
-  label?: string
-  className?: string
-  opacity?: number
-}) {
-  const tip = mirrored ? (
-    <polygon points="0,-7 6,5 -6,5" fill={fill} opacity={0.95} />
-  ) : (
-    <circle cx={0} cy={-5} r={3.2} fill={fill} />
-  )
+/**
+ * Chiral 2D L-marker (stem + right arm + tip). Same glyph for every op;
+ * improper ops use geometric scale/mirror transforms, never a tip swap.
+ */
+function MotifGlyph({ fill }: { fill: string }) {
   return (
-    <g
-      transform={`translate(${x},${y})`}
-      className={className}
-      opacity={opacity}
-    >
-      <line
-        x1={0}
-        y1={6}
-        x2={0}
-        y2={-2}
+    <g>
+      {/* Vertical stem */}
+      <path
+        d="M0 7.5 V-6"
+        fill="none"
+        stroke={fill}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+      {/* Asymmetric right arm */}
+      <path
+        d="M0 -6 H9"
+        fill="none"
+        stroke={fill}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+      {/* Tip flag — breaks left/right symmetry so orientation reads clearly */}
+      <polygon points="9,-6 13,-3.2 9,-0.4" fill={fill} />
+      {/* Short foot on +x only */}
+      <path
+        d="M0 7.5 H4.5"
+        fill="none"
         stroke={fill}
         strokeWidth={2.2}
         strokeLinecap="round"
       />
-      {tip}
-      {!mirrored && (
-        <rect x={-2.2} y={4} width={4.4} height={4.4} rx={0.6} fill={fill} />
-      )}
-      {mirrored && (
-        <rect
-          x={-2.2}
-          y={4}
-          width={4.4}
-          height={4.4}
-          rx={0.6}
-          fill="none"
-          stroke={fill}
-          strokeWidth={1.4}
-          strokeDasharray="2 1.5"
-        />
-      )}
+    </g>
+  )
+}
+
+function Motif({
+  x,
+  y,
+  fill,
+  label,
+  className,
+  opacity = 1,
+  /** Extra SVG transform after translate(x,y), e.g. scale(-1,-1) for inversion image. */
+  orient = '',
+}: {
+  x: number
+  y: number
+  fill: string
+  label?: string
+  className?: string
+  opacity?: number
+  orient?: string
+}) {
+  const tf = orient
+    ? `translate(${x},${y}) ${orient}`
+    : `translate(${x},${y})`
+  return (
+    <g transform={tf} className={className} opacity={opacity}>
+      <MotifGlyph fill={fill} />
       {label ? (
         <text
           x={0}
@@ -134,17 +141,19 @@ function Motif({
   )
 }
 
-/** Motif drawn at local origin — for CSS-transformed movers. */
+/** Motif at local origin — for CSS-transformed movers (same chiral glyph). */
 function MotifLocal({
-  mirrored = false,
   fill,
   className,
 }: {
-  mirrored?: boolean
   fill: string
   className?: string
 }) {
-  return <Motif x={0} y={0} mirrored={mirrored} fill={fill} className={className} />
+  return (
+    <g className={className}>
+      <MotifGlyph fill={fill} />
+    </g>
+  )
 }
 
 function CellFrame() {
@@ -168,28 +177,34 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
-          <Motif
-            x={60}
-            y={34}
-            fill={color}
-            label="BASE"
-            className="primer-mover primer-identity-pulse"
-          />
+          <g className="primer-mover primer-identity-pulse" transform="translate(60,34)">
+            <MotifLocal fill={color} />
+            <text
+              x={0}
+              y={18}
+              textAnchor="middle"
+              fill={color}
+              fontSize={8}
+              fontWeight={700}
+            >
+              BASE
+            </text>
+          </g>
         </svg>
       )
     case 'inversion':
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
-          {/* Static start/end markers */}
+          {/* Static B / enantiomorphic I (point-inverted orientation) */}
           <Motif x={34} y={26} fill={color} label="B" opacity={0.35} className="primer-marker" />
           <Motif
             x={86}
             y={46}
-            mirrored
             fill={color}
             label="I"
             opacity={0.35}
+            orient="scale(-1,-1)"
             className="primer-marker primer-static-end"
           />
           <circle
@@ -212,14 +227,9 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             opacity={0.45}
             className="primer-guide-path"
           />
-          {/* Ghost travels through ⊙; flips to mirrored past the center */}
-          <g className="primer-mover primer-inv-travel">
-            <g className="primer-inv-proper">
-              <MotifLocal fill={color} />
-            </g>
-            <g className="primer-inv-mirror">
-              <MotifLocal mirrored fill={color} />
-            </g>
+          {/* Continuous point inversion about (60,36): scale(1→−1) of offset from B */}
+          <g className="primer-mover primer-inv-rotor">
+            <MotifLocal fill={color} />
           </g>
         </svg>
       )
@@ -236,7 +246,17 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeWidth={2}
             strokeLinecap="round"
           />
-          {/* Pure 2-fold: same height; static B/I markers */}
+          {/* Lens mark: CSS rotate is about axis ⊥ page through (60,36) */}
+          <ellipse
+            cx={60}
+            cy={36}
+            rx={3.2}
+            ry={5.5}
+            fill="none"
+            stroke={color}
+            strokeWidth={1.4}
+          />
+          {/* Pure 2-fold: same height; I is upright-rotated 180° (proper) */}
           <Motif x={38} y={36} fill={color} label="B" opacity={0.35} className="primer-marker" />
           <Motif
             x={82}
@@ -244,6 +264,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             fill={color}
             label="I"
             opacity={0.35}
+            orient="rotate(180)"
             className="primer-marker primer-static-end"
           />
           <path
@@ -255,7 +276,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             opacity={0.45}
             className="primer-guide-path"
           />
-          {/* Rotate 180° about vertical axis at x=60, constant height */}
+          {/* rotate(180) about (60,36): L ends upside-down — correct for axis ⊥ page */}
           <g className="primer-mover primer-twofold-rotor">
             <Motif x={38} y={36} fill={color} />
           </g>
@@ -281,6 +302,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             fill={color}
             label="I"
             opacity={0.35}
+            orient="rotate(180)"
             className="primer-marker primer-static-end"
           />
           <path
@@ -295,7 +317,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <text x={66} y={18} fill={color} fontSize={8} fontWeight={700}>
             +½
           </text>
-          {/* 180° about axis + slide +½ along axis (helix projection) */}
+          {/* Same 180° orientation change as 2-fold + +½ axial slide */}
           <g className="primer-mover primer-screw-ghost">
             <MotifLocal fill={color} />
           </g>
@@ -325,19 +347,15 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <Motif
             x={86}
             y={36}
-            mirrored
             fill="#fde68a"
             label="I"
             opacity={0.35}
+            orient="scale(-1,1)"
             className="primer-marker primer-static-end"
           />
-          <g className="primer-mover primer-mirror-travel">
-            <g className="primer-mirror-proper">
-              <MotifLocal fill="#38bdf8" />
-            </g>
-            <g className="primer-mirror-image">
-              <MotifLocal mirrored fill="#fde68a" />
-            </g>
+          {/* Continuous scaleX(-1) about the mirror line x=60 */}
+          <g className="primer-mover primer-mirror-rotor">
+            <MotifLocal fill="#38bdf8" />
           </g>
         </svg>
       )
@@ -358,10 +376,10 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <Motif
             x={88}
             y={50}
-            mirrored
             fill={color}
             label="I"
             opacity={0.35}
+            orient="scale(1,-1)"
             className="primer-marker primer-static-end"
           />
           <path
@@ -388,14 +406,9 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <text x={50} y={26} fill={color} fontSize={8} fontWeight={700}>
             glide →
           </text>
-          {/* Reflect across plane, then translate along it */}
+          {/* Reflect across y=36 (scaleY), then translate along the plane */}
           <g className="primer-mover primer-glide-ghost">
-            <g className="primer-glide-proper">
-              <MotifLocal fill={color} />
-            </g>
-            <g className="primer-glide-image">
-              <MotifLocal mirrored fill={color} />
-            </g>
+            <MotifLocal fill={color} />
           </g>
         </svg>
       )

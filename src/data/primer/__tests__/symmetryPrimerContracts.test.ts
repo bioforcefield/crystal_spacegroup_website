@@ -18,11 +18,22 @@ describe('SymmetryPrimer animation contracts', () => {
       expect(tsx).toMatch(`data-primer={d.id}`)
     }
     expect(tsx).toMatch(/primer-identity-pulse/)
-    expect(tsx).toMatch(/primer-inv-travel/)
+    expect(tsx).toMatch(/primer-inv-rotor/)
     expect(tsx).toMatch(/primer-twofold-rotor/)
     expect(tsx).toMatch(/primer-screw-ghost/)
-    expect(tsx).toMatch(/primer-mirror-travel/)
+    expect(tsx).toMatch(/primer-mirror-rotor/)
     expect(tsx).toMatch(/primer-glide-ghost/)
+  })
+
+  it('uses a single chiral L MotifGlyph (not circle/triangle tip swap)', () => {
+    expect(tsx).toMatch(/function MotifGlyph/)
+    expect(tsx).toMatch(/Chiral 2D L-marker/)
+    expect(tsx).toMatch(/Asymmetric right arm/)
+    expect(tsx).toMatch(/Tip flag/)
+    // No mid-flight shape swap via mirrored circle↔triangle Motif variants
+    expect(tsx).not.toMatch(/mirrored\s*\?\s*\(/)
+    expect(tsx).not.toMatch(/polygon points="0,-7 6,5 -6,5"/)
+    expect(tsx).not.toMatch(/circle cx=\{0\} cy=\{-5\}/)
   })
 
   it('pauses off-screen via IntersectionObserver and is-inview', () => {
@@ -43,6 +54,7 @@ describe('SymmetryPrimer animation contracts', () => {
     expect(tsx).toMatch(/Motif\s*\n\s*x=\{82\}\s*\n\s*y=\{36\}/)
     expect(css).toMatch(/transform-origin:\s*60px 36px/)
     expect(css).toMatch(/@keyframes primer-twofold/)
+    expect(css).toMatch(/rotate\(180deg\)/)
   })
 
   it('screw adds +½ slide distinct from twofold', () => {
@@ -56,9 +68,28 @@ describe('SymmetryPrimer animation contracts', () => {
     expect(tsx).not.toMatch(/url\(#arrow\)/)
   })
 
-  it('improper ops keep mirrored image geometry', () => {
-    expect(tsx).toMatch(/primer-inv-mirror/)
-    expect(tsx).toMatch(/primer-mirror-image/)
-    expect(tsx).toMatch(/primer-glide-image/)
+  it('improper ops use geometric scale/mirror transforms (not opacity crossfade)', () => {
+    // Inversion: continuous scale(-1,-1) about center
+    expect(css).toMatch(/@keyframes primer-inv/)
+    expect(css).toMatch(/scale\(-1, -1\)/)
+    expect(tsx).toMatch(/orient="scale\(-1,-1\)"/)
+    // Mirror: scaleX(-1) about plane
+    expect(css).toMatch(/@keyframes primer-mirror/)
+    expect(css).toMatch(/scale\(-1, 1\)/)
+    expect(tsx).toMatch(/orient="scale\(-1,1\)"/)
+    // Glide: scaleY(-1) then translate
+    expect(css).toMatch(/@keyframes primer-glide/)
+    expect(css).toMatch(/scale\(1, -1\)/)
+    expect(tsx).toMatch(/orient="scale\(1,-1\)"/)
+    // No opacity crossfade between different Motif tips
+    expect(css).not.toMatch(/primer-inv-proper/)
+    expect(css).not.toMatch(/primer-inv-mirror/)
+    expect(css).not.toMatch(/primer-mirror-proper/)
+    expect(css).not.toMatch(/primer-mirror-image/)
+    expect(css).not.toMatch(/primer-glide-proper/)
+    expect(css).not.toMatch(/primer-glide-image/)
+    expect(tsx).not.toMatch(/primer-inv-proper/)
+    expect(tsx).not.toMatch(/primer-mirror-image/)
+    expect(tsx).not.toMatch(/MotifLocal mirrored/)
   })
 })
