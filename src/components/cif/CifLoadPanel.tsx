@@ -30,6 +30,8 @@ export interface CifLoadPanelProps {
   remoteLink: string | null
   fileName: string | null
   error: string | null
+  /** When true, collapse teaching chips behind "Try another structure". */
+  structureLoaded?: boolean
 }
 
 type LoadMode = 'id' | 'name' | 'smiles'
@@ -51,6 +53,7 @@ export default function CifLoadPanel({
   remoteLink,
   fileName,
   error,
+  structureLoaded = false,
 }: CifLoadPanelProps) {
   const [extras, setExtras] = useState<CodSampleMeta[]>([])
   const [mode, setMode] = useState<LoadMode>('id')
@@ -308,39 +311,81 @@ export default function CifLoadPanel({
         </div>
       )}
 
-      <div className="cif-cod-chips" role="group" aria-label="Cached COD teaching structures">
-        {COD_TEACHING_CHIPS.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className="cif-cod-chip"
-            disabled={busy}
-            onClick={() => pick(c.id)}
-            title={`Load COD ${c.id} from same-origin cache`}
-          >
-            {c.short}
-          </button>
-        ))}
-      </div>
-      {more.length > 0 && (
-        <details className="cif-cod-more">
-          <summary>More cached COD ids ({extras.length} total)</summary>
-          <div className="cif-cod-chips" role="group" aria-label="More cached COD ids">
-            {extras.map((s) => (
+      {structureLoaded ? (
+        <details className="cif-cod-try-another">
+          <summary>Try another structure</summary>
+          <div className="cif-cod-chips" role="group" aria-label="Cached COD teaching structures">
+            {COD_TEACHING_CHIPS.map((c) => (
               <button
-                key={s.id}
+                key={c.id}
                 type="button"
                 className="cif-cod-chip"
                 disabled={busy}
-                onClick={() => pick(s.id)}
-                title={s.hm ? `${s.label} · ${s.hm}` : s.label}
+                onClick={() => pick(c.id)}
+                title={`Load COD ${c.id} from same-origin cache`}
               >
-                {s.id}
-                {s.ita != null ? ` · ${s.ita}` : ''}
+                {c.short}
               </button>
             ))}
           </div>
+          {more.length > 0 && (
+            <details className="cif-cod-more">
+              <summary>More cached COD ids ({extras.length} total)</summary>
+              <div className="cif-cod-chips" role="group" aria-label="More cached COD ids">
+                {extras.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="cif-cod-chip"
+                    disabled={busy}
+                    onClick={() => pick(s.id)}
+                    title={s.hm ? `${s.label} · ${s.hm}` : s.label}
+                  >
+                    {s.id}
+                    {s.ita != null ? ` · ${s.ita}` : ''}
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
         </details>
+      ) : (
+        <>
+          <div className="cif-cod-chips" role="group" aria-label="Cached COD teaching structures">
+            {COD_TEACHING_CHIPS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className="cif-cod-chip"
+                disabled={busy}
+                onClick={() => pick(c.id)}
+                title={`Load COD ${c.id} from same-origin cache`}
+              >
+                {c.short}
+              </button>
+            ))}
+          </div>
+          {more.length > 0 && (
+            <details className="cif-cod-more">
+              <summary>More cached COD ids ({extras.length} total)</summary>
+              <div className="cif-cod-chips" role="group" aria-label="More cached COD ids">
+                {extras.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className="cif-cod-chip"
+                    disabled={busy}
+                    onClick={() => pick(s.id)}
+                    title={s.hm ? `${s.label} · ${s.hm}` : s.label}
+                  >
+                    {s.id}
+                    {s.ita != null ? ` · ${s.ita}` : ''}
+                  </button>
+                ))}
+              </div>
+            </details>
+          )}
+        </>
       )}
 
       <p className="hint">

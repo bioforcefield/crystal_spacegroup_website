@@ -290,6 +290,23 @@ export default function CifExplorerPage() {
           </p>
         </header>
 
+        {structure && (
+          <CifStructurePanel
+            structure={structure}
+            selectedOp={selectedOp}
+            onSelectOp={setSelectedOp}
+            moleculesForOp={moleculesForOp}
+            atomCountForOp={atomCountForOp}
+            onOpKeyDown={onOpKeyDown}
+            elementDemo={elementDemo}
+            selected={selected}
+            onLoadCodId={(id) => {
+              setCodeInput(id)
+              void loadByCode(id)
+            }}
+          />
+        )}
+
         <CifLoadPanel
           busy={busy}
           codeInput={codeInput}
@@ -310,24 +327,8 @@ export default function CifExplorerPage() {
           remoteLink={remoteLink}
           fileName={fileName}
           error={error}
+          structureLoaded={structure != null}
         />
-
-        {structure && (
-          <CifStructurePanel
-            structure={structure}
-            selectedOp={selectedOp}
-            onSelectOp={setSelectedOp}
-            moleculesForOp={moleculesForOp}
-            atomCountForOp={atomCountForOp}
-            onOpKeyDown={onOpKeyDown}
-            elementDemo={elementDemo}
-            selected={selected}
-            onLoadCodId={(id) => {
-              setCodeInput(id)
-              void loadByCode(id)
-            }}
-          />
-        )}
       </aside>
 
       <CifViewport
