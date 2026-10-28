@@ -264,3 +264,61 @@ function seedsEqual(a: Vec3, b: Vec3): boolean {
     Math.abs(a[2] - b[2]) < 1e-9
   )
 }
+
+/**
+ * Projection-readable clearance target from mirror / glide planes (fractional,
+ * along the plane normal). P21/m and P21/c use ≈0.17. Dense packs with many
+ * plane families get a softer bar.
+ */
+export function scaledPlaneClearance(multiplicity: number): number {
+  if (multiplicity <= 8) return 0.12
+  if (multiplicity <= 16) return 0.08
+  if (multiplicity <= 48) return 0.04
+  return 0.02
+}
+
+function gcd(a: number, b: number): number {
+  a = Math.abs(a)
+  b = Math.abs(b)
+  while (b) [a, b] = [b, a % b]
+  return a
+}
+
+/**
+ * Smallest distance (fractional, along the primitive plane normal, divided by
+ * its length) from the seed to any mirror or glide plane of the operator set.
+ * Glide translations are ignored: this is the "looks on the plane in
+ * projection" metric (P21/c c-glide case), not 3D overlap.
+ * Returns Infinity when the group has no reflection-type operators.
+ */
+export function minPlaneClearance(operators: Operator[], seed: Vec3): number {
+  let min = Infinity
+  for (const op of operators) {
+    const R = op.R
+    const det =
+      R[0]![0]! * (R[1]![1]! * R[2]![2]! - R[1]![2]! * R[2]![1]!) -
+      R[0]![1]! * (R[1]![0]! * R[2]![2]! - R[1]![2]! * R[2]![0]!) +
+      R[0]![2]! * (R[1]![0]! * R[2]![1]! - R[1]![1]! * R[2]![0]!)
+    const trace = R[0]![0]! + R[1]![1]! + R[2]![2]!
+    if (Math.round(det) !== -1 || Math.round(trace) !== 1) continue
+    // Rows of (R − I) annihilate in-plane vectors → plane normal covector.
+    let n: number[] | null = null
+    for (let r = 0; r < 3; r++) {
+      const row = [0, 1, 2].map((c) => Math.round(R[r]![c]! - (r === c ? 1 : 0)))
+      if (row.some((v) => v !== 0)) {
+        n = row
+        break
+      }
+    }
+    if (!n) continue
+    const g = gcd(gcd(n[0]!, n[1]!), n[2]!)
+    n = n.map((v) => v / g)
+    const img = applyOperator(op, seed)
+    const nd =
+      n[0]! * (img[0]! - seed[0]) + n[1]! * (img[1]! - seed[1]) + n[2]! * (img[2]! - seed[2])
+    const frac = Math.abs(nd - Math.round(nd))
+    const clr = frac / 2 / Math.hypot(n[0]!, n[1]!, n[2]!)
+    if (clr < min) min = clr
+  }
+  return min
+}
