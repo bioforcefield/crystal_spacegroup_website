@@ -449,6 +449,11 @@ button {
 }
 
 .viewport-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
   padding: 0.55rem 1rem;
   font-size: 0.78rem;
   color: var(--muted);
@@ -1053,6 +1058,17 @@ button {
   border-top: 1px solid var(--panel-border);
 }
 
+.site-copyright-line,
+.site-copyright-meta {
+  margin: 0;
+}
+
+.site-copyright-meta {
+  margin-top: 0.35rem;
+  font-size: 0.74rem;
+  opacity: 0.92;
+}
+
 .site-copyright a {
   color: var(--accent);
   text-decoration: none;
@@ -1061,6 +1077,24 @@ button {
 
 .site-copyright a:hover {
   text-decoration: underline;
+}
+
+.visit-counter {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.viewport-footer-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.visit-counter--footer {
+  flex: 0 0 auto;
+  font-size: 0.74rem;
+  opacity: 0.9;
 }
 
 .index-page {

@@ -1,4 +1,4 @@
-# Deploy the COD CORS Cloudflare Worker (CIF + /search).
+# Deploy the COD CORS Cloudflare Worker (CIF + /search + /crossref + /visits).
 #
 # Repo secrets:
 #   CLOUDFLARE_API_TOKEN

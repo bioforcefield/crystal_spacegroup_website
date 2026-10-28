@@ -1,0 +1,56 @@
+/**
+ * Source contracts: visit counter appears in shared copyright + demo footers.
+ */
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+const root = resolve(__dirname, '../../..')
+
+function readSrc(rel: string): string {
+  return readFileSync(resolve(root, rel), 'utf8')
+}
+
+describe('Visit counter footer contracts', () => {
+  it('SiteCopyright renders VisitCounter under the copyright line', () => {
+    const src = readSrc('src/components/SiteCopyright.tsx')
+    expect(src).toMatch(/import VisitCounter from '\.\/VisitCounter'/)
+    expect(src).toMatch(/<VisitCounter\s*\/>/)
+    expect(src).toMatch(/site-copyright-meta/)
+  })
+
+  it('index-shell App chrome still mounts SiteCopyright', () => {
+    const app = readSrc('src/App.tsx')
+    expect(app).toMatch(/import SiteCopyright from '\.\/components\/SiteCopyright'/)
+    expect(app).toMatch(/<SiteCopyright\s*\/>/)
+  })
+
+  it('demo viewport footers include VisitCounter (no SiteCopyright there)', () => {
+    const sg = readSrc('src/pages/SpaceGroupPage.tsx')
+    const cif = readSrc('src/components/cif/CifViewport.tsx')
+    expect(sg).toMatch(/VisitCounter/)
+    expect(sg).toMatch(/visit-counter--footer/)
+    expect(cif).toMatch(/VisitCounter/)
+    expect(cif).toMatch(/visit-counter--footer/)
+  })
+
+  it('worker exposes /visits with Durable Object binding', () => {
+    const worker = readSrc('scripts/cod-cors-worker.js')
+    const toml = readSrc('scripts/wrangler.cod-proxy.toml')
+    expect(worker).toMatch(/export class VisitsCounter/)
+    expect(worker).toMatch(/path === '\/visits'/)
+    expect(worker).toMatch(/handleVisits/)
+    expect(worker).toMatch(/peek/)
+    expect(toml).toMatch(/VISITS_COUNTER/)
+    expect(toml).toMatch(/VisitsCounter/)
+    expect(toml).toMatch(/v1-visits-counter/)
+  })
+
+  it('no Google Analytics / heavy trackers wired for visits', () => {
+    const api = readSrc('src/data/visits/visitsApi.ts')
+    const counter = readSrc('src/components/VisitCounter.tsx')
+    for (const src of [api, counter]) {
+      expect(src).not.toMatch(/google-analytics|gtag\(|GA_MEASUREMENT|googletagmanager/i)
+    }
+  })
+})

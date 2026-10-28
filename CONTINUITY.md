@@ -3,6 +3,12 @@
 Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+## Visitor counter (2026-10-28)
+- Footer chip `Visits: N` via `VisitCounter` in `SiteCopyright` (index shell) + demo `viewport-footer` (SG / CIF).
+- Worker: `GET /visits` (+ `?peek=1`) on `crystal-cod-proxy` Durable Object `VisitsCounter` (`scripts/cod-cors-worker.js`, wrangler DO migration `v1-visits-counter`).
+- Client: once per tab session (`sessionStorage`); `VITE_VISITS_URL` optional (else COD proxy origin + `/visits`).
+- Deploy worker first (Actions or `npx wrangler deploy -c scripts/wrangler.cod-proxy.toml`), then Pages with `VITE_COD_PROXY=…`.
+
 ## Front-page spotlights
 - CIF / Publications / Morphology+kinetics share `.home-spotlights` (1280px, same padding as hero/main)
 - Pubs + teach sit in equal-height `.home-spotlight-row` (2-col → 1-col ≤900px)

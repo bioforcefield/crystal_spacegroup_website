@@ -17,6 +17,7 @@ import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
 import { describeCifStructure } from '../../data/a11y/structureSummary'
 import type { SpaceGroupDemo } from '../../data/types'
+import VisitCounter from '../VisitCounter'
 
 const CifStructureScene = lazy(() => import('../CifStructureScene'))
 
@@ -685,21 +686,24 @@ export default function CifViewport({
       </div>
 
       <footer className="viewport-footer">
-        CIF explorer · intact molecules (covalent + min-image unwrap) ·
-        {structure?.operatorSource === 'cif'
-          ? 'operators from the CIF symmetry loop'
-          : structure?.operatorSource === 'demo'
-            ? 'operators from ITA (CIF had no symmetry loop)'
-            : 'operators'}
-        {structure?.spaceGroupNumber != null
-          ? ` · teaching demo: /sg/${structure.spaceGroupNumber}`
-          : ''}
-        {placementMode === 'nearest'
-          ? ' · Nearest images may sit just outside the cell'
-          : ' · In cell wraps atoms into [0, 1)³'}
-        {canShowElements && showSymmetryElements
-          ? ` · ${elementCount} symmetry loci on CIF cell`
-          : ''}
+        <span className="viewport-footer-text">
+          CIF explorer · intact molecules (covalent + min-image unwrap) ·
+          {structure?.operatorSource === 'cif'
+            ? 'operators from the CIF symmetry loop'
+            : structure?.operatorSource === 'demo'
+              ? 'operators from ITA (CIF had no symmetry loop)'
+              : 'operators'}
+          {structure?.spaceGroupNumber != null
+            ? ` · teaching demo: /sg/${structure.spaceGroupNumber}`
+            : ''}
+          {placementMode === 'nearest'
+            ? ' · Nearest images may sit just outside the cell'
+            : ' · In cell wraps atoms into [0, 1)³'}
+          {canShowElements && showSymmetryElements
+            ? ` · ${elementCount} symmetry loci on CIF cell`
+            : ''}
+        </span>
+        <VisitCounter className="visit-counter--footer" />
       </footer>
     </main>
   )

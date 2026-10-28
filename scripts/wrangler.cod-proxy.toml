@@ -1,9 +1,19 @@
-# Optional Cloudflare Worker: COD CIF + /search + /crossref (Crossref metadata) for GitHub Pages.
+# Optional Cloudflare Worker: COD CIF + /search + /crossref + /visits for GitHub Pages.
 # From repo root:
 #   npx wrangler deploy -c scripts/wrangler.cod-proxy.toml
 # Then rebuild Pages with:
 #   VITE_COD_PROXY="https://crystal-cod-proxy.<your-subdomain>.workers.dev/{id}.cif" npm run build:pages
+# Optional override: VITE_VISITS_URL="https://…/visits" (default = proxy origin + /visits)
 name = "crystal-cod-proxy"
 main = "cod-cors-worker.js"
 compatibility_date = "2024-09-01"
 workers_dev = true
+
+# Privacy-light site visit counter (one Durable Object instance named "site")
+[[durable_objects.bindings]]
+name = "VISITS_COUNTER"
+class_name = "VisitsCounter"
+
+[[migrations]]
+tag = "v1-visits-counter"
+new_classes = ["VisitsCounter"]

@@ -1,5 +1,5 @@
 /**
- * Cloudflare Worker: CORS proxy for COD CIF downloads + search.
+ * Cloudflare Worker: CORS proxy for COD CIF downloads + search + visit counter.
  *
  * One-click deploy (Cloudflare account required):
  *   npx wrangler deploy -c scripts/wrangler.cod-proxy.toml
@@ -7,8 +7,11 @@
  *
  * Then rebuild Pages with:
  *   VITE_COD_PROXY="https://crystal-cod-proxy.<subdomain>.workers.dev/{id}.cif" npm run build:pages
+ * Optional: VITE_VISITS_URL="https://crystal-cod-proxy.<subdomain>.workers.dev/visits"
+ * (defaults to COD proxy origin + /visits when unset).
  *
- * Without a worker, GitHub Pages still serves curated ids from public/samples/cod/.
+ * Without a worker, GitHub Pages still serves curated ids from public/samples/cod/,
+ * and the visit counter shows "—" if /visits is unreachable.
  *
  * Accepted request shapes:
  *   /1100303.cif
@@ -18,6 +21,12 @@
  *   /search?smile=c1ccccc1   (forwarded to COD as smarts= — SMILES/substructure)
  *   /search?year=2020        (optional; combine with text/smile)
  *   /crossref?filter=…&rows=20&cursor=*   (Crossref metadata proxy)
+ *   /visits                  (privacy-light hit counter; increments once per call)
+ *   /visits?peek=1           (return count without incrementing)
+ *
+ * Counting policy (documented for the site UI): the browser calls /visits once per
+ * tab session (sessionStorage gate); later mounts use ?peek=1 or the cached count.
+ * No cookies, no fingerprinting, no Google Analytics.
  */
 const CROSSREF_UPSTREAM = 'https://api.crossref.org/works'
 const CROSSREF_UA =
@@ -29,10 +38,45 @@ const SEARCH_TIMEOUT_MS = 20_000
 const SEARCH_MAX_BYTES = 4_000_000
 const SEARCH_CAP = 20
 
-export default {
+/**
+ * Durable Object: single site-wide visit counter (privacy-light; no client IDs stored).
+ */
+export class VisitsCounter {
+  constructor(state) {
+    this.state = state
+  }
+
   async fetch(request) {
+    const url = new URL(request.url)
+    const peek = url.searchParams.has('peek')
+    let count = Number((await this.state.storage.get('count')) || 0)
+    if (!Number.isFinite(count) || count < 0) count = 0
+    if (!peek && (request.method === 'GET' || request.method === 'HEAD')) {
+      count += 1
+      await this.state.storage.put('count', count)
+    }
+    if (request.method === 'HEAD') {
+      return new Response(null, {
+        status: 200,
+        headers: corsHeaders({
+          'content-type': 'application/json',
+          'cache-control': 'no-store',
+          'x-visits': String(count),
+        }),
+      })
+    }
+    return jsonResponse(
+      { count },
+      200,
+      { 'cache-control': 'no-store', 'x-visits': String(count) },
+    )
+  }
+}
+
+export default {
+  async fetch(request, env) {
     try {
-      return await handle(request)
+      return await handle(request, env)
     } catch (err) {
       const msg = err && err.message ? String(err.message) : String(err)
       return new Response(`crystal-cod-proxy error: ${msg}\n`, {
@@ -43,7 +87,7 @@ export default {
   },
 }
 
-async function handle(request) {
+async function handle(request, env) {
   const url = new URL(request.url)
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: corsHeaders() })
@@ -56,6 +100,9 @@ async function handle(request) {
   }
 
   const path = url.pathname.replace(/\/+$/, '') || '/'
+  if (path === '/visits' || path.endsWith('/visits')) {
+    return handleVisits(request, env)
+  }
   if (path === '/search' || path.endsWith('/search')) {
     return handleSearch(url, request.method)
   }
@@ -68,7 +115,7 @@ async function handle(request) {
     (url.pathname.match(/(\d{5,10})(?:\.cif)?\/?$/) || [])[1]
   if (!id) {
     return new Response(
-      'crystal-cod-proxy: GET /{codId}.cif  or  GET /search?text=…|smile=…|year=YYYY  or  GET /crossref?…\n',
+      'crystal-cod-proxy: GET /{codId}.cif  or  GET /search?text=…|smile=…|year=YYYY  or  GET /crossref?…  or  GET /visits\n',
       {
         status: 400,
         headers: corsHeaders({ 'content-type': 'text/plain' }),
@@ -101,6 +148,20 @@ async function handle(request) {
       'x-cod-upstream-status': String(upstream.status),
     }),
   })
+}
+
+
+async function handleVisits(request, env) {
+  if (!env || !env.VISITS_COUNTER) {
+    return jsonResponse(
+      { error: 'Visit counter Durable Object not bound (redeploy worker)' },
+      503,
+    )
+  }
+  const id = env.VISITS_COUNTER.idFromName('site')
+  const stub = env.VISITS_COUNTER.get(id)
+  // Forward method + peek query; DO owns the count.
+  return stub.fetch(request)
 }
 
 async function handleSearch(url, method) {

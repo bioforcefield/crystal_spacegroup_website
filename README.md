@@ -85,6 +85,7 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
   2. Manual worker: `npx wrangler deploy -c scripts/wrangler.cod-proxy.toml` (needs Cloudflare account). Repo secrets for Actions: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
   3. Rebuild Pages: `VITE_COD_PROXY="https://YOUR_WORKER.workers.dev/{id}.cif" npm run build:pages` then `scripts/deploy-gh-pages.sh` (must keep `.nojekyll`). Search base is derived by stripping `/{id}.cif`.
   4. Refresh teaching cache: `bash scripts/fetch-cod-samples.sh` (or Actions → **Refresh COD cache**).
+- **Visitor counter** (footer chip `Visits: N`): privacy-light hit counter on the same worker at `GET /visits` (Durable Object). Increments **once per browser tab session** (`sessionStorage` gate); `?peek=1` reads without bumping. Optional `VITE_VISITS_URL` (default = COD proxy origin + `/visits`). Shows `—` if the endpoint is unreachable. No Google Analytics or trackers.
 - **CSD**: no free anonymous CIF API; UI links to [CCDC Access Structures](https://www.ccdc.cam.ac.uk/structures/) for download, then upload/paste. We do not scrape CSD.
 
 ## Publications (`/pubs`)

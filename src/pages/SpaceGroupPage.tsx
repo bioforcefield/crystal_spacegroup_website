@@ -13,6 +13,7 @@ import { operatorClass } from '../data/math'
 import type { PlacementMode } from '../data/nearestImages'
 import type { SpaceGroupDemo } from '../data/types'
 import { describeSpaceGroupCanvas } from '../data/a11y/structureSummary'
+import VisitCounter from '../components/VisitCounter'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -293,22 +294,25 @@ export default function SpaceGroupPage({ demo }: Props) {
           />
         </div>
         <footer className="viewport-footer">
-          {demo.meta.hm} ({demo.meta.number}) · BASE always marked · click an
-          operator (or a 2D site) to highlight IMAGE, connector, and its geometric
-          element (⊙ center · ‖ axis · ▭ glide)
-          {placementMode === 'nearest'
-            ? ' · Nearest images (3D + 2D) may sit just outside the cell (UCL-style)'
-            : ' · In cell wraps motifs into [0, 1)³ / [0, 1)²'}
-          {!showAllSites ? ' · Showing only BASE + IMAGE' : ''}
-          {demo.cell.alphaDeg && demo.cell.alphaDeg !== 90
-            ? ` · α = ${demo.cell.alphaDeg}°`
-            : ''}
-          {demo.cell.betaDeg && demo.cell.betaDeg !== 90
-            ? ` · β = ${demo.cell.betaDeg}°`
-            : ''}
-          {demo.cell.gammaDeg && demo.cell.gammaDeg !== 90
-            ? ` · γ = ${demo.cell.gammaDeg}°`
-            : ''}
+          <span className="viewport-footer-text">
+            {demo.meta.hm} ({demo.meta.number}) · BASE always marked · click an
+            operator (or a 2D site) to highlight IMAGE, connector, and its geometric
+            element (⊙ center · ‖ axis · ▭ glide)
+            {placementMode === 'nearest'
+              ? ' · Nearest images (3D + 2D) may sit just outside the cell (UCL-style)'
+              : ' · In cell wraps motifs into [0, 1)³ / [0, 1)²'}
+            {!showAllSites ? ' · Showing only BASE + IMAGE' : ''}
+            {demo.cell.alphaDeg && demo.cell.alphaDeg !== 90
+              ? ` · α = ${demo.cell.alphaDeg}°`
+              : ''}
+            {demo.cell.betaDeg && demo.cell.betaDeg !== 90
+              ? ` · β = ${demo.cell.betaDeg}°`
+              : ''}
+            {demo.cell.gammaDeg && demo.cell.gammaDeg !== 90
+              ? ` · γ = ${demo.cell.gammaDeg}°`
+              : ''}
+          </span>
+          <VisitCounter className="visit-counter--footer" />
         </footer>
       </main>
     </div>
