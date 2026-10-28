@@ -5,9 +5,7 @@ export default function SiteCopyright() {
   return (
     <div className="site-copyright">
       <p className="site-copyright-line">
-        Copyright © bioforcefield 2026–2027, all rights reserved. Powered by Grok
-        Bot. Contact:{' '}
-        <a href="mailto:bioforcefield@gmail.com">bioforcefield@gmail.com</a> (
+        Copyright © 2026–2027, all rights reserved. Powered by Grok Bot. (
         <VisitCounter />)
       </p>
     </div>

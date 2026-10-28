@@ -16,7 +16,9 @@ describe('Visit counter footer contracts', () => {
     const src = readSrc('src/components/SiteCopyright.tsx')
     expect(src).toMatch(/import VisitCounter from '\.\/VisitCounter'/)
     expect(src).not.toMatch(/site-copyright-meta/)
-    expect(src).toMatch(/bioforcefield@gmail\.com<\/a> \(\s*<VisitCounter\s*\/>\)\s*<\/p>/)
+    expect(src).toMatch(/Powered by Grok Bot\. \(\s*<VisitCounter\s*\/>\)\s*<\/p>/)
+    expect(src).not.toMatch(/bioforcefield/)
+    expect(src).not.toMatch(/mailto:/)
     expect((src.match(/<p\b/g) ?? []).length).toBe(1)
   })
 
