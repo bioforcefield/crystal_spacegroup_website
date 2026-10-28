@@ -25,9 +25,12 @@ describe('SymmetryPrimer animation contracts', () => {
     expect(tsx).toMatch(/primer-glide-ghost/)
   })
 
-  it('uses a single chiral L MotifGlyph (not circle/triangle tip swap)', () => {
+  it('uses a single chiral L MotifGlyph with near/far handedness cue', () => {
     expect(tsx).toMatch(/function MotifGlyph/)
-    expect(tsx).toMatch(/Chiral 2D L-marker/)
+    expect(tsx).toMatch(/Handedness \/ depth cue/)
+    expect(tsx).toMatch(/primer-hand-near/)
+    expect(tsx).toMatch(/primer-hand-far/)
+    expect(tsx).toMatch(/enantiomorph/)
     expect(tsx).toMatch(/Asymmetric right arm/)
     expect(tsx).toMatch(/Tip flag/)
     // No mid-flight shape swap via mirrored circle↔triangle Motif variants
@@ -49,32 +52,50 @@ describe('SymmetryPrimer animation contracts', () => {
   })
 
   it('2-fold is top-down lens only (axis ⊥ page, no vertical stroke)', () => {
-    // Digon / lens at center; B and I share y=36 (no axial shift)
-    expect(tsx).toMatch(/Motif x=\{38\} y=\{36\}/)
+    expect(tsx).toMatch(/Motif\s*\n\s*x=\{38\}\s*\n\s*y=\{36\}/)
     expect(tsx).toMatch(/Motif\s*\n\s*x=\{82\}\s*\n\s*y=\{36\}/)
     expect(tsx).toMatch(/orient="rotate\(180\)"/)
     expect(tsx).toMatch(/axis ⊥ page/)
     expect(tsx).toMatch(/primer-twofold-arrow/)
-    // Lens present; no in-plane axis stroke in the twofold case
     const twofoldCase = tsx.split("case 'twofold':")[1].split("case 'screw':")[0]
     expect(twofoldCase).toMatch(/<ellipse/)
     expect(twofoldCase).not.toMatch(/<line/)
+    // Proper: same enantiomorph both ends
+    expect(twofoldCase.match(/enantiomorph=\{false\}/g)?.length).toBeGreaterThanOrEqual(2)
     expect(css).toMatch(/transform-origin:\s*60px 36px/)
     expect(css).toMatch(/@keyframes primer-twofold/)
     expect(css).toMatch(/rotate\(180deg\)/)
   })
 
-  it('2₁ screw is side view: upright +½, left↔right (not cartwheel)', () => {
+  it('2₁ screw is side view, proper — same enantiomorph, no scaleX(-1)', () => {
     expect(tsx).toMatch(/\+½/)
     expect(tsx).toMatch(/side view: 180° \+ ½ along axis/)
+    expect(tsx).toMatch(/proper — hand kept/)
     const screwCase = tsx.split("case 'screw':")[1].split("case 'mirror':")[0]
     expect(screwCase).toMatch(/<line/)
     expect(screwCase).not.toMatch(/<ellipse/)
-    expect(screwCase).toMatch(/orient="scale\(-1,1\)"/)
+    // Proper: both markers keep the same hand
+    expect(screwCase.match(/enantiomorph=\{false\}/g)?.length).toBeGreaterThanOrEqual(2)
+    expect(screwCase).not.toMatch(/enantiomorph=\{true\}/)
+    // No improper scaleX(-1) on the static image (that looked like mirror)
+    expect(screwCase).not.toMatch(/orient="scale\(-1,1\)"/)
     expect(screwCase).not.toMatch(/orient="rotate\(180\)"/)
     expect(css).toMatch(/@keyframes primer-screw/)
-    expect(css).toMatch(/translate\(84px, 50px\) scale\(-1, 1\)/)
+    // End pose keeps scale(1,1) — foreshorten through axis but never flip sign
+    expect(css).toMatch(/translate\(84px, 50px\) scale\(1, 1\)/)
+    expect(css).not.toMatch(/translate\(84px, 50px\) scale\(-1, 1\)/)
     expect(css).not.toMatch(/translate\(84px, 48px\) rotate\(180deg\)/)
+  })
+
+  it('mirror is improper — opposite enantiomorph vs screw', () => {
+    expect(tsx).toMatch(/improper — hand flips/)
+    const mirrorCase = tsx.split("case 'mirror':")[1].split("case 'glide':")[0]
+    expect(mirrorCase).toMatch(/enantiomorph=\{false\}/)
+    expect(mirrorCase).toMatch(/enantiomorph=\{true\}/)
+    // Static I is the flipped hand
+    expect(mirrorCase).toMatch(/label="I"[\s\S]*?enantiomorph=\{true\}/)
+    expect(css).toMatch(/@keyframes primer-mirror/)
+    expect(css).toMatch(/scale\(-1, 1\)/)
   })
 
   it('uses unique glide marker id', () => {
@@ -83,19 +104,14 @@ describe('SymmetryPrimer animation contracts', () => {
   })
 
   it('improper ops use geometric scale/mirror transforms (not opacity crossfade)', () => {
-    // Inversion: continuous scale(-1,-1) about center
     expect(css).toMatch(/@keyframes primer-inv/)
     expect(css).toMatch(/scale\(-1, -1\)/)
     expect(tsx).toMatch(/orient="scale\(-1,-1\)"/)
-    // Mirror: scaleX(-1) about plane
     expect(css).toMatch(/@keyframes primer-mirror/)
     expect(css).toMatch(/scale\(-1, 1\)/)
-    expect(tsx).toMatch(/orient="scale\(-1,1\)"/)
-    // Glide: scaleY(-1) then translate
     expect(css).toMatch(/@keyframes primer-glide/)
     expect(css).toMatch(/scale\(1, -1\)/)
     expect(tsx).toMatch(/orient="scale\(1,-1\)"/)
-    // No opacity crossfade between different Motif tips
     expect(css).not.toMatch(/primer-inv-proper/)
     expect(css).not.toMatch(/primer-inv-mirror/)
     expect(css).not.toMatch(/primer-mirror-proper/)

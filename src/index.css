@@ -2059,8 +2059,9 @@ button {
 }
 
 /*
- * 4. 2₁ screw — side view: rotate about vertical axis + translate ½ along it.
- * Stem stays upright; scaleX foreshortens through the axis (left↔right end), not a cartwheel.
+ * 4. 2₁ screw (proper) — side view: slide +½ across the axis.
+ * Foreshorten scaleX through the axis (edge-on) but NEVER flip the sign —
+ * scaleX(-1) is improper and would match the mirror card. Handedness cue kept.
  */
 @keyframes primer-screw {
   0% {
@@ -2068,23 +2069,23 @@ button {
     opacity: 1;
   }
   40% {
-    transform: translate(54px, 34px) scale(0.2, 1);
+    transform: translate(54px, 34px) scale(0.18, 1);
     opacity: 0.9;
   }
   50% {
-    transform: translate(66px, 38px) scale(-0.2, 1);
+    transform: translate(66px, 38px) scale(0.18, 1);
     opacity: 0.9;
   }
   72% {
-    transform: translate(84px, 50px) scale(-1, 1);
+    transform: translate(84px, 50px) scale(1, 1);
     opacity: 1;
   }
   86% {
-    transform: translate(84px, 50px) scale(-1, 1);
+    transform: translate(84px, 50px) scale(1, 1);
     opacity: 1;
   }
   94% {
-    transform: translate(84px, 50px) scale(-1, 1);
+    transform: translate(84px, 50px) scale(1, 1);
     opacity: 0;
   }
   95% {
@@ -2104,7 +2105,7 @@ button {
 
 /*
  * 5. Mirror (improper) — continuous scaleX(-1) about the vertical plane x=60.
- * Same L becomes its mirror image; constant height.
+ * Same L becomes its mirror image; near●/far○ cue flips with the transform.
  */
 @keyframes primer-mirror {
   from {

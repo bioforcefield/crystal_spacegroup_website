@@ -4,8 +4,11 @@ Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crys
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
 ## Primer animations (2026-10-28)
-- Home `#primer` cards loop CSS/SVG demos (identity pulse, inversion through ⊙, **2-fold top-down lens** 180° ⊥ page, **2₁ side view** upright +½ left↔right, mirror flip, glide reflect→translate).
-- 2 vs 2₁ use distinct viewpoints on purpose (lens-only vs vertical axis + half-arrow ticks); fade-reset loops, not alternate reverse.
+- Home `#primer` cards loop CSS/SVG demos (identity pulse, inversion through ⊙, **2-fold top-down lens** 180° ⊥ page, **2₁ side view** upright +½, mirror flip, glide reflect→translate).
+- Motif has near●/far○ depth cue; `enantiomorph` reverses cue cyclic order (same L topology).
+- **Proper** (2-fold, 2₁): same enantiomorph both ends. Screw no longer uses `scaleX(-1)` (that looked like mirror); foreshortens through the axis with scaleX≥0.
+- **Improper** (mirror, glide, inversion): opposite hand / geometric flip. Tiny captions on screw/mirror: “proper — hand kept” / “improper — hand flips”.
+- 2 vs 2₁ use distinct viewpoints (lens-only vs vertical axis + half-arrow ticks).
 - Pause off-screen (`IntersectionObserver` + `.is-inview`); `prefers-reduced-motion: reduce` → static B/I markers.
 - Contracts: `src/data/primer/__tests__/symmetryPrimerContracts.test.ts`.
 
