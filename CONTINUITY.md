@@ -66,5 +66,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `ac3674b` · SEO meta/robots/sitemap; 770 tests
-- gh-pages: `568aa7b` (SEO live; CNAME crystalspacegroups.com)
+- main: `b4464cd` · Footer: drop bioforcefield name + contact email; 770 tests
+- gh-pages: `6ad50e2` (CNAME; footer cleanup)
