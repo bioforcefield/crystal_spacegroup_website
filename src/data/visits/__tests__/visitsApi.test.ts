@@ -47,8 +47,8 @@ describe('formatVisitCount / visitCounterLabel', () => {
     expect(formatVisitCount(null)).toBe('—')
     expect(formatVisitCount(undefined)).toBe('—')
     expect(formatVisitCount(Number.NaN)).toBe('—')
-    expect(visitCounterLabel(12345)).toBe('Visits: 12,345')
-    expect(visitCounterLabel(null)).toBe('Visits: —')
+    expect(visitCounterLabel(12345)).toBe('12,345')
+    expect(visitCounterLabel(null)).toBe('—')
   })
 })
 

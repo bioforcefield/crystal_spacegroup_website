@@ -10,7 +10,7 @@ type Props = {
 }
 
 /**
- * Compact privacy-light visit chip. Shows "Visits: N" or "Visits: —" on failure.
+ * Compact privacy-light visit chip. Shows just the count "N" (or "—" on failure) inside the footer parentheses.
  * Increments once per browser tab session via the COD Cloudflare worker /visits.
  */
 export default function VisitCounter({ className }: Props) {

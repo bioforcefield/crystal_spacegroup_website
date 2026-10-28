@@ -62,7 +62,7 @@ export function formatVisitCount(count: number | null | undefined): string {
 }
 
 export function visitCounterLabel(count: number | null | undefined): string {
-  return `Visits: ${formatVisitCount(count)}`
+  return formatVisitCount(count)
 }
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
