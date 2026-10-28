@@ -9,6 +9,11 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - Hero uses same 1.4rem inset column as spotlights/main (no double outer pad)
 - System cards stretch evenly in the explore grid
 
+## SG 11 · P21/m teaching AU (2026-10-28)
+- User report: overlaps on /sg/11. Operators already matched ITA unique-axis b (`x,y,z`; `−x,y+½,−z`; `−x,−y,−z`; `x,−y+½,z`) — mirror at y=¼, not wrong generators.
+- Root cause: teaching seed reused P21/c’s `[0.18, 0.22, 0.31]` so Δy to the mirror ≈ 0.03; identity↔mirror (and 2₁↔inversion) sat ~0.07 apart with no c-glide to separate them.
+- Fix: seed → `[0.18, 0.08, 0.31]` (general position; min pairwise ≈ 0.39). Tests: `p21mPlacement.test.ts`.
+
 ## CIF map — camera + Cell HUD (2026-10-27 night)
 - Root cause of “invisible 3D until Cell click”: FitCifCamera ran once on a 0/pathological canvas size (or lagged R3F `size`); expanding the Cell chip reflowed the flex canvas and only then re-fit.
 - Fix: `aspectForFit` / `isUsableCanvasSize` / clamped aspect; retry + ResizeObserver + live `clientWidth/Height`; `updateProjectionMatrix`; pure `computeCifViewBounds`.

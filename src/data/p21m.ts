@@ -15,7 +15,15 @@ import type {
 import { buildOperatorsFromTriplets } from './groups'
 
 export const CELL: CellParams = { a: 1, b: 1.15, c: 1.35, betaDeg: 110 }
-export const SEED: Vec3 = [0.18, 0.22, 0.31]
+
+/**
+ * Teaching AU in general position for P21/m.
+ * Must stay well clear of the mirror at y = ¼ (and y = ¾): the same
+ * seed as P21/c ([0.18, 0.22, 0.31]) sits Δy ≈ 0.03 from that plane, so
+ * identity and mirror copies nearly coincide (no c-glide to separate them).
+ * y = 0.08 → mirrored y = 0.42; min pairwise motif spacing ≈ 0.39 cell units.
+ */
+export const SEED: Vec3 = [0.18, 0.08, 0.31]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },
@@ -40,6 +48,7 @@ export const CLASS_LEGEND_ORDER: SymmetryClassId[] = [
   'mirror',
 ]
 
+/** ITA Vol. A general positions, unique axis b (cell choice 1): P 1 21/m 1. */
 export const OPERATORS: Operator[] = buildOperatorsFromTriplets([
   'x, y, z',
   '−x, y+½, −z',
