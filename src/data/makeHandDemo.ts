@@ -23,6 +23,7 @@ import type {
   Vec3,
 } from './types'
 import { pickTeachingSeed } from './teachingSeed'
+import { TEACHING_SEED_PREFER } from './teachingSeedOverrides'
 
 interface ItaGroupRecord {
   number: number
@@ -149,9 +150,10 @@ export function makeHandDemo(spec: HandDemoSpec): SpaceGroupDemo {
       blurb: spec.blurb,
     },
     cell: spec.cell ?? teachingCell(catalog.system),
-    seed: spec.seed
-      ? spec.seed
-      : pickTeachingSeed(operators, spec.cell ?? teachingCell(catalog.system), raw.multiplicity),
+    seed:
+      spec.seed ??
+      TEACHING_SEED_PREFER[spec.number] ??
+      pickTeachingSeed(operators, spec.cell ?? teachingCell(catalog.system), raw.multiplicity),
     operators,
     symmetryClasses: SYMMETRY_CLASSES,
     classLegendOrder: legend.length ? legend : ['identity'],

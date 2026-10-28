@@ -163,7 +163,7 @@ describe('symmetry expansion uses demo operators when SG known', () => {
       '-x,-y,-z',
       'x,-y+1/2,z+1/2',
     ])
-    const cell: CellParams = { a: 5.5, b: 8.2, c: 7.1, betaDeg: 110 }
+    const _cell: CellParams = { a: 5.5, b: 8.2, c: 7.1, betaDeg: 110 }
     const seed: Vec3 = [0.22, 0.31, 0.18]
     for (const op of ops) {
       const f = applyOperator(op, seed)

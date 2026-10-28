@@ -47,7 +47,7 @@ export {
 export const CELL: CellParams = { a: 1, b: 1.2, c: 1.5 }
 
 /** Seed point in the asymmetric unit (fractional coordinates). */
-export const SEED: Vec3 = [0.15, 0.32, 0.11]
+export const SEED: Vec3 = [0.13, 0.13, 0.13]
 
 /** Teaching palette — one distinct color per class shown in the legend. */
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {

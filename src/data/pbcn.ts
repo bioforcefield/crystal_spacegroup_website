@@ -17,7 +17,7 @@ import type {
 export const CELL: CellParams = { a: 1, b: 1.2, c: 1.5 }
 
 /** Seed off special positions (fractional). */
-export const SEED: Vec3 = [0.21, 0.15, 0.09]
+export const SEED: Vec3 = [0.07, 0.21, 0.41]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },

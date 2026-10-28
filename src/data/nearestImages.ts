@@ -19,7 +19,6 @@ import type {
   SpaceGroupDemo,
   Vec3,
 } from './types'
-import { pbcaDemo } from './pbca'
 import {
   LATTICE_NEIGHBORS as LATTICE,
   outsideCellPenalty as outsidePenalty,
@@ -158,35 +157,20 @@ function distToScrewAxis(
   return best
 }
 
+/**
+ * Axis-aligned glide/mirror distance when corners are unavailable.
+ * Uses |Δfrac| × cell edge along the normal — a teaching approximation that
+ * ignores monoclinic a/c obliquity. Prefer {@link distToGlidePlaneSpec} with
+ * plane.corners for a true Cartesian normal distance.
+ */
 function distToGlidePlane(
   p: Vec3,
   planeValue: number,
   normalAxis: 0 | 1 | 2,
   cell: CellParams,
 ): number {
-  // Distance along the normal in Cartesian: for unique-b monoclinic,
-  // normals along a/b/c need care; b is orthogonal; a/c are in xz.
-  if (normalAxis === 1) {
-    return Math.abs(p[1] - planeValue) * cell.b
-  }
-  const a = fracToCart(
-    normalAxis === 0 ? [planeValue, 0, 0] : [0, 0, planeValue],
-    cell,
-  )
-  const b = fracToCart(
-    normalAxis === 0 ? [planeValue, 1, 0] : [0, 1, planeValue],
-    cell,
-  )
-  const c = fracToCart(
-    normalAxis === 0 ? [planeValue, 0, 1] : [1, 0, planeValue],
-    cell,
-  )
-  // Approximate: use fractional difference × characteristic length
   const axisLen =
-    normalAxis === 0 ? cell.a : normalAxis === 2 ? cell.c : cell.b
-  void a
-  void b
-  void c
+    normalAxis === 0 ? cell.a : normalAxis === 1 ? cell.b : cell.c
   return Math.abs(p[normalAxis] - planeValue) * axisLen
 }
 
@@ -309,6 +293,20 @@ function placedWrapped(demo: SpaceGroupDemo): PlacementResult {
   }
 }
 
+/**
+ * Near screw scoring weights (ITA teaching cases: P21/c compact −a image,
+ * P212121 +c advance, P41/I41 axial screws). Do NOT reintroduce a hard
+ * “force Δc ≥ 0” lattice-hop rule — that parked P21/c on the far +a side.
+ */
+/** Prefer raw Seitz image over a same-side copy across the cell (a≈−¼ vs a≈¾). */
+const SCREW_COMPACT_LATTICE_WEIGHT = 0.1
+/** Soft penalty when advance along teachingScrewSense is negative (‖ b for P21/c). */
+const SCREW_SENSE_NEG_PENALTY = 0.03
+/** Softly discourage |Δc| ≳ ½ when Seitz t_z sets axis height (not screw advance). */
+const SCREW_LARGE_DC_HOP_PENALTY = 0.08
+const PAIR_BASE_IMAGE_DIST_WEIGHT = 0.25
+const PAIR_OUTSIDE_CELL_WEIGHT = 0.2
+
 function pairScore(
   demo: SpaceGroupDemo,
   base: Vec3,
@@ -318,29 +316,22 @@ function pairScore(
   let score =
     distToElement(demo, base, op) +
     distToElement(demo, image, op) +
-    0.25 * cartDist(base, image, demo.cell) +
-    0.2 * (outsidePenalty(base) + outsidePenalty(image))
+    PAIR_BASE_IMAGE_DIST_WEIGHT * cartDist(base, image, demo.cell) +
+    PAIR_OUTSIDE_CELL_WEIGHT * (outsidePenalty(base) + outsidePenalty(image))
 
-  // Screws: keep a *compact* pairing near the raw Seitz image. Do NOT force
-  // large +Δc lattice hops — those park the motif on the far side of the cell.
+  // Screws: keep a *compact* pairing near the raw Seitz image.
   if (op.classId === 'screw') {
     const axis =
       demo.screwAxes.find((s) => s.opIndex === op.index && s.primary) ??
       demo.screwAxes.find((s) => s.opIndex === op.index)
     if (axis) {
-      // Prefer the raw operator image (or a half-cell wrap) over a same-side
-      // copy across the cell. Weight beats outsidePenalty for a≈−¼ vs a≈¾.
       const rawImage = applyOperatorRaw(op, base)
-      score += 0.1 * screwImageLatticeShift(rawImage, image)
-      // Soft tie-break: positive advance along the screw axis sense (‖ b for
-      // P21/c). Tiny — must not outweigh cartDist of a full-cell hop.
+      score += SCREW_COMPACT_LATTICE_WEIGHT * screwImageLatticeShift(rawImage, image)
       const advance = screwAdvanceAlongSense(base, image, axis.direction)
-      if (advance < -1e-9) score += 0.03
-      // Softly discourage |Δc| ≳ ½ lattice hops for screws whose Seitz has a
-      // c-translation (axis height), without forbidding small negative Δc.
+      if (advance < -1e-9) score += SCREW_SENSE_NEG_PENALTY
       const dc = image[2] - base[2]
       if (Math.abs(op.t[2]) > 0.2 && Math.abs(dc) > 0.5) {
-        score += 0.08
+        score += SCREW_LARGE_DC_HOP_PENALTY
       }
     }
   }
@@ -428,10 +419,3 @@ export function placedPositions(
   return placedNearest(demo, selectedIndex)
 }
 
-/** @deprecated Pbca-only shim — prefer placedPositions(demo, …) */
-export function placedPositionsPbca(
-  selectedIndex: number,
-  mode: PlacementMode = 'nearest',
-): PlacementResult {
-  return placedPositions(pbcaDemo, selectedIndex, mode)
-}

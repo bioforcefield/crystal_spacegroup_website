@@ -55,6 +55,13 @@ describe('CIF UI source contracts', () => {
     expect(vp).not.toMatch(/label-short">Cell</)
   })
 
+  it('SG demo short label is Wrap (aligned with CIF, not Cell)', () => {
+    const page = readSrc('src/pages/SpaceGroupPage.tsx')
+    expect(page).toMatch(/label-full">In cell</)
+    expect(page).toMatch(/label-short">Wrap</)
+    expect(page).not.toMatch(/label-short">Cell</)
+  })
+
   it('Teaching view + Display menu chrome remain wired', () => {
     const vp = readSrc('src/components/cif/CifViewport.tsx')
     expect(vp).toMatch(/Teaching view/)

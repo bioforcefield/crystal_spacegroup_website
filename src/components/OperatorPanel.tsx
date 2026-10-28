@@ -222,7 +222,7 @@ export default function OperatorPanel({
           {formatVec(imagePoint.fractional)}
         </p>
         <p className="hint seed-note">
-          3D and 2D both follow Nearest images / In cell.
+          3D and 2D both follow Near / Wrap.
         </p>
       </section>
 

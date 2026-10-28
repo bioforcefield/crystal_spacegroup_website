@@ -13,7 +13,12 @@ import {
   seedIsGeneralPosition,
 } from '../../teachingSeed'
 import { minPlaneClearance, scaledPlaneClearance, minScrewClearance, scaledScrewClearance } from '../../teachingSeed'
-import { PLANE_CLEARANCE_SEED_OVERRIDES } from '../../teachingSeedOverrides'
+import { TEACHING_SEED_PREFER } from '../../teachingSeedOverrides'
+import { allHandDemos } from '../../registry'
+import { SEED as P21C_SEED } from '../../p21c'
+import { SEED as P21M_SEED } from '../../p21m'
+import { SEED as P212121_SEED } from '../../p212121'
+import { SEED as PBCA_SEED } from '../../pbca'
 import type { Vec3 } from '../../types'
 
 describe('teachingSeed helpers', () => {
@@ -108,14 +113,39 @@ describe('all demos 1–230 · projection clearance from mirror/glide planes', (
     expect(fails).toEqual([])
   })
 
-  it('overrides improve plane clearance and keep the motif floor', () => {
-    for (const [k, seed] of Object.entries(PLANE_CLEARANCE_SEED_OVERRIDES)) {
+  it('prefer seeds match live demos and keep clearance floors', () => {
+    for (const [k, seed] of Object.entries(TEACHING_SEED_PREFER)) {
       const d = getDemo(Number(k))!
       expect(d.seed).toEqual(seed)
       expect(minPlaneClearance(d.operators, seed)).toBeGreaterThan(0.02)
       expect(minMotifSeparation(d.operators, seed, d.cell)).toBeGreaterThanOrEqual(
         scaledMinMotifSeparation(d.meta.multiplicity) - 1e-9,
       )
+    }
+  })
+})
+
+describe('E1 · single seed source of truth', () => {
+  it('hand module SEED constants match getDemo(n).seed', () => {
+    expect(getDemo(14)?.seed).toEqual(P21C_SEED)
+    expect(getDemo(11)?.seed).toEqual(P21M_SEED)
+    expect(getDemo(19)?.seed).toEqual(P212121_SEED)
+    expect(getDemo(61)?.seed).toEqual(PBCA_SEED)
+  })
+
+  it('every hand demo seed equals getDemo (no registry overlay)', () => {
+    for (const d of allHandDemos()) {
+      const live = getDemo(d.meta.number)!
+      expect(live.seed).toEqual(d.seed)
+    }
+  })
+
+  it('generated prefer seeds equal live getDemo seeds', () => {
+    for (const [k, seed] of Object.entries(TEACHING_SEED_PREFER)) {
+      const n = Number(k)
+      const d = getDemo(n)!
+      if (d.demoSource !== 'generated' && !TEACHING_SEED_PREFER[n]) continue
+      expect(d.seed).toEqual(seed)
     }
   })
 })

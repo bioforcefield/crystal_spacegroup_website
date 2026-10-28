@@ -24,7 +24,10 @@ export default function SpaceGroupPage({ demo }: Props) {
   const [animateToken, setAnimateToken] = useState(0)
   const [resetToken, setResetToken] = useState(0)
   const [placementMode, setPlacementMode] = useState<PlacementMode>('nearest')
-  const [showAllSites, setShowAllSites] = useState(true)
+  // Dense packs (Z>48) default to BASE+IMAGE so the cell stays readable (S5).
+  const [showAllSites, setShowAllSites] = useState(
+    () => demo.meta.multiplicity <= 48,
+  )
   /** On narrow screens: which pane is primary. Desktop ignores this. */
   const [mobilePane, setMobilePane] = useState<'3d' | '2d'>('3d')
 
@@ -60,6 +63,13 @@ export default function SpaceGroupPage({ demo }: Props) {
     if (idx != null) handleSelect(idx)
   }
 
+  const selectedOp = demo.operators.find((o) => o.index === selectedIndex)
+  const liveStatus = selectedOp
+    ? `Operator ${selectedOp.index}: ${selectedOp.label}. Placement ${
+        placementMode === 'nearest' ? 'Near' : 'Wrap'
+      }.${showAllSites ? '' : ' Showing BASE and IMAGE only.'}`
+    : ''
+
   return (
     <div className={`app layout-demo mobile-pane-${mobilePane}`}>
       <OperatorPanel
@@ -83,42 +93,45 @@ export default function SpaceGroupPage({ demo }: Props) {
                 )
               })}
             </div>
-            <div className="legend chirality">
-              <span className="chip proper">●△■</span> tips: ball · triangle ·
-              square
-              <span className="sep">·</span>
-              <span className="chip proper">solid</span> proper (same hand)
-              <span className="sep">·</span>
-              <span className="chip mirrored">mirrored</span> improper
-              (opposite hand)
-              <span className="sep">·</span>
-              <span className="chip base">BASE</span>
-              <span className="sep">→</span>
-              <span className="chip image">IMAGE</span>
-            </div>
-            <div className="legend elements-legend">
-              {demo.inversionCenters.length > 0 && (
-                <>
-                  <span className="chip element">⊙</span> inversion
-                  <span className="sep">·</span>
-                </>
-              )}
-              {demo.screwAxes.length > 0 && (
-                <>
-                  <span className="chip element">‖</span> 2 / 2₁ / n-fold
-                  <span className="sep">·</span>
-                </>
-              )}
-              {demo.glidePlanes.length > 0 && (
-                <>
-                  <span className="chip element">▭</span> mirror / glide
-                  <span className="sep">·</span>
-                </>
-              )}
-              {demo.geometryLimited
-                ? 'limited geometry overlays'
-                : 'selected element emphasized; others faint'}
-            </div>
+            <details className="legend-details">
+              <summary className="legend-details-summary">Legend</summary>
+              <div className="legend chirality">
+                <span className="chip proper">●△■</span> tips: ball · triangle ·
+                square
+                <span className="sep">·</span>
+                <span className="chip proper">solid</span> proper (same hand)
+                <span className="sep">·</span>
+                <span className="chip mirrored">mirrored</span> improper
+                (opposite hand)
+                <span className="sep">·</span>
+                <span className="chip base">BASE</span>
+                <span className="sep">→</span>
+                <span className="chip image">IMAGE</span>
+              </div>
+              <div className="legend elements-legend">
+                {demo.inversionCenters.length > 0 && (
+                  <>
+                    <span className="chip element">⊙</span> inversion
+                    <span className="sep">·</span>
+                  </>
+                )}
+                {demo.screwAxes.length > 0 && (
+                  <>
+                    <span className="chip element">‖</span> 2 / 2₁ / n-fold
+                    <span className="sep">·</span>
+                  </>
+                )}
+                {demo.glidePlanes.length > 0 && (
+                  <>
+                    <span className="chip element">▭</span> mirror / glide
+                    <span className="sep">·</span>
+                  </>
+                )}
+                {demo.geometryLimited
+                  ? 'limited geometry overlays'
+                  : 'selected element emphasized; others faint'}
+              </div>
+            </details>
           </div>
           <div className="toolbar-actions">
             <div
@@ -172,7 +185,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                 title="Wrap every motif into the unit cell [0,1)³"
               >
                 <span className="label-full">In cell</span>
-                <span className="label-short">Cell</span>
+                <span className="label-short">Wrap</span>
               </button>
             </div>
             <div
@@ -214,6 +227,11 @@ export default function SpaceGroupPage({ demo }: Props) {
         {demo.geometryLimited && demo.geometryNote && (
           <p className="geometry-note" role="note">
             {demo.geometryNote}
+          </p>
+        )}
+        {placementMode === 'nearest' && (
+          <p className="placement-near-hint" role="note">
+            Near may place BASE/IMAGE just outside the cell box (UCL-style).
           </p>
         )}
         <div
@@ -293,14 +311,20 @@ export default function SpaceGroupPage({ demo }: Props) {
             placementMode={placementMode}
           />
         </div>
+        <div className="sr-only" aria-live="polite" aria-atomic="true">
+          {liveStatus}
+        </div>
         <footer className="viewport-footer">
           <span className="viewport-footer-text">
             {demo.meta.hm} ({demo.meta.number}) · BASE always marked · click an
             operator (or a 2D site) to highlight IMAGE, connector, and its geometric
             element (⊙ center · ‖ axis · ▭ glide)
             {placementMode === 'nearest'
-              ? ' · Nearest images (3D + 2D) may sit just outside the cell (UCL-style)'
-              : ' · In cell wraps motifs into [0, 1)³ / [0, 1)²'}
+              ? ' · Near (3D + 2D) may sit just outside the cell (UCL-style)'
+              : ' · Wrap motifs into [0, 1)³ / [0, 1)²'}
+            {demo.screwAxes.length > 0
+              ? ' · Ghost flight is schematic, not the crystallographic screw path'
+              : ''}
             {!showAllSites ? ' · Showing only BASE + IMAGE' : ''}
             {demo.cell.alphaDeg && demo.cell.alphaDeg !== 90
               ? ` · α = ${demo.cell.alphaDeg}°`

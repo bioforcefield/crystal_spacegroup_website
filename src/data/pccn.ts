@@ -15,7 +15,7 @@ import type {
 import { buildOperatorsFromTriplets } from './groups'
 
 export const CELL: CellParams = { a: 1, b: 1.2, c: 1.4 }
-export const SEED: Vec3 = [0.41, 0.07, 0.18]
+export const SEED: Vec3 = [0.13, 0.07, 0.13]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },

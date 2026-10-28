@@ -53,6 +53,13 @@ rm -rf "$TMP"
 
 Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, commit, force-push.
 
+
+## Deep links on GitHub Pages
+
+Vite copies `index.html` → `dist/404.html` so client-side routes like `/sg/14` still boot the SPA after a hard refresh. GitHub Pages returns **HTTP 404** with that SPA body — browsers load the app; crawlers and some chat unfurlers see a 404 status. Prefer sharing from in-app navigation, or open the link in a browser. (Cloudflare/Pages rewrites that return 200 are optional and not required for local use.)
+
+CIF UI contract tests (`cifUiContracts.test.ts`) are **source-string contracts**, not R3F paint tests — they lock toolbar labels and CSS selectors against regressions.
+
 ## Layout
 
 | Path | Role |

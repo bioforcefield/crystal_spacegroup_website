@@ -16,7 +16,7 @@ import { buildOperatorsFromTriplets } from './groups'
 
 /** Tetragonal teaching cell: a = b, γ = 90°, c elongated. */
 export const CELL: CellParams = { a: 1, b: 1, c: 1.4 }
-export const SEED: Vec3 = [0.07, 0.21, 0.32]
+export const SEED: Vec3 = [0.07, 0.21, 0.29]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },

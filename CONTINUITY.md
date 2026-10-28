@@ -1,4 +1,4 @@
-# Crystal space-group site — resume notes (2026-10-27)
+# Crystal space-group site — resume notes (2026-10-28)
 
 Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
@@ -15,27 +15,22 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - Hero uses same 1.4rem inset column as spotlights/main (no double outer pad)
 - System cards stretch evenly in the explore grid
 
+## Oct 2026 review sprint (E1/E2/U1 + soft)
+- **E1**: Folded plane/screw seed overrides into hand `SEED` constants; `TEACHING_SEED_PREFER` (98) is construction-only for generated + makeHandDemo. Removed `getDemo` overlay. Test: hand SEED === getDemo.
+- **E2**: Named Near `pairScore` screw weights; expanded screw matrix (P21/c, P21/m, C2/c, P212121 a/b/c, P41, I41). Kept compact −a for P21/c (no force-Δc≥0).
+- **U1**: SG short label **Wrap** (aligned with CIF); Near toolbar hint; home How-to Near/Wrap.
+- Soft: distToGlidePlane fractional note (E4); removed Pbca shims (E7); README SPA 404.html note (E3/U6); screw ghost caption (S2); Z>48 defaults BASE+IMAGE (S5); mobile Legend disclosure (U2); aria-live op+mode (U5).
+- Deferred: E6 Near cache; U3 sticky jump; S3/S4/S6 doc-only.
+
 ## SG 11 · P21/m teaching AU (2026-10-28)
-- User report: overlaps on /sg/11. Operators already matched ITA unique-axis b (`x,y,z`; `−x,y+½,−z`; `−x,−y,−z`; `x,−y+½,z`) — mirror at y=¼, not wrong generators.
-- Root cause: teaching seed reused P21/c’s `[0.18, 0.22, 0.31]` so Δy to the mirror ≈ 0.03; identity↔mirror (and 2₁↔inversion) sat ~0.07 apart with no c-glide to separate them.
-- Fix: seed → `[0.18, 0.08, 0.31]` (general position; min pairwise ≈ 0.39). Tests: `p21mPlacement.test.ts`.
+- Seed clearance + Near screw sense; see `p21mPlacement.test.ts`, `screwSense.test.ts`.
 
 ## Teaching AU seed clearance (2026-10-28)
-- Audit of all 230 demos: many shared default seeds (`[0.17,0.23,0.31]` / monoclinic `[0.18,0.22,0.31]` / ortho `[0.22,0.15,0.3]`) sat near mirrors or diagonal planes — same class of bug as SG 11.
-- Shared module `src/data/teachingSeed.ts`: `minMotifSeparation`, `pickTeachingSeed`, scaled clearance floors.
-- `generatedDemo` + `makeHandDemo` auto-pick seeds; 41 hand files retuned. No ITA operator bugs found.
-- Tests: `teachingSeed.test.ts` (+ link from `p21mPlacement.test.ts`). Suite 687 green.
+- Shared module `src/data/teachingSeed.ts`; prefer map in `teachingSeedOverrides.ts`.
+- Tests: `teachingSeed.test.ts`. cifUiContracts are **source contracts**, not R3F paint.
 
-## CIF map — camera + Cell HUD (2026-10-27 night)
-- Root cause of “invisible 3D until Cell click”: FitCifCamera ran once on a 0/pathological canvas size (or lagged R3F `size`); expanding the Cell chip reflowed the flex canvas and only then re-fit.
-- Fix: `aspectForFit` / `isUsableCanvasSize` / clamped aspect; retry + ResizeObserver + live `clientWidth/Height`; `updateProjectionMatrix`; pure `computeCifViewBounds`.
-- Cell HUD blur: `.cif-canvas-frame > div { height:100% }` also matched the lattice badge → full-canvas `backdrop-filter` over the molecule. Fix: R3F root class `.cif-r3f-root` only; lattice strip **outside** canvas (above 3D); no badge backdrop-filter; opaque strip.
-- Cell HUD: always-on a/b/c + angles + origin via strip (no expand gate). In-cell short label → **Wrap**.
-- Tests: `fitCamera.test.ts`, `cellBadgeModel.test.ts`, `cifUiContracts.test.ts` (covering-HUD contracts).
-
-## CIF map layout (earlier evening)
-- Desktop toolbar wraps in-bounds; canvas frame absolutely fills `.canvas-wrap`
-- Display menu / legend / chips / Teaching view unchanged
+## CIF map — camera + Cell HUD
+- FitCifCamera + Cell strip outside canvas; contracts in `cifUiContracts.test.ts`.
 
 ## Cloudflare COD proxy
 - Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif
@@ -45,5 +40,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `d409a38` (visits counter + SQLite DO migration)
-- gh-pages: `4aafc7a` (VITE_COD_PROXY + VITE_VISITS_URL baked; CNAME crystalspacegroups.com)
+- main: _(fill after commit)_
+- gh-pages: _(fill after deploy)_

@@ -183,7 +183,7 @@ function DemoRoute() {
   return (
     <SiteChrome variant="demo">
       <Suspense fallback={<RouteFallback />}>
-        <SpaceGroupPage demo={demo} />
+        <SpaceGroupPage key={demo.meta.number} demo={demo} />
       </Suspense>
     </SiteChrome>
   )

@@ -600,8 +600,39 @@ button {
     -webkit-overflow-scrolling: touch;
   }
 
+  /* Collapse chirality/elements into Legend disclosure (U2); keep class swatches. */
   .app.layout-demo .legend-stack {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 55%;
+    overflow: hidden;
+  }
+  .app.layout-demo .legend.class-legend {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-width: 70%;
+  }
+  .app.layout-demo .legend-details {
+    flex-shrink: 0;
+  }
+  .app.layout-demo .legend-details:not([open]) .legend.chirality,
+  .app.layout-demo .legend-details:not([open]) .legend.elements-legend {
     display: none;
+  }
+  .app.layout-demo .legend-details[open] {
+    position: absolute;
+    z-index: 5;
+    top: 2.4rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 0.5rem 0.65rem;
+    max-height: 40vh;
+    overflow: auto;
   }
 
   .app.layout-demo .toolbar-actions {
@@ -4872,5 +4903,56 @@ button.linkish {
 @media (max-width: 640px) {
   .teach-wulff3d canvas {
     height: 220px !important;
+  }
+}
+
+
+/* Near placement one-line hint (U1) */
+.placement-near-hint {
+  margin: 0;
+  padding: 0.25rem 0.75rem 0.35rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.legend-details {
+  margin: 0;
+}
+.legend-details-summary {
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  list-style: none;
+}
+.legend-details-summary::-webkit-details-marker {
+  display: none;
+}
+.legend-details[open] .legend-details-summary {
+  margin-bottom: 0.2rem;
+}
+.legend-details .legend {
+  margin-top: 0.15rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 901px) {
+  .app.layout-demo .legend-details > .legend-details-summary {
+    display: none;
+  }
+  .app.layout-demo .legend-details {
+    display: contents;
   }
 }

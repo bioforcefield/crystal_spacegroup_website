@@ -1,4 +1,3 @@
-import { PLANE_CLEARANCE_SEED_OVERRIDES } from './teachingSeedOverrides'
 /** Lookup interactive demos by ITA number or slug. */
 
 import { pbcaDemo } from './pbca'
@@ -157,22 +156,8 @@ function withHandSource(demo: SpaceGroupDemo): SpaceGroupDemo {
   return demo
 }
 
-const seedOverrideCache = new WeakMap<SpaceGroupDemo, SpaceGroupDemo>()
-
-function withSeedOverride(demo: SpaceGroupDemo | undefined): SpaceGroupDemo | undefined {
-  if (!demo) return demo
-  const o = PLANE_CLEARANCE_SEED_OVERRIDES[demo.meta.number]
-  if (!o) return demo
-  let out = seedOverrideCache.get(demo)
-  if (!out) {
-    out = { ...demo, seed: o }
-    seedOverrideCache.set(demo, out)
-  }
-  return out
-}
-
 export function getDemo(id: string | number): SpaceGroupDemo | undefined {
-  return withSeedOverride(getDemoRaw(id))
+  return getDemoRaw(id)
 }
 
 function getDemoRaw(id: string | number): SpaceGroupDemo | undefined {

@@ -60,7 +60,7 @@ describe('SG 11 · P21/m teaching cell', () => {
     expect(ITA_SG11.multiplicity).toBe(4)
     expect(ITA_SG11.triplets).toHaveLength(4)
 
-    const expected = [
+    const _expected = [
       'x,y,z',
       '-x,y+1/2,-z',
       '-x,-y,-z',

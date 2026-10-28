@@ -360,11 +360,11 @@ export default function IndexPage() {
               <h3>Placement &amp; visibility</h3>
               <ul>
                 <li>
-                  <strong>Nearest images</strong> — place BASE and IMAGE near the
+                  <strong>Near</strong> — place BASE and IMAGE near the
                   selected element (may sit just outside the cell).
                 </li>
                 <li>
-                  <strong>In cell</strong> — wrap every motif into [0, 1)³.
+                  <strong>Wrap</strong> (in cell) — wrap every motif into [0, 1)³.
                 </li>
                 <li>
                   <strong>All sites</strong> vs <strong>BASE + IMAGE</strong> —

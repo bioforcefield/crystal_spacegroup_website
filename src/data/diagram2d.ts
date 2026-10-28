@@ -13,7 +13,6 @@ import type {
   SpaceGroupDemo,
   Vec3,
 } from './types'
-import { pbcaDemo } from './pbca'
 
 export type { ProjectionDir, ProjectionInfo }
 
@@ -58,8 +57,6 @@ export function buildProjections(cell: CellParams): Record<ProjectionDir, Projec
   }
 }
 
-/** @deprecated Pbca-only — use buildProjections(demo.cell) */
-export const PROJECTIONS = buildProjections(pbcaDemo.cell)
 export const DEFAULT_PROJECTION: ProjectionDir = 'c'
 
 export function projectFrac(

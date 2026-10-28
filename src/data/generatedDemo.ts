@@ -23,6 +23,7 @@ import type {
   SymmetryClassId,
 } from './types'
 import { pickTeachingSeed } from './teachingSeed'
+import { TEACHING_SEED_PREFER } from './teachingSeedOverrides'
 
 export interface ItaGroupRecord {
   number: number
@@ -330,7 +331,9 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
       blurb: `ITA No. ${n} · ${catalog.hm} — ${systemName}, ${lattice.toLowerCase()} lattice, multiplicity ${raw.multiplicity}. ${summary}.${csdBit} Auto-generated from standard ITA general positions (not hand-tuned).${overlayBit} Click an operator to highlight BASE → IMAGE.`,
     },
     cell,
-    seed: pickTeachingSeed(operators, cell, raw.multiplicity),
+    seed:
+      TEACHING_SEED_PREFER[n] ??
+      pickTeachingSeed(operators, cell, raw.multiplicity),
     operators,
     symmetryClasses: SYMMETRY_CLASSES,
     classLegendOrder,

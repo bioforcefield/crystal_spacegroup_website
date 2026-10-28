@@ -15,7 +15,7 @@ import type {
 export const CELL: CellParams = { a: 1, b: 1.2, c: 1.5 }
 
 /** Seed off axes in a general position (fractional). */
-export const SEED: Vec3 = [0.22, 0.15, 0.3]
+export const SEED: Vec3 = [0.41, 0.35, 0.35]
 
 /** Teaching palette — only identity + 2₁ appear in the legend for this group. */
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
