@@ -97,3 +97,7 @@ Or equivalent: clone/`worktree` of `gh-pages`, replace contents with `dist/`, co
 ## Stack
 
 Vite + React + TypeScript + Three.js (`@react-three/fiber`, `@react-three/drei`) + react-router
+
+## License
+
+This project is released under the [MIT License](LICENSE).
