@@ -3,6 +3,12 @@
 Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+## SEO discovery (2026-10-28)
+- `index.html`: meta description (~155 chars), canonical, og:title/description/url/type, twitter:card summary. No noindex.
+- `public/robots.txt`: Allow / + Sitemap URL.
+- `public/sitemap.xml`: `/`, `/cif`, `/pubs`, `/morphology`, `/kinetics`, `/sg/1`…`/sg/230` (235 URLs; redirects omitted).
+- Contract: `src/data/__tests__/seoContracts.test.ts`.
+
 ## Near C2 2₁ compact (2026-10-28)
 - C2 screw (`classId === 'screw'`, axis at (¼,y,0)): bumped `SCREW_COMPACT_LATTICE_WEIGHT` 0.1 → 0.2 so Near keeps the raw Seitz mate (z≈−0.31) instead of wrapping +(0,0,1).
 - Outside-cell + pair-distance had beaten weight 0.1; the wrap put both motifs on the +z side so the drawn 2₁ missed the BASE–IMAGE segment.
