@@ -637,6 +637,10 @@ export default function CifViewport({
         </div>
       )}
 
+      {structure && (
+        <CellParamsBadge cell={structure.cell} variant="strip" />
+      )}
+
       <div className="viewport-body cif-viewport-body">
         <div
           id="demo-main"
@@ -679,8 +683,6 @@ export default function CifViewport({
           )}
         </div>
       </div>
-
-      {structure && <CellParamsBadge cell={structure.cell} variant="strip" />}
 
       <footer className="viewport-footer">
         CIF explorer · intact molecules (covalent + min-image unwrap) ·

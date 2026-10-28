@@ -1,7 +1,7 @@
 import type { CellParams } from '../../data/types'
 import { cellBadgeModel } from '../../data/cif/cellBadgeModel'
 
-/** Compact HTML readout of lattice parameters (overlay on canvas or phone strip). */
+/** Compact HTML readout of lattice parameters (toolbar strip above canvas; overlay variant unused in explorer). */
 export default function CellParamsBadge({
   cell,
   variant = 'overlay',

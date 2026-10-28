@@ -2758,8 +2758,8 @@ a.csd-bar-row.ready:hover {
   min-height: 0;
 }
 
-/* R3F wraps <canvas> in a div — both must fill the frame */
-.cif-canvas-frame > div {
+/* R3F root only — never match .cif-cell-badge (that covered the 3D with blur) */
+.cif-canvas-frame > .cif-r3f-root {
   width: 100% !important;
   height: 100% !important;
 }
@@ -2772,20 +2772,23 @@ a.csd-bar-row.ready:hover {
 
 .cif-cell-badge {
   position: absolute;
+  top: 0.4rem;
   left: 0.4rem;
-  bottom: 0.4rem;
+  bottom: auto;
   z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.08rem;
   width: max-content;
-  max-width: calc(100% - 0.8rem);
+  max-width: min(18rem, calc(100% - 0.8rem));
+  height: auto;
+  max-height: none;
   padding: 0.18rem 0.36rem;
   border-radius: 6px;
   border: 1px solid rgba(125, 211, 252, 0.22);
-  background: rgba(7, 11, 20, 0.72);
-  backdrop-filter: blur(6px);
+  /* Solid opaque — no backdrop-filter (blur covered the molecule when badge was oversized) */
+  background: #070b14;
   font-size: 0.62rem;
   line-height: 1.15;
   pointer-events: none;
@@ -2829,8 +2832,9 @@ a.csd-bar-row.ready:hover {
 
 @media (max-width: 900px) {
   .cif-cell-badge {
+    top: 0.3rem;
     left: 0.3rem;
-    bottom: 0.3rem;
+    bottom: auto;
     padding: 0.14rem 0.28rem;
     font-size: 0.6rem;
   }
@@ -3093,22 +3097,37 @@ button.linkish {
   }
 }
 
-/* Lattice strip: shown below the canvas on phone instead of the overlay */
-.cif-cell-strip { display: none; }
+/* Lattice strip: outside the canvas (above 3D) — never covers the molecule */
+.cif-explorer .cif-cell-badge { display: none; }
+.cif-explorer .cif-cell-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.75rem;
+  flex: 0 0 auto;
+  padding: 0.28rem 0.75rem;
+  border-top: 1px solid var(--panel-border);
+  border-bottom: 1px solid var(--panel-border);
+  background: #0b1220;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: #e2e8f0;
+  pointer-events: none;
+}
+.cif-explorer .cif-cell-strip .cif-cell-badge-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.45rem;
+}
+.cif-explorer .cif-cell-strip .cif-cell-angles,
+.cif-explorer .cif-cell-strip .cif-cell-origin {
+  font-size: 0.62rem;
+}
 @media (max-width: 900px) {
-  .cif-explorer .cif-cell-badge { display: none; }
   .cif-explorer .cif-cell-strip {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.08rem;
     padding: 0.28rem 0.5rem;
-    border-top: 1px solid var(--panel-border);
-    border-bottom: 1px solid var(--panel-border);
-    background: rgba(15, 23, 42, 0.85);
     font-size: 0.68rem;
-    line-height: 1.2;
-    color: #e2e8f0;
   }
   .cif-explorer .cif-cell-strip .cif-cell-angles,
   .cif-explorer .cif-cell-strip .cif-cell-origin {
@@ -3327,7 +3346,7 @@ button.linkish {
     flex: 1 1 0;
     min-height: 40px;
   }
-  /* Keep lattice strip below canvas (never cover 3D) */
+  /* Lattice strip stays in document flow (never covers 3D) */
   .cif-explorer .cif-cell-strip {
     position: relative;
     z-index: 0;

@@ -17,7 +17,6 @@ import {
 } from '../data/cif/placement'
 import type { CellParams, SpaceGroupDemo, Vec3 } from '../data/types'
 import SymmetryElements from './SymmetryElements'
-import CellParamsBadge from './cif/CellParamsBadge'
 import type {
   CifColorMode,
   CifHBondMode,
@@ -42,7 +41,6 @@ import {
 
 export type { CifPlacementMode }
 export type { CifVisibility }
-export { CellParamsBadge }
 
 function fmtLen(v: number): string {
   return v >= 10 ? v.toFixed(2) : v.toFixed(3)
@@ -559,6 +557,7 @@ export default function CifStructureScene(props: Props) {
   return (
     <div className="cif-canvas-frame">
       <Canvas
+        className="cif-r3f-root"
         camera={{
           position: [
             CIF_CAM_DIR.x * 12,
@@ -575,7 +574,6 @@ export default function CifStructureScene(props: Props) {
       >
         <SceneBody {...props} controlsRef={controlsRef} />
       </Canvas>
-      <CellParamsBadge cell={props.structure.cell} />
     </div>
   )
 }

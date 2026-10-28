@@ -62,4 +62,26 @@ describe('CIF UI source contracts', () => {
     expect(vp).toMatch(/onTeachingView|Teaching view/)
     expect(vp).toMatch(/Legend|cif-chrome-label/)
   })
+
+  it('lattice HUD lives outside the canvas (strip), not as a covering overlay', () => {
+    const scene = readSrc('src/components/CifStructureScene.tsx')
+    const vp = readSrc('src/components/cif/CifViewport.tsx')
+    const css = readSrc('src/index.css')
+    // No in-canvas overlay badge
+    expect(scene).not.toMatch(/CellParamsBadge/)
+    expect(scene).toMatch(/className="cif-r3f-root"/)
+    // Strip rendered above the canvas body
+    expect(vp).toMatch(/CellParamsBadge[\s\S]*variant="strip"/)
+    expect(vp).toMatch(/CellParamsBadge[\s\S]*viewport-body cif-viewport-body/)
+    // R3F fill selector must not blanket every child div (that forced badge to 100%)
+    expect(css).not.toMatch(/\.cif-canvas-frame\s*>\s*div\s*\{/)
+    expect(css).toMatch(/\.cif-canvas-frame\s*>\s*\.cif-r3f-root\s*\{/)
+    // Explorer uses strip, hides overlay badge; no backdrop blur on lattice chrome
+    expect(css).toMatch(/\.cif-explorer \.cif-cell-strip\s*\{/)
+    expect(css).toMatch(/\.cif-explorer \.cif-cell-badge\s*\{\s*display:\s*none/)
+    const badgeBlock = css.match(/\.cif-cell-badge\s*\{[^}]+\}/)?.[0] ?? ''
+    expect(badgeBlock).not.toMatch(/backdrop-filter\s*:/)
+    expect(badgeBlock).toMatch(/pointer-events:\s*none/)
+    expect(badgeBlock).not.toMatch(/height:\s*100%/)
+  })
 })
