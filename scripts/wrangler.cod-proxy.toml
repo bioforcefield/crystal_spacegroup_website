@@ -16,4 +16,4 @@ class_name = "VisitsCounter"
 
 [[migrations]]
 tag = "v1-visits-counter"
-new_classes = ["VisitsCounter"]
+new_sqlite_classes = ["VisitsCounter"]
