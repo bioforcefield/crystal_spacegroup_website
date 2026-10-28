@@ -30,8 +30,8 @@ export type PlacementMode = 'nearest' | 'wrapped'
 /**
  * Teaching screw advance sense: flip `direction` so its dominant crystallographic
  * component is positive, preferring +c, then +b, then +a (ITA right-hand /
- * positive-axis convention). Used so Near-mode screw animations advance toward
- * +c when the axis has a c-component (e.g. P21/c 2₁ with t_z = ½).
+ * positive-axis convention). Used as a soft Near tie-break along the screw
+ * axis itself (e.g. +b for P21/c 2₁ ‖ b) — not to force large lattice hops.
  */
 export function teachingScrewSense(direction: Vec3): Vec3 {
   let dx = direction[0]
@@ -66,6 +66,32 @@ export function screwAdvanceAlongSense(
       (image[1] - base[1]) * s[1] +
       (image[2] - base[2]) * s[2]) /
     len
+  )
+}
+
+/**
+ * L1 fractional lattice shift between the raw operator image and a chosen
+ * periodic copy. Near mode should stay close to the raw Seitz image so the
+ * motif sits across the screw axis (e.g. a≈−¼) rather than a same-side copy
+ * across the cell (a≈¾).
+ */
+export function screwImageLatticeShift(rawImage: Vec3, image: Vec3): number {
+  return (
+    Math.abs(image[0] - rawImage[0]) +
+    Math.abs(image[1] - rawImage[1]) +
+    Math.abs(image[2] - rawImage[2])
+  )
+}
+
+/**
+ * True when the chosen image is the minimal-shift lattice copy of the raw
+ * Seitz image (shift < ½ cell on every axis). Useful in tests.
+ */
+export function isCompactScrewImage(rawImage: Vec3, image: Vec3): boolean {
+  return (
+    Math.abs(image[0] - rawImage[0]) < 0.5 + 1e-9 &&
+    Math.abs(image[1] - rawImage[1]) < 0.5 + 1e-9 &&
+    Math.abs(image[2] - rawImage[2]) < 0.5 + 1e-9
   )
 }
 
@@ -295,21 +321,26 @@ function pairScore(
     0.25 * cartDist(base, image, demo.cell) +
     0.2 * (outsidePenalty(base) + outsidePenalty(image))
 
-  // Screws: prefer lattice images that advance along the teaching sense.
-  // Only the *sign* of advance / Δc is encoded — penalise the opposite sense
-  // without rewarding huge +Δc leaps (which would fight cartDist).
+  // Screws: keep a *compact* pairing near the raw Seitz image. Do NOT force
+  // large +Δc lattice hops — those park the motif on the far side of the cell.
   if (op.classId === 'screw') {
     const axis =
       demo.screwAxes.find((s) => s.opIndex === op.index && s.primary) ??
       demo.screwAxes.find((s) => s.opIndex === op.index)
     if (axis) {
+      // Prefer the raw operator image (or a half-cell wrap) over a same-side
+      // copy across the cell. Weight beats outsidePenalty for a≈−¼ vs a≈¾.
+      const rawImage = applyOperatorRaw(op, base)
+      score += 0.1 * screwImageLatticeShift(rawImage, image)
+      // Soft tie-break: positive advance along the screw axis sense (‖ b for
+      // P21/c). Tiny — must not outweigh cartDist of a full-cell hop.
       const advance = screwAdvanceAlongSense(base, image, axis.direction)
-      if (advance < -1e-9) score += 0.45
-      // Unique-axis-b 2₁ with t_z = ½ (P21/c): require Δc ≥ 0 so Near
-      // animation reads as advancing toward +c.
+      if (advance < -1e-9) score += 0.03
+      // Softly discourage |Δc| ≳ ½ lattice hops for screws whose Seitz has a
+      // c-translation (axis height), without forbidding small negative Δc.
       const dc = image[2] - base[2]
-      if (Math.abs(op.t[2]) > 0.2 && dc < -1e-9) {
-        score += 0.55
+      if (Math.abs(op.t[2]) > 0.2 && Math.abs(dc) > 0.5) {
+        score += 0.08
       }
     }
   }

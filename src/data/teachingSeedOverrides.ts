@@ -10,7 +10,7 @@ export const TEACHING_SEED_OVERRIDES: Readonly<Record<number, Vec3>> = {
   9: [0.05, 0.13, 0.05], // Cc: plane 0.120, screw Inf
   11: [0.25, 0.05, 0.5], // P21/m: plane 0.200, screw 0.250
   12: [0.05, 0.33, 0.37], // C2/m: plane 0.080, screw 0.373
-  14: [0.25, 0.08, 0.31], // P21/c: plane 0.170, screw 0.257
+  14: [0.25, 0.08, 0.22], // P21/c: plane 0.170, screw 0.252; axis slightly +c of base
   15: [0.13, 0.13, 0.13], // C2/c: plane 0.120, screw 0.170
   18: [0.32, 0.21, 0.41], // P21212: plane Inf, screw 0.341
   19: [0.41, 0.35, 0.35], // P212121: plane Inf, screw 0.364
