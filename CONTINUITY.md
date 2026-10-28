@@ -45,5 +45,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `9bed39a` (tip) · review body `0415f5b`
-- gh-pages: `1dde2a6` (COD/visits baked; CNAME; 727 tests @ review build)
+- main: `02da56a` · primer animations
+- gh-pages: `22032ea` (COD/visits; CNAME; 734 tests)
