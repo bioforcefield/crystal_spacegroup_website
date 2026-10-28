@@ -37,16 +37,16 @@ const DEMOS: DemoSpec[] = [
   {
     id: 'twofold',
     title: '2-fold rotation',
-    subtitle: '180° about an axis',
+    subtitle: '180° · axis ⊥ page',
     color: '#67e8f9',
-    body: 'Rotate 180° about an axis. Proper: handedness is preserved. Pure 2-folds appear in many groups.',
+    body: 'Top-down view: rotate 180° about an axis pointing at you (ITA lens). Proper — same handedness; the L ends upside-down. No translation.',
   },
   {
     id: 'screw',
     title: '2₁ screw',
-    subtitle: '180° + ½ translation',
+    subtitle: 'side view: 180° + ½ along axis',
     color: SYMMETRY_CLASSES.screw.color,
-    body: 'Rotate 180° and slide half a cell along the axis. Many common groups (including Pbca) use 2₁ screws.',
+    body: 'Side view: rotate 180° about the vertical axis while sliding half a cell along it. Motif stays upright (left↔right), unlike the top-down 2-fold.',
   },
   {
     id: 'mirror',
@@ -237,26 +237,18 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
-          <line
-            x1={60}
-            y1={12}
-            x2={60}
-            y2={60}
-            stroke={color}
-            strokeWidth={2}
-            strokeLinecap="round"
-          />
-          {/* Lens mark: CSS rotate is about axis ⊥ page through (60,36) */}
+          {/* ITA digon / lens only — axis ⊥ page (no in-plane stroke) */}
           <ellipse
             cx={60}
             cy={36}
-            rx={3.2}
-            ry={5.5}
-            fill="none"
+            rx={4}
+            ry={7}
+            fill={color}
+            fillOpacity={0.22}
             stroke={color}
-            strokeWidth={1.4}
+            strokeWidth={1.6}
           />
-          {/* Pure 2-fold: same height; I is upright-rotated 180° (proper) */}
+          {/* Same height; I is 180° in-plane (proper; L upside-down) */}
           <Motif x={38} y={36} fill={color} label="B" opacity={0.35} className="primer-marker" />
           <Motif
             x={82}
@@ -268,15 +260,29 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             className="primer-marker primer-static-end"
           />
           <path
-            d="M44 50 Q60 62 76 50"
+            d="M44 48 A 22 22 0 0 0 76 48"
             fill="none"
             stroke={color}
-            strokeWidth={1.2}
+            strokeWidth={1.3}
             strokeDasharray="3 2"
-            opacity={0.45}
+            opacity={0.5}
+            markerEnd="url(#primer-twofold-arrow)"
             className="primer-guide-path"
           />
-          {/* rotate(180) about (60,36): L ends upside-down — correct for axis ⊥ page */}
+          <defs>
+            <marker
+              id="primer-twofold-arrow"
+              viewBox="0 0 10 10"
+              refX={8}
+              refY={5}
+              markerWidth={5}
+              markerHeight={5}
+              orient="auto-start-reverse"
+            >
+              <path d="M0 0 L10 5 L0 10 z" fill={color} />
+            </marker>
+          </defs>
+          {/* Smooth 180° about lens center (60,36) */}
           <g className="primer-mover primer-twofold-rotor">
             <Motif x={38} y={36} fill={color} />
           </g>
@@ -286,6 +292,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
       return (
         <svg viewBox="0 0 120 72" className="primer-svg primer-screw" aria-hidden>
           <CellFrame />
+          {/* Side view: vertical screw axis only (no end-on lens) */}
           <line
             x1={60}
             y1={12}
@@ -295,29 +302,47 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeWidth={2.4}
             strokeLinecap="round"
           />
-          <Motif x={36} y={24} fill={color} label="B" opacity={0.35} className="primer-marker" />
+          {/* ITA-ish 2₁ half-arrow ticks along the axis */}
+          <path
+            d="M60 22 L67 19 M60 22 L67 25"
+            fill="none"
+            stroke={color}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M60 50 L53 47 M60 50 L53 53"
+            fill="none"
+            stroke={color}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {/* Upright L both ends; I is left↔right (180° about vertical), not cartwheel */}
+          <Motif x={36} y={22} fill={color} label="B" opacity={0.35} className="primer-marker" />
           <Motif
             x={84}
-            y={48}
+            y={50}
             fill={color}
             label="I"
             opacity={0.35}
-            orient="rotate(180)"
+            orient="scale(-1,1)"
             className="primer-marker primer-static-end"
           />
           <path
-            d="M40 34 C52 20, 68 52, 80 38"
+            d="M40 28 C48 28, 52 36, 60 36 C68 36, 72 44, 80 44"
             fill="none"
             stroke={color}
             strokeWidth={1.3}
             strokeDasharray="3 2"
-            className="primer-guide-path primer-glide-path"
+            className="primer-guide-path"
             opacity={0.55}
           />
-          <text x={66} y={18} fill={color} fontSize={8} fontWeight={700}>
+          <text x={68} y={16} fill={color} fontSize={9} fontWeight={700}>
             +½
           </text>
-          {/* Same 180° orientation change as 2-fold + +½ axial slide */}
+          {/* Helical: across-axis + +½ along axis; stem stays upright */}
           <g className="primer-mover primer-screw-ghost">
             <MotifLocal fill={color} />
           </g>

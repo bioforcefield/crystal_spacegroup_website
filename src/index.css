@@ -2023,39 +2023,83 @@ button {
 }
 
 /*
- * 3. 2-fold (proper) — CSS rotate 180° about (60,36).
- * Vertical stroke + lens: axis treated as ⊥ page; L ends upside-down (handedness kept).
+ * 3. 2-fold (proper) — top-down / axis ⊥ page through lens at (60,36).
+ * In-plane 180°; L ends upside-down; no axial translation. Loop: hold → fade → reset.
  */
 @keyframes primer-twofold {
-  from {
+  0% {
     transform: rotate(0deg);
+    opacity: 1;
   }
-  to {
+  55% {
     transform: rotate(180deg);
+    opacity: 1;
+  }
+  72% {
+    transform: rotate(180deg);
+    opacity: 1;
+  }
+  85% {
+    transform: rotate(180deg);
+    opacity: 0;
+  }
+  86% {
+    transform: rotate(0deg);
+    opacity: 0;
+  }
+  100% {
+    transform: rotate(0deg);
+    opacity: 1;
   }
 }
 
 .primer-card.is-inview .primer-twofold-rotor {
   transform-origin: 60px 36px;
-  animation: primer-twofold 2.6s ease-in-out infinite alternate;
+  animation: primer-twofold 3s ease-in-out infinite;
 }
 
-/* 4. 2₁ screw — same 180° orientation change + +½ slide along axis */
+/*
+ * 4. 2₁ screw — side view: rotate about vertical axis + translate ½ along it.
+ * Stem stays upright; scaleX foreshortens through the axis (left↔right end), not a cartwheel.
+ */
 @keyframes primer-screw {
   0% {
-    transform: translate(36px, 24px) rotate(0deg);
+    transform: translate(36px, 22px) scale(1, 1);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(54px, 34px) scale(0.2, 1);
+    opacity: 0.9;
   }
   50% {
-    transform: translate(60px, 36px) rotate(90deg);
+    transform: translate(66px, 38px) scale(-0.2, 1);
+    opacity: 0.9;
+  }
+  72% {
+    transform: translate(84px, 50px) scale(-1, 1);
+    opacity: 1;
+  }
+  86% {
+    transform: translate(84px, 50px) scale(-1, 1);
+    opacity: 1;
+  }
+  94% {
+    transform: translate(84px, 50px) scale(-1, 1);
+    opacity: 0;
+  }
+  95% {
+    transform: translate(36px, 22px) scale(1, 1);
+    opacity: 0;
   }
   100% {
-    transform: translate(84px, 48px) rotate(180deg);
+    transform: translate(36px, 22px) scale(1, 1);
+    opacity: 1;
   }
 }
 
 .primer-card.is-inview .primer-screw-ghost {
   transform-origin: 0px 0px;
-  animation: primer-screw 2.8s ease-in-out infinite alternate;
+  animation: primer-screw 3.2s ease-in-out infinite;
 }
 
 /*

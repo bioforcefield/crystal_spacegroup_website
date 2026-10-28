@@ -48,19 +48,33 @@ describe('SymmetryPrimer animation contracts', () => {
     expect(css).toMatch(/primer-static-end/)
   })
 
-  it('keeps pure 2-fold at constant height (no axial shift)', () => {
-    // Rotor origin at mid-height; B and I share y=36
+  it('2-fold is top-down lens only (axis ⊥ page, no vertical stroke)', () => {
+    // Digon / lens at center; B and I share y=36 (no axial shift)
     expect(tsx).toMatch(/Motif x=\{38\} y=\{36\}/)
     expect(tsx).toMatch(/Motif\s*\n\s*x=\{82\}\s*\n\s*y=\{36\}/)
+    expect(tsx).toMatch(/orient="rotate\(180\)"/)
+    expect(tsx).toMatch(/axis ⊥ page/)
+    expect(tsx).toMatch(/primer-twofold-arrow/)
+    // Lens present; no in-plane axis stroke in the twofold case
+    const twofoldCase = tsx.split("case 'twofold':")[1].split("case 'screw':")[0]
+    expect(twofoldCase).toMatch(/<ellipse/)
+    expect(twofoldCase).not.toMatch(/<line/)
     expect(css).toMatch(/transform-origin:\s*60px 36px/)
     expect(css).toMatch(/@keyframes primer-twofold/)
     expect(css).toMatch(/rotate\(180deg\)/)
   })
 
-  it('screw adds +½ slide distinct from twofold', () => {
+  it('2₁ screw is side view: upright +½, left↔right (not cartwheel)', () => {
     expect(tsx).toMatch(/\+½/)
+    expect(tsx).toMatch(/side view: 180° \+ ½ along axis/)
+    const screwCase = tsx.split("case 'screw':")[1].split("case 'mirror':")[0]
+    expect(screwCase).toMatch(/<line/)
+    expect(screwCase).not.toMatch(/<ellipse/)
+    expect(screwCase).toMatch(/orient="scale\(-1,1\)"/)
+    expect(screwCase).not.toMatch(/orient="rotate\(180\)"/)
     expect(css).toMatch(/@keyframes primer-screw/)
-    expect(css).toMatch(/translate\(84px, 48px\) rotate\(180deg\)/)
+    expect(css).toMatch(/translate\(84px, 50px\) scale\(-1, 1\)/)
+    expect(css).not.toMatch(/translate\(84px, 48px\) rotate\(180deg\)/)
   })
 
   it('uses unique glide marker id', () => {
