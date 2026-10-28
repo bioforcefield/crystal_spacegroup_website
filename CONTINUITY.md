@@ -46,4 +46,4 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 
 ## SHAs
 - main: `02da56a` · primer animations
-- gh-pages: `22032ea` (COD/visits; CNAME; 734 tests)
+- gh-pages: `8f7dc5a` (COD/visits; CNAME; 735 tests; chiral-L primer orientation)
