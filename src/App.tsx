@@ -10,6 +10,7 @@ import {
   useParams,
 } from 'react-router-dom'
 import IndexPage from './pages/IndexPage'
+import SiteCopyright from './components/SiteCopyright'
 import { getDemo } from './data/registry'
 
 const SpaceGroupPage = lazy(() => import('./pages/SpaceGroupPage'))
@@ -160,6 +161,7 @@ function SiteChrome({
         </nav>
       </header>
       {children}
+      <SiteCopyright />
     </div>
   )
 }
