@@ -32,45 +32,28 @@ function FaceRateBars({
     { label: 'R{110}', value: Rc, color: '#f472b6' },
   ]
   return (
-    <svg
-      className="teach-svg"
-      viewBox="0 0 320 140"
+    <div
+      className="teach-rate-bars"
       role="img"
       aria-label={`Relative growth rates: R100 ${Ra.toFixed(2)}, R010 ${Rb.toFixed(2)}, R110 ${Rc.toFixed(2)}`}
     >
-      <title>Relative face growth rates</title>
-      {rows.map((r, i) => {
-        const y = 22 + i * 38
-        const w = (r.value / max) * 220
+      <p className="teach-rate-bars-title">Relative face growth rates</p>
+      {rows.map((r) => {
+        const pct = Math.max(2, (r.value / max) * 100)
         return (
-          <g key={r.label}>
-            <text x={8} y={y + 12} className="teach-axis-label">
-              {r.label}
-            </text>
-            <rect
-              x={72}
-              y={y}
-              width={220}
-              height={18}
-              rx={4}
-              className="teach-bar-track"
-            />
-            <rect
-              x={72}
-              y={y}
-              width={Math.max(2, w)}
-              height={18}
-              rx={4}
-              fill={r.color}
-              opacity={0.9}
-            />
-            <text x={300} y={y + 13} textAnchor="end" className="teach-axis-label">
-              {r.value.toFixed(2)}
-            </text>
-          </g>
+          <div className="teach-rate-row" key={r.label}>
+            <span className="teach-rate-label">{r.label}</span>
+            <div className="teach-rate-track" aria-hidden="true">
+              <div
+                className="teach-rate-fill"
+                style={{ width: `${pct}%`, background: r.color }}
+              />
+            </div>
+            <span className="teach-rate-value">{r.value.toFixed(2)}</span>
+          </div>
         )
       })}
-    </svg>
+    </div>
   )
 }
 
@@ -168,44 +151,52 @@ export default function MorphologyPage() {
               {result.aspect.toFixed(2)}.
             </p>
           </div>
-          <div className="teach-panel">
+          <div className="teach-panel teach-morph-controls">
             <FaceRateBars Ra={Ra} Rb={Rb} Rc={Rc} />
-            <label className="teach-slider-label" htmlFor="morph-ra">
-              R{'{'}100{'}'} · {Ra.toFixed(2)}
-            </label>
-            <input
-              id="morph-ra"
-              type="range"
-              min={0.3}
-              max={3}
-              step={0.05}
-              value={Ra}
-              onChange={(e) => setRa(Number(e.target.value))}
-            />
-            <label className="teach-slider-label" htmlFor="morph-rb">
-              R{'{'}010{'}'} · {Rb.toFixed(2)}
-            </label>
-            <input
-              id="morph-rb"
-              type="range"
-              min={0.3}
-              max={3}
-              step={0.05}
-              value={Rb}
-              onChange={(e) => setRb(Number(e.target.value))}
-            />
-            <label className="teach-slider-label" htmlFor="morph-rc">
-              R{'{'}110{'}'} · {Rc.toFixed(2)}
-            </label>
-            <input
-              id="morph-rc"
-              type="range"
-              min={0.3}
-              max={3}
-              step={0.05}
-              value={Rc}
-              onChange={(e) => setRc(Number(e.target.value))}
-            />
+            <div className="teach-slider-stack" role="group" aria-label="Adjust face growth rates">
+              <div className="teach-slider-row">
+                <label className="teach-slider-label" htmlFor="morph-ra">
+                  R{'{'}100{'}'} · {Ra.toFixed(2)}
+                </label>
+                <input
+                  id="morph-ra"
+                  type="range"
+                  min={0.3}
+                  max={3}
+                  step={0.05}
+                  value={Ra}
+                  onChange={(e) => setRa(Number(e.target.value))}
+                />
+              </div>
+              <div className="teach-slider-row">
+                <label className="teach-slider-label" htmlFor="morph-rb">
+                  R{'{'}010{'}'} · {Rb.toFixed(2)}
+                </label>
+                <input
+                  id="morph-rb"
+                  type="range"
+                  min={0.3}
+                  max={3}
+                  step={0.05}
+                  value={Rb}
+                  onChange={(e) => setRb(Number(e.target.value))}
+                />
+              </div>
+              <div className="teach-slider-row">
+                <label className="teach-slider-label" htmlFor="morph-rc">
+                  R{'{'}110{'}'} · {Rc.toFixed(2)}
+                </label>
+                <input
+                  id="morph-rc"
+                  type="range"
+                  min={0.3}
+                  max={3}
+                  step={0.05}
+                  value={Rc}
+                  onChange={(e) => setRc(Number(e.target.value))}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
