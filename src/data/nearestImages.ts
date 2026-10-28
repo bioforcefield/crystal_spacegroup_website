@@ -71,8 +71,8 @@ export function screwAdvanceAlongSense(
 /**
  * L1 fractional lattice shift between the raw operator image and a chosen
  * periodic copy. Near mode should stay close to the raw Seitz image so the
- * motif sits across the screw axis (e.g. a≈−¼) rather than a same-side copy
- * across the cell (a≈¾).
+ * motif sits across the axis (screw a≈−¼, or C2 2-fold across (0,y,0)) rather
+ * than a same-side copy across the cell (a≈¾).
  */
 export function screwImageLatticeShift(rawImage: Vec3, image: Vec3): number {
   return (
@@ -294,12 +294,15 @@ function placedWrapped(demo: SpaceGroupDemo): PlacementResult {
 }
 
 /**
- * Near screw scoring weights (ITA teaching cases: P21/c compact −a image,
- * P212121 +c advance, P41/I41 axial screws). Do NOT reintroduce a hard
- * “force Δc ≥ 0” lattice-hop rule — that parked P21/c on the far +a side.
+ * Near axis scoring weights (ITA teaching cases: P21/c compact −a image,
+ * C2 pure 2-fold across (0,y,0), P212121 +c advance, P41/I41 axial screws).
+ * Do NOT reintroduce a hard “force Δc ≥ 0” lattice-hop rule — that parked
+ * P21/c on the far +a side.
  */
 /** Prefer raw Seitz image over a same-side copy across the cell (a≈−¼ vs a≈¾). */
 const SCREW_COMPACT_LATTICE_WEIGHT = 0.1
+/** Same compact raw-Seitz preference for pure 2-folds (C2 / P2). */
+const TWOFOLD_COMPACT_LATTICE_WEIGHT = SCREW_COMPACT_LATTICE_WEIGHT
 /** Soft penalty when advance along teachingScrewSense is negative (‖ b for P21/c). */
 const SCREW_SENSE_NEG_PENALTY = 0.03
 /** Softly discourage |Δc| ≳ ½ when Seitz t_z sets axis height (not screw advance). */
@@ -319,14 +322,22 @@ function pairScore(
     PAIR_BASE_IMAGE_DIST_WEIGHT * cartDist(base, image, demo.cell) +
     PAIR_OUTSIDE_CELL_WEIGHT * (outsidePenalty(base) + outsidePenalty(image))
 
-  // Screws: keep a *compact* pairing near the raw Seitz image.
+  // Screws + pure 2-folds: keep a *compact* pairing near the raw Seitz image
+  // so the drawn axis sits between BASE and IMAGE (not a same-side +1 hop).
+  if (op.classId === 'screw' || op.classId === 'twofold') {
+    const rawImage = applyOperatorRaw(op, base)
+    const compactW =
+      op.classId === 'twofold'
+        ? TWOFOLD_COMPACT_LATTICE_WEIGHT
+        : SCREW_COMPACT_LATTICE_WEIGHT
+    score += compactW * screwImageLatticeShift(rawImage, image)
+  }
+
   if (op.classId === 'screw') {
     const axis =
       demo.screwAxes.find((s) => s.opIndex === op.index && s.primary) ??
       demo.screwAxes.find((s) => s.opIndex === op.index)
     if (axis) {
-      const rawImage = applyOperatorRaw(op, base)
-      score += SCREW_COMPACT_LATTICE_WEIGHT * screwImageLatticeShift(rawImage, image)
       const advance = screwAdvanceAlongSense(base, image, axis.direction)
       if (advance < -1e-9) score += SCREW_SENSE_NEG_PENALTY
       const dc = image[2] - base[2]

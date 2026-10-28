@@ -3,6 +3,11 @@
 Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+## Near twofold compact (2026-10-28)
+- Pure 2-fold (`classId === 'twofold'`) Near now uses the same compact raw-Seitz lattice weight as screws (`TWOFOLD_COMPACT_LATTICE_WEIGHT` = screw weight).
+- Fixes C2: BASE/IMAGE straddle the drawn axis at (0,y,0) instead of same-side +(1,0,1) wrap into the cell.
+- Tests: `twofoldNear.test.ts` (C2 + P2). Screw matrix unchanged.
+
 ## Primer animations (2026-10-28) — InvGhost inversion
 - Home `#primer`: isometric chiral L. **Animations are authoritative**; static B/I match their endpoints (not PoseGhost→markers).
 - Movers: JS `InvGhost` + CSS `primer-twofold` / `primer-mirror` / `primer-glide` + JS `ScrewGhost`. No `PoseGhost`. No CSS `primer-inv`.
