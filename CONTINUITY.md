@@ -5,13 +5,15 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 
 ## Primer animations (2026-10-28)
 - Home `#primer`: isometric chiral L (stem +Y, arm +X, foot +Z, face shading, RGB tips). No flat ●/○ badges.
-- `enantiomorph` = object-space mirror (x→−x); `yawDeg` = proper rotation about +Y.
-- **2₁**: JS `ScrewGhost` — yaw 0→180 about vertical axis + translate +½ along it; B yaw=0 / I yaw=180; same enantiomorph. Distinct from 2-fold (lens, no slide) and mirror (enant, yaw 0).
+- Shared `PRIMER_POSES` B/I endpoints; `PoseGhost` drives the **same** Motif props (x,y,yaw,spin,enantiomorph) so animation t=0 ≡ B and t=1 ≡ I. No CSS scale/rotate approximations.
+- `enantiomorph` = object-space mirror (x→−x); `yawDeg` = proper rotation about +Y; `spinDeg` = in-page spin (2-fold ⊥ page).
+- **2₁**: yaw 0→180 about vertical axis + translate +½ along it; B yaw=0 / I yaw=180; same enantiomorph. Distinct from 2-fold (lens, spin 180, no slide) and mirror (enant, yaw 0).
 - **Proper** (2-fold, 2₁): same enantiomorph. **Improper** (mirror, glide, inversion): opposite enantiomorph. Captions: “proper — hand kept” / “improper — hand flips”.
-- Pause off-screen; reduced-motion → static B/I. Contracts: `symmetryPrimerContracts.test.ts`.
+- Pause off-screen; reduced-motion → static B/I. Contracts: `symmetryPrimerContracts.test.ts` (endpoint nearly-equal asserts).
+- Deploy: main `906fa3a`, gh-pages `2935ab8` (743 tests).
 
 ## Visitor counter (2026-10-28)
-- Footer chip `Visits: N` via `VisitCounter` in `SiteCopyright` (index shell) + demo `viewport-footer` (SG / CIF).
+- Footer chip `(N)` (number only) via `VisitCounter` in `SiteCopyright` (index shell) + demo `viewport-footer` (SG / CIF).
 - Worker: `GET /visits` (+ `?peek=1`) on `crystal-cod-proxy` Durable Object `VisitsCounter` (`scripts/cod-cors-worker.js`, wrangler DO migration `v1-visits-counter`).
 - Client: once per tab session (`sessionStorage`); `VITE_VISITS_URL` optional (else COD proxy origin + `/visits`).
 - Deploy worker first (Actions or `npx wrangler deploy -c scripts/wrangler.cod-proxy.toml`), then Pages with `VITE_COD_PROXY=…`.
