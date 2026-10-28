@@ -4,13 +4,11 @@ Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crys
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
 ## Primer animations (2026-10-28)
-- Home `#primer` cards loop CSS/SVG demos (identity pulse, inversion through ⊙, **2-fold top-down lens** 180° ⊥ page, **2₁ side view** upright +½, mirror flip, glide reflect→translate).
-- Motif has near●/far○ depth cue; `enantiomorph` reverses cue cyclic order (same L topology).
-- **Proper** (2-fold, 2₁): same enantiomorph both ends. Screw no longer uses `scaleX(-1)` (that looked like mirror); foreshortens through the axis with scaleX≥0.
-- **Improper** (mirror, glide, inversion): opposite hand / geometric flip. Tiny captions on screw/mirror: “proper — hand kept” / “improper — hand flips”.
-- 2 vs 2₁ use distinct viewpoints (lens-only vs vertical axis + half-arrow ticks).
-- Pause off-screen (`IntersectionObserver` + `.is-inview`); `prefers-reduced-motion: reduce` → static B/I markers.
-- Contracts: `src/data/primer/__tests__/symmetryPrimerContracts.test.ts`.
+- Home `#primer`: isometric chiral L (stem +Y, arm +X, foot +Z, face shading, RGB tips). No flat ●/○ badges.
+- `enantiomorph` = object-space mirror (x→−x); `yawDeg` = proper rotation about +Y.
+- **2₁**: JS `ScrewGhost` — yaw 0→180 about vertical axis + translate +½ along it; B yaw=0 / I yaw=180; same enantiomorph. Distinct from 2-fold (lens, no slide) and mirror (enant, yaw 0).
+- **Proper** (2-fold, 2₁): same enantiomorph. **Improper** (mirror, glide, inversion): opposite enantiomorph. Captions: “proper — hand kept” / “improper — hand flips”.
+- Pause off-screen; reduced-motion → static B/I. Contracts: `symmetryPrimerContracts.test.ts`.
 
 ## Visitor counter (2026-10-28)
 - Footer chip `Visits: N` via `VisitCounter` in `SiteCopyright` (index shell) + demo `viewport-footer` (SG / CIF).

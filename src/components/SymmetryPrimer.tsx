@@ -1,6 +1,6 @@
 /** Lightweight SVG demos of common space-group operations (index primer). */
 
-import { useEffect, useRef, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { SYMMETRY_CLASSES } from '../data/pbca'
 
 type DemoId =
@@ -32,93 +32,212 @@ const DEMOS: DemoSpec[] = [
     title: 'Inversion center',
     subtitle: '−x, −y, −z (about a point)',
     color: SYMMETRY_CLASSES.inversion.color,
-    body: 'Point reflection through a center (⊙). Improper — handedness flips (enantiomorph).',
+    body: 'Point reflection through a center (⊙). Improper — the isometric L becomes its enantiomorph.',
   },
   {
     id: 'twofold',
     title: '2-fold rotation',
     subtitle: '180° · axis ⊥ page',
     color: '#67e8f9',
-    body: 'Top-down view: rotate 180° about an axis pointing at you (ITA lens). Proper — same handedness (near● / far○ kept); the L ends upside-down. No translation.',
+    body: 'Top-down view: rotate 180° about an axis pointing at you (ITA lens). Proper — same enantiomorph; the isometric L ends upside-down. No translation along the axis.',
   },
   {
     id: 'screw',
     title: '2₁ screw',
     subtitle: 'side view: 180° + ½ along axis',
     color: SYMMETRY_CLASSES.screw.color,
-    body: 'Side view: rotate 180° about the vertical axis while sliding half a cell along it. Proper — same handedness (near● / far○ cue kept). Motif stays upright; unlike the top-down 2-fold.',
+    body: 'Side view of a 2₁: 180° about the vertical screw axis plus translation by ½ along that same axis. Proper — same enantiomorph (foot goes from toward→away after the turn). Distinct from a pure 2-fold (no slide) and from a mirror (hand would flip).',
   },
   {
     id: 'mirror',
     title: 'Mirror plane',
     subtitle: 'reflection',
     color: '#e2e8f0',
-    body: 'Reflect across a plane. Improper — handedness flips (near● / far○ cue reverses). (Pbca has no mirrors; it uses glides instead.)',
+    body: 'Reflect across a plane. Improper — opposite enantiomorph of the isometric L (arm flips side; foot stays toward the viewer). (Pbca has no mirrors; it uses glides instead.)',
   },
   {
     id: 'glide',
     title: 'Glide plane',
     subtitle: 'reflect + translate',
     color: SYMMETRY_CLASSES['a-glide'].color,
-    body: 'Reflect, then translate by a fraction of a lattice vector (a-, b-, c-, or n-glide). Named in symbols like Pbca and C2/c.',
+    body: 'Reflect across a plane, then translate by a fraction of a lattice vector (a-, b-, c-, or n-glide). Improper — enantiomorph, then slide. Named in symbols like Pbca and C2/c.',
   },
 ]
 
+/** Classic isometric screen coords from object (x right, y up, z toward viewer). */
+function iso(x: number, y: number, z: number): [number, number] {
+  const sx = (x - z) * 0.8660254
+  const sy = (x + z) * 0.5 - y
+  return [sx, sy]
+}
+
+function shade(hex: string, factor: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return hex
+  const n = parseInt(m[1], 16)
+  const r = Math.min(255, Math.max(0, Math.round(((n >> 16) & 255) * factor)))
+  const g = Math.min(255, Math.max(0, Math.round(((n >> 8) & 255) * factor)))
+  const b = Math.min(255, Math.max(0, Math.round((n & 255) * factor)))
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`
+}
+
 /**
- * Chiral L-marker (stem + right arm + tip) plus a depth/handedness cue:
- * filled near● (toward viewer) below the arm, hollow far○ above.
- * `enantiomorph` reverses the near/far cyclic order (same L topology, opposite hand).
- * Improper ops end on the enantiomorph; proper ops keep it.
+ * Rotate object coords about +Y (screw / vertical axis), then optional enantiomorph
+ * (mirror in YZ: x → −x). Order: yaw first (proper), then enantiomorph (improper).
+ */
+function objectMap(
+  x: number,
+  y: number,
+  z: number,
+  yawDeg: number,
+  enantiomorph: boolean,
+): [number, number, number] {
+  const rad = (yawDeg * Math.PI) / 180
+  const c = Math.cos(rad)
+  const s = Math.sin(rad)
+  // yaw about +Y: (x,z) → (x c + z s, −x s + z c)
+  let X = x * c + z * s
+  const Y = y
+  let Z = -x * s + z * c
+  if (enantiomorph) X = -X
+  return [X, Y, Z]
+}
+
+/**
+ * True isometric chiral L (teaching triad): stem +Y, arm +X, foot +Z toward viewer.
+ * Face-shaded beams + distinct tips (ball / triangle / square).
+ * - enantiomorph: improper mirror (x → −x) after yaw
+ * - yawDeg: proper rotation about +Y (0 = foot toward viewer; 180 = foot away)
  */
 function MotifGlyph({
   fill,
   enantiomorph = false,
+  yawDeg = 0,
 }: {
   fill: string
   enantiomorph?: boolean
+  /** Proper rotation about the stem / screw axis (degrees). */
+  yawDeg?: number
 }) {
-  // Same L topology always (arm +x). Handedness = cyclic order of near● / far○.
-  // Right hand: near below arm (toward viewer), far above. Left: swapped.
-  const nearY = enantiomorph ? -9.0 : -3.0
-  const farY = enantiomorph ? -3.0 : -9.0
+  const lit = shade(fill, 1.15)
+  const mid = fill
+  const dim = shade(fill, 0.55)
+  const edge = shade(fill, 0.35)
+
+  const lx = 7.5
+  const ly = 10
+  const lz = 8.5
+  const t = 1.55
+  const ay = 1.2
+
+  const P = (x: number, y: number, z: number) => {
+    const [X, Y, Z] = objectMap(x, y, z, yawDeg, enantiomorph)
+    return iso(X, Y, Z)
+  }
+
+  const stemFront = [P(-t, 0, t), P(t, 0, t), P(t, ly, t), P(-t, ly, t)]
+  const stemRight = [P(t, 0, t), P(t, 0, -t), P(t, ly, -t), P(t, ly, t)]
+  const stemTop = [P(-t, ly, t), P(t, ly, t), P(t, ly, -t), P(-t, ly, -t)]
+
+  const armTop = [
+    P(0, ay + t, t),
+    P(lx, ay + t, t),
+    P(lx, ay + t, -t),
+    P(0, ay + t, -t),
+  ]
+  const armFront = [
+    P(0, ay - t, t),
+    P(lx, ay - t, t),
+    P(lx, ay + t, t),
+    P(0, ay + t, t),
+  ]
+  const armSide = [
+    P(lx, ay - t, t),
+    P(lx, ay - t, -t),
+    P(lx, ay + t, -t),
+    P(lx, ay + t, t),
+  ]
+
+  const footTop = [
+    P(-t, ay + t, 0),
+    P(t, ay + t, 0),
+    P(t, ay + t, lz),
+    P(-t, ay + t, lz),
+  ]
+  const footFront = [
+    P(-t, ay - t, lz),
+    P(t, ay - t, lz),
+    P(t, ay + t, lz),
+    P(-t, ay + t, lz),
+  ]
+  const footSide = [
+    P(t, ay - t, 0),
+    P(t, ay - t, lz),
+    P(t, ay + t, lz),
+    P(t, ay + t, 0),
+  ]
+
+  const poly = (pts: [number, number][], c: string, sw = 0.45) => (
+    <polygon
+      points={pts.map(([a, b]) => `${a.toFixed(2)},${b.toFixed(2)}`).join(' ')}
+      fill={c}
+      stroke={edge}
+      strokeWidth={sw}
+      strokeLinejoin="round"
+    />
+  )
+
+  const [bx, by] = P(lx + 1.6, ay, 0)
+  const [tx, ty] = P(0, ly + 2.2, 0)
+  const [fx, fy] = P(0, ay, lz + 1.6)
+  const tri = [
+    [tx, ty - 2.4],
+    [tx + 2.2, ty + 1.6],
+    [tx - 2.2, ty + 1.6],
+  ] as [number, number][]
+  const sq = 2.1
+  const square = [
+    [fx - sq, fy - sq],
+    [fx + sq, fy - sq],
+    [fx + sq, fy + sq],
+    [fx - sq, fy + sq],
+  ] as [number, number][]
+
+  // When foot is away (yaw ~180), draw dimmer back faces with lower tip opacity cues
+  const footAway = ((yawDeg % 360) + 360) % 360 > 90 && ((yawDeg % 360) + 360) % 360 < 270
+  const tipZOpacity = footAway ? 0.45 : 1
+
   return (
-    <g>
-      {/* Vertical stem */}
-      <path
-        d="M0 7.5 V-6"
-        fill="none"
-        stroke={fill}
-        strokeWidth={2.4}
-        strokeLinecap="round"
+    <g
+      className="primer-iso-l"
+      data-iso-enantiomorph={enantiomorph ? 'flipped' : 'same'}
+      data-iso-yaw={Math.round(yawDeg)}
+    >
+      {poly(stemRight, dim)}
+      {poly(armSide, dim)}
+      {poly(footSide, dim)}
+      {poly(stemFront, mid)}
+      {poly(armFront, mid)}
+      {poly(footFront, footAway ? dim : lit)}
+      {poly(stemTop, lit)}
+      {poly(armTop, lit)}
+      {poly(footTop, footAway ? mid : lit)}
+      <circle cx={0} cy={0} r={1.7} fill={lit} stroke={edge} strokeWidth={0.5} />
+      <circle cx={bx} cy={by} r={2.35} fill="#fca5a5" stroke={edge} strokeWidth={0.5} />
+      <polygon
+        points={tri.map(([a, b]) => `${a.toFixed(2)},${b.toFixed(2)}`).join(' ')}
+        fill="#86efac"
+        stroke={edge}
+        strokeWidth={0.5}
+        strokeLinejoin="round"
       />
-      {/* Asymmetric right arm */}
-      <path
-        d="M0 -6 H9"
-        fill="none"
-        stroke={fill}
-        strokeWidth={2.4}
-        strokeLinecap="round"
-      />
-      {/* Tip flag — breaks left/right symmetry so orientation reads clearly */}
-      <polygon points="9,-6 13,-3.2 9,-0.4" fill={fill} />
-      {/* Short foot on +x only */}
-      <path
-        d="M0 7.5 H4.5"
-        fill="none"
-        stroke={fill}
-        strokeWidth={2.2}
-        strokeLinecap="round"
-      />
-      {/* Handedness / depth cue (near● toward viewer, far○ away) */}
-      <circle className="primer-hand-near" cx={5} cy={nearY} r={2.15} fill={fill} />
-      <circle
-        className="primer-hand-far"
-        cx={5}
-        cy={farY}
-        r={2.15}
-        fill="none"
-        stroke={fill}
-        strokeWidth={1.35}
+      <polygon
+        points={square.map(([a, b]) => `${a.toFixed(2)},${b.toFixed(2)}`).join(' ')}
+        fill="#93c5fd"
+        stroke={edge}
+        strokeWidth={0.5}
+        strokeLinejoin="round"
+        opacity={tipZOpacity}
       />
     </g>
   )
@@ -131,10 +250,9 @@ function Motif({
   label,
   className,
   opacity = 1,
-  /** Extra SVG transform after translate(x,y), e.g. scale(-1,-1) for inversion image. */
   orient = '',
-  /** Opposite hand (improper image). Same L; near/far cue reversed. */
   enantiomorph = false,
+  yawDeg = 0,
 }: {
   x: number
   y: number
@@ -144,10 +262,9 @@ function Motif({
   opacity?: number
   orient?: string
   enantiomorph?: boolean
+  yawDeg?: number
 }) {
-  const tf = orient
-    ? `translate(${x},${y}) ${orient}`
-    : `translate(${x},${y})`
+  const tf = orient ? `translate(${x},${y}) ${orient}` : `translate(${x},${y})`
   return (
     <g
       transform={tf}
@@ -155,16 +272,9 @@ function Motif({
       opacity={opacity}
       data-enantiomorph={enantiomorph ? 'flipped' : 'same'}
     >
-      <MotifGlyph fill={fill} enantiomorph={enantiomorph} />
+      <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} />
       {label ? (
-        <text
-          x={0}
-          y={18}
-          textAnchor="middle"
-          fill={fill}
-          fontSize={8}
-          fontWeight={700}
-        >
+        <text x={0} y={20} textAnchor="middle" fill={fill} fontSize={8} fontWeight={700}>
           {label}
         </text>
       ) : null}
@@ -172,22 +282,20 @@ function Motif({
   )
 }
 
-/** Motif at local origin — for CSS-transformed movers (same chiral glyph). */
 function MotifLocal({
   fill,
   className,
   enantiomorph = false,
+  yawDeg = 0,
 }: {
   fill: string
   className?: string
   enantiomorph?: boolean
+  yawDeg?: number
 }) {
   return (
-    <g
-      className={className}
-      data-enantiomorph={enantiomorph ? 'flipped' : 'same'}
-    >
-      <MotifGlyph fill={fill} enantiomorph={enantiomorph} />
+    <g className={className} data-enantiomorph={enantiomorph ? 'flipped' : 'same'}>
+      <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} />
     </g>
   )
 }
@@ -207,6 +315,76 @@ function CellFrame() {
   )
 }
 
+/**
+ * 2₁ mover: true screw = 180° about the vertical axis + ½ translation along it.
+ * Position orbits from left→right of the axis while yaw 0→180 (proper; hand kept).
+ * Pauses when the card is off-screen or prefers-reduced-motion.
+ */
+function ScrewGhost({ color }: { color: string }) {
+  const gRef = useRef<SVGGElement>(null)
+  const [pose, setPose] = useState({ x: 36, y: 22, yaw: 0, opacity: 1, active: true })
+
+  useEffect(() => {
+    const el = gRef.current
+    if (!el) return
+    const card = el.closest('.primer-card')
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    let raf = 0
+    let start = performance.now()
+    const PERIOD = 3400
+
+    const tick = (now: number) => {
+      const inview = !card || card.classList.contains('is-inview')
+      const still = reduce?.matches || !inview
+      if (still) {
+        setPose({ x: 36, y: 22, yaw: 0, opacity: 0, active: false })
+        raf = requestAnimationFrame(tick)
+        return
+      }
+      const u = ((now - start) % PERIOD) / PERIOD
+      // Motion phase 0–0.72: screw; hold; fade; reset
+      let p: number
+      let opacity = 1
+      if (u < 0.7) {
+        p = u / 0.7
+      } else if (u < 0.82) {
+        p = 1
+      } else if (u < 0.92) {
+        p = 1
+        opacity = 1 - (u - 0.82) / 0.1
+      } else {
+        p = 0
+        opacity = (u - 0.92) / 0.08
+      }
+      // Ease in-out
+      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
+      // Orbit in the horizontal plane about axis x=60: angle 0→π (left → right)
+      // Start at screen-left of axis; after 180° about vertical, on the right.
+      const ang = Math.PI * e
+      const radius = 24
+      const x = 60 - radius * Math.cos(ang)
+      const y = 22 + 28 * e // +½ along axis (down the card)
+      const yaw = 180 * e
+      setPose({ x, y, yaw, opacity, active: true })
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  return (
+    <g
+      ref={gRef}
+      className="primer-mover primer-screw-ghost"
+      transform={`translate(${pose.x},${pose.y})`}
+      opacity={pose.opacity}
+      data-screw-active={pose.active ? '1' : '0'}
+    >
+      <MotifLocal fill={color} enantiomorph={false} yawDeg={pose.yaw} />
+    </g>
+  )
+}
+
 function DemoArt({ id, color }: { id: DemoId; color: string }) {
   switch (id) {
     case 'identity':
@@ -215,14 +393,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <CellFrame />
           <g className="primer-mover primer-identity-pulse" transform="translate(60,34)">
             <MotifLocal fill={color} />
-            <text
-              x={0}
-              y={18}
-              textAnchor="middle"
-              fill={color}
-              fontSize={8}
-              fontWeight={700}
-            >
+            <text x={0} y={20} textAnchor="middle" fill={color} fontSize={8} fontWeight={700}>
               BASE
             </text>
           </g>
@@ -232,7 +403,6 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
-          {/* Static B / enantiomorphic I (point-inverted orientation) */}
           <Motif
             x={34}
             y={26}
@@ -242,25 +412,17 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             enantiomorph={false}
             className="primer-marker"
           />
-          {/* Improper: point inversion = scale(-1,-1) of the right-hand Motif */}
+          {/* Improper end: enantiomorph of the isometric L */}
           <Motif
             x={86}
             y={46}
             fill={color}
             label="I"
             opacity={0.35}
-            enantiomorph={false}
-            orient="scale(-1,-1)"
+            enantiomorph={true}
             className="primer-marker primer-static-end primer-hand-flipped"
           />
-          <circle
-            cx={60}
-            cy={36}
-            r={4}
-            fill="none"
-            stroke={color}
-            strokeWidth={1.6}
-          />
+          <circle cx={60} cy={36} r={4} fill="none" stroke={color} strokeWidth={1.6} />
           <circle cx={60} cy={36} r={1.4} fill={color} />
           <line
             x1={42}
@@ -273,7 +435,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             opacity={0.45}
             className="primer-guide-path"
           />
-          {/* Continuous point inversion about (60,36): scale(1→−1) of offset from B */}
+          {/* Continuous point inversion about (60,36) via CSS scale(-1,-1) */}
           <g className="primer-mover primer-inv-rotor">
             <MotifLocal fill={color} />
           </g>
@@ -283,7 +445,6 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
       return (
         <svg viewBox="0 0 120 72" className="primer-svg" aria-hidden>
           <CellFrame />
-          {/* ITA digon / lens only — axis ⊥ page (no in-plane stroke) */}
           <ellipse
             cx={60}
             cy={36}
@@ -294,7 +455,6 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             stroke={color}
             strokeWidth={1.6}
           />
-          {/* Same height; I is 180° in-plane (proper; L upside-down) */}
           <Motif
             x={38}
             y={36}
@@ -304,6 +464,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             enantiomorph={false}
             className="primer-marker"
           />
+          {/* Proper: same enantiomorph, 180° in the page plane (axis ⊥ page) */}
           <Motif
             x={82}
             y={36}
@@ -337,9 +498,8 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
               <path d="M0 0 L10 5 L0 10 z" fill={color} />
             </marker>
           </defs>
-          {/* Smooth 180° about lens center (60,36) */}
           <g className="primer-mover primer-twofold-rotor">
-            <Motif x={38} y={36} fill={color} />
+            <Motif x={38} y={36} fill={color} enantiomorph={false} />
           </g>
         </svg>
       )
@@ -347,7 +507,6 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
       return (
         <svg viewBox="0 0 120 78" className="primer-svg primer-screw" aria-hidden>
           <CellFrame />
-          {/* Side view: vertical screw axis only (no end-on lens) */}
           <line
             x1={60}
             y1={12}
@@ -357,7 +516,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeWidth={2.4}
             strokeLinecap="round"
           />
-          {/* ITA-ish 2₁ half-arrow ticks along the axis */}
+          {/* ITA-ish 2₁ half-arrow ticks */}
           <path
             d="M60 22 L67 19 M60 22 L67 25"
             fill="none"
@@ -374,8 +533,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-          {/* Proper 2₁: same enantiomorph both ends (near●/far○ kept). No scaleX(-1) —
-              that would be improper and look like the mirror card. Helix path + +½ teach the 180°. */}
+          {/* B: yaw 0 (foot toward). I: yaw 180 (foot away) — same enantiomorph, proper 2₁ */}
           <Motif
             x={36}
             y={22}
@@ -383,6 +541,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             label="B"
             opacity={0.35}
             enantiomorph={false}
+            yawDeg={0}
             className="primer-marker"
           />
           <Motif
@@ -392,6 +551,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             label="I"
             opacity={0.35}
             enantiomorph={false}
+            yawDeg={180}
             className="primer-marker primer-static-end"
           />
           <text x={10} y={74} fill={color} fontSize={7} fontWeight={600} opacity={0.9}>
@@ -409,10 +569,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <text x={68} y={16} fill={color} fontSize={9} fontWeight={700}>
             +½
           </text>
-          {/* Helical: across-axis + +½; foreshorten through axis; hand kept (no scaleX sign flip) */}
-          <g className="primer-mover primer-screw-ghost">
-            <MotifLocal fill={color} enantiomorph={false} />
-          </g>
+          <ScrewGhost color={color} />
         </svg>
       )
     case 'mirror':
@@ -435,9 +592,10 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             label="B"
             opacity={0.35}
             enantiomorph={false}
+            yawDeg={0}
             className="primer-marker"
           />
-          {/* Improper: opposite enantiomorph (near●/far○ reversed) + scaleX across the plane */}
+          {/* Improper: enantiomorph, foot still toward — unlike screw I (yaw 180, same hand) */}
           <Motif
             x={86}
             y={36}
@@ -445,13 +603,12 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             label="I"
             opacity={0.35}
             enantiomorph={true}
-            orient="scale(-1,1)"
+            yawDeg={0}
             className="primer-marker primer-static-end"
           />
           <text x={10} y={74} fill="#fde68a" fontSize={7} fontWeight={600} opacity={0.9}>
             improper — hand flips
           </text>
-          {/* Continuous scaleX(-1) about the mirror line x=60 — improper; hand cue flips */}
           <g className="primer-mover primer-mirror-rotor">
             <MotifLocal fill="#38bdf8" enantiomorph={false} />
           </g>
@@ -479,15 +636,13 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             enantiomorph={false}
             className="primer-marker"
           />
-          {/* Improper: reflect then translate — scaleY(-1) of the right-hand Motif */}
           <Motif
             x={88}
             y={50}
             fill={color}
             label="I"
             opacity={0.35}
-            enantiomorph={false}
-            orient="scale(1,-1)"
+            enantiomorph={true}
             className="primer-marker primer-static-end primer-hand-flipped"
           />
           <path
@@ -514,7 +669,6 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <text x={50} y={26} fill={color} fontSize={8} fontWeight={700}>
             glide →
           </text>
-          {/* Reflect across y=36 (scaleY), then translate along the plane */}
           <g className="primer-mover primer-glide-ghost">
             <MotifLocal fill={color} />
           </g>

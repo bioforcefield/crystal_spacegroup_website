@@ -2006,7 +2006,7 @@ button {
 /*
  * 2. Inversion (improper) — continuous point inversion about (60,36):
  * translate(center) scale(s,s) translate(-startRel) with s: 1 → −1.
- * Same chiral L; end pose is enantiomorphic (not a glyph swap).
+ * Isometric chiral L; end pose is enantiomorphic (not a badge swap).
  */
 @keyframes primer-inv {
   from {
@@ -2059,53 +2059,19 @@ button {
 }
 
 /*
- * 4. 2₁ screw (proper) — side view: slide +½ across the axis.
- * Foreshorten scaleX through the axis (edge-on) but NEVER flip the sign —
- * scaleX(-1) is improper and would match the mirror card. Handedness cue kept.
+ * 4. 2₁ screw (proper) — JS-driven ScrewGhost in SymmetryPrimer.tsx:
+ * yaw 0→180 about the vertical axis + translate +½ along it (same enantiomorph).
+ * No CSS scaleX(-1). Static B yaw=0 / I yaw=180. Reduced-motion & off-screen
+ * handled inside ScrewGhost (opacity 0); markers remain for the end poses.
  */
-@keyframes primer-screw {
-  0% {
-    transform: translate(36px, 22px) scale(1, 1);
-    opacity: 1;
-  }
-  40% {
-    transform: translate(54px, 34px) scale(0.18, 1);
-    opacity: 0.9;
-  }
-  50% {
-    transform: translate(66px, 38px) scale(0.18, 1);
-    opacity: 0.9;
-  }
-  72% {
-    transform: translate(84px, 50px) scale(1, 1);
-    opacity: 1;
-  }
-  86% {
-    transform: translate(84px, 50px) scale(1, 1);
-    opacity: 1;
-  }
-  94% {
-    transform: translate(84px, 50px) scale(1, 1);
-    opacity: 0;
-  }
-  95% {
-    transform: translate(36px, 22px) scale(1, 1);
-    opacity: 0;
-  }
-  100% {
-    transform: translate(36px, 22px) scale(1, 1);
-    opacity: 1;
-  }
-}
-
-.primer-card.is-inview .primer-screw-ghost {
-  transform-origin: 0px 0px;
-  animation: primer-screw 3.2s ease-in-out infinite;
+.primer-screw-ghost {
+  transform-origin: 0 0;
+  will-change: transform, opacity;
 }
 
 /*
  * 5. Mirror (improper) — continuous scaleX(-1) about the vertical plane x=60.
- * Same L becomes its mirror image; near●/far○ cue flips with the transform.
+ * Isometric L becomes its enantiomorph (static I uses enantiomorph={true}).
  */
 @keyframes primer-mirror {
   from {
