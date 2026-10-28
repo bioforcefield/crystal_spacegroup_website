@@ -49,5 +49,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `4f58e9a` · primer 2-fold top-down / 2₁ side-view redesign
-- gh-pages: `d1f32c7` (COD/visits; CNAME; 735 tests; distinct 2 vs 2₁ primer)
+- main: `4955bb2` · primer handedness contrast (screw keeps hand; mirror flips)
+- gh-pages: `7f2d84b` (COD/visits; CNAME; 736 tests; near●/far○ cue)
