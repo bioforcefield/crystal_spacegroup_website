@@ -47,5 +47,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `4955bb2` · primer handedness contrast (screw keeps hand; mirror flips)
-- gh-pages: `7f2d84b` (COD/visits; CNAME; 736 tests; near●/far○ cue)
+- main:  · isometric chiral L + crystallographic 2₁ (yaw 0→180 + ½)
+- gh-pages:  (COD/visits; CNAME; 736 tests; no flat ●/○)
