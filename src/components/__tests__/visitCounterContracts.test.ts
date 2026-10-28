@@ -12,11 +12,18 @@ function readSrc(rel: string): string {
 }
 
 describe('Visit counter footer contracts', () => {
-  it('SiteCopyright renders VisitCounter under the copyright line', () => {
+  it('SiteCopyright puts (VisitCounter) at end of the copyright line', () => {
     const src = readSrc('src/components/SiteCopyright.tsx')
     expect(src).toMatch(/import VisitCounter from '\.\/VisitCounter'/)
-    expect(src).toMatch(/<VisitCounter\s*\/>/)
-    expect(src).toMatch(/site-copyright-meta/)
+    expect(src).not.toMatch(/site-copyright-meta/)
+    expect(src).toMatch(/bioforcefield@gmail\.com<\/a> \(\s*<VisitCounter\s*\/>\)\s*<\/p>/)
+    expect((src.match(/<p\b/g) ?? []).length).toBe(1)
+  })
+
+  it('visit counter CSS is inline (no meta block)', () => {
+    const css = readSrc('src/index.css')
+    expect(css).not.toMatch(/site-copyright-meta/)
+    expect(css).toMatch(/\.visit-counter \{[^}]*display: inline;/)
   })
 
   it('index-shell App chrome still mounts SiteCopyright', () => {
@@ -32,6 +39,9 @@ describe('Visit counter footer contracts', () => {
     expect(sg).toMatch(/visit-counter--footer/)
     expect(cif).toMatch(/VisitCounter/)
     expect(cif).toMatch(/visit-counter--footer/)
+    for (const src of [sg, cif]) {
+      expect(src).toMatch(/\{' \('\}\s*<VisitCounter className="visit-counter--footer" \/>\s*\{'\)'\}\s*<\/span>/)
+    }
   })
 
   it('worker exposes /visits with Durable Object binding', () => {

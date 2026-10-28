@@ -702,8 +702,10 @@ export default function CifViewport({
           {canShowElements && showSymmetryElements
             ? ` · ${elementCount} symmetry loci on CIF cell`
             : ''}
+          {' ('}
+          <VisitCounter className="visit-counter--footer" />
+          {')'}
         </span>
-        <VisitCounter className="visit-counter--footer" />
       </footer>
     </main>
   )

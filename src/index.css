@@ -1058,15 +1058,8 @@ button {
   border-top: 1px solid var(--panel-border);
 }
 
-.site-copyright-line,
-.site-copyright-meta {
+.site-copyright-line {
   margin: 0;
-}
-
-.site-copyright-meta {
-  margin-top: 0.35rem;
-  font-size: 0.74rem;
-  opacity: 0.92;
 }
 
 .site-copyright a {
@@ -1080,6 +1073,7 @@ button {
 }
 
 .visit-counter {
+  display: inline;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   color: var(--muted);
@@ -1092,9 +1086,7 @@ button {
 }
 
 .visit-counter--footer {
-  flex: 0 0 auto;
-  font-size: 0.74rem;
-  opacity: 0.9;
+  display: inline;
 }
 
 .index-page {
