@@ -486,7 +486,7 @@ export default function CifViewport({
                 title="Wrap every atom into the unit cell [0,1)³"
               >
                 <span className="label-full">In cell</span>
-                <span className="label-short">Cell</span>
+                <span className="label-short">Wrap</span>
               </button>
             </div>
             <div

@@ -2775,26 +2775,33 @@ a.csd-bar-row.ready:hover {
   left: 0.4rem;
   bottom: 0.4rem;
   z-index: 5;
-  display: inline-flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0.12rem 0.32rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08rem;
   width: max-content;
   max-width: calc(100% - 0.8rem);
-  padding: 0.16rem 0.32rem;
+  padding: 0.18rem 0.36rem;
   border-radius: 6px;
   border: 1px solid rgba(125, 211, 252, 0.22);
   background: rgba(7, 11, 20, 0.72);
   backdrop-filter: blur(6px);
   font-size: 0.62rem;
   line-height: 1.15;
-  pointer-events: auto;
+  pointer-events: none;
   color: #e2e8f0;
 }
 
-.cif-cell-badge.is-expanded {
+.cif-cell-badge-row {
+  display: inline-flex;
   flex-wrap: wrap;
-  max-width: min(16rem, calc(100% - 0.8rem));
+  align-items: baseline;
+  gap: 0.1rem 0.35rem;
+  max-width: 100%;
+}
+
+.cif-cell-badge-meta {
+  gap: 0.15rem 0.45rem;
 }
 
 .cif-cell-axis {
@@ -2809,46 +2816,15 @@ a.csd-bar-row.ready:hover {
 .cif-cell-axis.c { color: #60a5fa; }
 
 .cif-cell-angles {
-  flex: 1 1 100%;
   color: #94a3b8;
-  font-size: 0.58rem;
+  font-size: 0.56rem;
+  white-space: nowrap;
 }
 
 .cif-cell-origin {
-  flex: 1 1 100%;
   color: #fbbf24;
   font-size: 0.56rem;
-}
-
-.cif-cell-more {
-  appearance: none;
-  border: 1px solid color-mix(in srgb, #7dd3fc 30%, transparent);
-  background: color-mix(in srgb, #0f172a 70%, #1e293b);
-  color: #bae6fd;
-  font: inherit;
-  font-size: 0.56rem;
-  font-weight: 600;
-  padding: 0.06rem 0.32rem;
-  border-radius: 999px;
-  cursor: pointer;
-  pointer-events: auto;
-  line-height: 1.15;
-  flex: 0 0 auto;
-}
-.cif-cell-more:hover {
-  border-color: #7dd3fc;
-  color: #e0f2fe;
-}
-.cif-cell-more:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 1px;
-}
-.cif-cell-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.1rem 0.4rem;
-  flex: 1 1 100%;
-  width: 100%;
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {
@@ -3123,9 +3099,9 @@ button.linkish {
   .cif-explorer .cif-cell-badge { display: none; }
   .cif-explorer .cif-cell-strip {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.1rem 0.4rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.08rem;
     padding: 0.28rem 0.5rem;
     border-top: 1px solid var(--panel-border);
     border-bottom: 1px solid var(--panel-border);
@@ -3136,12 +3112,7 @@ button.linkish {
   }
   .cif-explorer .cif-cell-strip .cif-cell-angles,
   .cif-explorer .cif-cell-strip .cif-cell-origin {
-    flex: 0 1 auto;
     font-size: 0.62rem;
-  }
-  .cif-explorer .cif-cell-strip .cif-cell-more {
-    font-size: 0.6rem;
-    padding: 0.08rem 0.35rem;
   }
   /* Toolbar wraps into tidy rows (no sideways scroll) with touch targets */
   .app.layout-demo.cif-explorer .viewport-toolbar {
@@ -3487,8 +3458,7 @@ button.linkish {
   margin-top: 0.45rem;
 }
 .cif-display-toggle:focus-visible,
-.cif-help-toggle:focus-visible,
-.cif-cell-more:focus-visible {
+.cif-help-toggle:focus-visible {
   outline: 2px solid #38bdf8;
   outline-offset: 2px;
 }

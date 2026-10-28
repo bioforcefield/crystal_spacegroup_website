@@ -33,7 +33,12 @@ import {
   residueColor,
   uIsoRadiusScale,
 } from '../data/cif/thermal'
-import { CIF_FOV, fitDistanceForSphere } from '../data/cif/fitCamera'
+import {
+  CIF_FOV,
+  aspectForFit,
+  computeCifViewBounds,
+  fitDistanceForSphere,
+} from '../data/cif/fitCamera'
 
 export type { CifPlacementMode }
 export type { CifVisibility }
@@ -43,7 +48,6 @@ function fmtLen(v: number): string {
   return v >= 10 ? v.toFixed(2) : v.toFixed(3)
 }
 
-const CIF_BOUND_PAD = 0.45
 /** Match SG demos: origin toward the front of Reset view. */
 const CIF_CAM_DIR = new THREE.Vector3(-2.4, 1.35, -2.6).normalize()
 
@@ -160,6 +164,10 @@ function applyCifFit(
   const dist = fitDistanceForSphere(bounds.radius, CIF_FOV, aspect)
   const dir = CIF_CAM_DIR.clone()
   const target = bounds.center
+  if (camera instanceof THREE.PerspectiveCamera) {
+    camera.aspect = aspect
+    camera.updateProjectionMatrix()
+  }
   camera.position.set(
     target.x + dir.x * dist,
     target.y + dir.y * dist,
@@ -169,6 +177,12 @@ function applyCifFit(
   ctrl.update()
 }
 
+/**
+ * Frame the CIF cell once the WebGL canvas has a real size.
+ * First paint often reports 0×0 (or a pathological flex size); fitting then
+ * zooms to infinity and the cell looks like a black speck until a later
+ * reflow (e.g. toggling the old Cell expand). Retry until size is usable.
+ */
 function FitCifCamera({
   bounds,
   controlsRef,
@@ -178,30 +192,79 @@ function FitCifCamera({
   controlsRef: RefObject<OrbitControlsImpl | null>
   resetToken: number
 }) {
-  const { camera, size } = useThree()
+  const { camera, size, gl } = useThree()
 
   useEffect(() => {
-    const aspect =
-      size.width > 0 && size.height > 0
-        ? size.width / size.height
-        : camera instanceof THREE.PerspectiveCamera
-          ? camera.aspect
-          : 1
+    let cancelled = false
+    let raf = 0
+    let attempts = 0
+    const maxAttempts = 180 // ~3s at 60fps — cover layout settle after CIF load
 
-    const tryFit = () => {
+    const measure = () => {
+      // Prefer live DOM box: R3F `size` can lag a flex reflow that CSS
+      // `height:100% !important` already painted (Cell-click "fixed" that).
+      const dom = gl.domElement
+      const parent = dom.parentElement
+      const w = Math.max(
+        size.width,
+        dom.clientWidth || 0,
+        parent?.clientWidth || 0,
+      )
+      const h = Math.max(
+        size.height,
+        dom.clientHeight || 0,
+        parent?.clientHeight || 0,
+      )
+      return { w, h }
+    }
+
+    const tryFit = (): boolean => {
       const ctrl = controlsRef.current
       if (!ctrl) return false
+      const { w, h } = measure()
+      const aspect = aspectForFit(
+        w,
+        h,
+        camera instanceof THREE.PerspectiveCamera ? camera.aspect : undefined,
+      )
+      if (aspect == null) return false
       applyCifFit(camera, ctrl, bounds, aspect)
       return true
     }
 
-    if (tryFit()) return
+    const tick = () => {
+      if (cancelled) return
+      if (tryFit()) {
+        // Layout can still settle one frame later (toolbar wrap, sidebar).
+        raf = window.requestAnimationFrame(() => {
+          if (!cancelled) tryFit()
+        })
+        return
+      }
+      attempts += 1
+      if (attempts < maxAttempts) {
+        raf = window.requestAnimationFrame(tick)
+      }
+    }
 
-    // OrbitControls ref is assigned after first commit — retry next frame.
-    const id = window.requestAnimationFrame(() => {
-      tryFit()
-    })
-    return () => window.cancelAnimationFrame(id)
+    tick()
+    // Also re-fit when the canvas element itself resizes (flex / absolute frame).
+    const ro =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => {
+            if (!cancelled) tryFit()
+          })
+        : null
+    if (ro) {
+      ro.observe(gl.domElement)
+      if (gl.domElement.parentElement) ro.observe(gl.domElement.parentElement)
+    }
+
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(raf)
+      ro?.disconnect()
+    }
   }, [
     bounds.center.x,
     bounds.center.y,
@@ -213,6 +276,7 @@ function FitCifCamera({
     camera,
     controlsRef,
     bounds,
+    gl,
   ])
 
   return null
@@ -277,24 +341,19 @@ function SceneBody({
 
   /** AABB of cell + visible atoms in cell-centred coords (nearest images can sit off-centre). */
   const viewBounds = useMemo(() => {
-    const box = new THREE.Box3()
+    const pts: [number, number, number][] = []
     for (const p of cellCornersCart(structure.cell)) {
-      box.expandByPoint(
-        new THREE.Vector3(p[0] - center[0], p[1] - center[1], p[2] - center[2]),
-      )
+      pts.push([p[0] - center[0], p[1] - center[1], p[2] - center[2]])
     }
     for (const i of visibleIndices) {
       const p = placement.positions[i]!
-      box.expandByPoint(
-        new THREE.Vector3(p[0] - center[0], p[1] - center[1], p[2] - center[2]),
-      )
+      pts.push([p[0] - center[0], p[1] - center[1], p[2] - center[2]])
     }
-    const mid = new THREE.Vector3()
-    const size = new THREE.Vector3()
-    box.getCenter(mid)
-    box.getSize(size)
-    const radius = 0.5 * size.length() + CIF_BOUND_PAD
-    return { center: mid, radius: Math.max(radius, 1) }
+    const b = computeCifViewBounds(pts)
+    return {
+      center: new THREE.Vector3(b.center.x, b.center.y, b.center.z),
+      radius: b.radius,
+    }
   }, [structure.cell, center, visibleIndices, placement.positions])
 
 
