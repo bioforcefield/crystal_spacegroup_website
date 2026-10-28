@@ -49,5 +49,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: _(pending commit)_ · primer course-correct: restore geometric movers; static ≡ anim ends
-- gh-pages: _(pending deploy)_
+- main: `aa9b33a` · primer course-correct: restore geometric movers; static ≡ anim ends
+- gh-pages: `47f06a2` (COD/visits; CNAME; 739 tests)
