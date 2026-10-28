@@ -4,7 +4,8 @@ Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crys
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
 ## Primer animations (2026-10-28)
-- Home `#primer` cards loop CSS/SVG demos (identity pulse, inversion through ⊙, 2-fold constant-height 180°, 2₁ helix +½, mirror flip, glide reflect→translate).
+- Home `#primer` cards loop CSS/SVG demos (identity pulse, inversion through ⊙, **2-fold top-down lens** 180° ⊥ page, **2₁ side view** upright +½ left↔right, mirror flip, glide reflect→translate).
+- 2 vs 2₁ use distinct viewpoints on purpose (lens-only vs vertical axis + half-arrow ticks); fade-reset loops, not alternate reverse.
 - Pause off-screen (`IntersectionObserver` + `.is-inview`); `prefers-reduced-motion: reduce` → static B/I markers.
 - Contracts: `src/data/primer/__tests__/symmetryPrimerContracts.test.ts`.
 
@@ -45,5 +46,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `02da56a` · primer animations
-- gh-pages: `8f7dc5a` (COD/visits; CNAME; 735 tests; chiral-L primer orientation)
+- main: `4f58e9a` · primer 2-fold top-down / 2₁ side-view redesign
+- gh-pages: `d1f32c7` (COD/visits; CNAME; 735 tests; distinct 2 vs 2₁ primer)
