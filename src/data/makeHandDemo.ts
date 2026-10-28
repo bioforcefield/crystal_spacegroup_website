@@ -22,6 +22,7 @@ import type {
   SymmetryClassId,
   Vec3,
 } from './types'
+import { pickTeachingSeed } from './teachingSeed'
 
 interface ItaGroupRecord {
   number: number
@@ -35,8 +36,6 @@ interface ItaGroupRecord {
 const ITA = itaJson as { groups: ItaGroupRecord[] }
 const itaByNumber = new Map(ITA.groups.map((g) => [g.number, g]))
 const catalogByNumber = new Map(SPACE_GROUPS.map((g) => [g.number, g]))
-
-const SEED: Vec3 = [0.17, 0.23, 0.31]
 
 function teachingCell(system: CrystalSystemId): CellParams {
   switch (system) {
@@ -150,7 +149,9 @@ export function makeHandDemo(spec: HandDemoSpec): SpaceGroupDemo {
       blurb: spec.blurb,
     },
     cell: spec.cell ?? teachingCell(catalog.system),
-    seed: spec.seed ?? SEED,
+    seed: spec.seed
+      ? spec.seed
+      : pickTeachingSeed(operators, spec.cell ?? teachingCell(catalog.system), raw.multiplicity),
     operators,
     symmetryClasses: SYMMETRY_CLASSES,
     classLegendOrder: legend.length ? legend : ['identity'],

@@ -14,6 +14,7 @@ import {
 import { parseTriplet } from '../parseTriplet'
 import { checkClosure } from '../closure'
 import type { Vec3 } from '../../types'
+import { minMotifSeparation, MIN_MOTIF_SEPARATION as SHARED_MIN } from '../../teachingSeed'
 
 const ITA_SG11 = (
   itaJson as {
@@ -116,8 +117,10 @@ describe('SG 11 · P21/m teaching cell', () => {
   })
 
   it('expanded AU motifs have no near-coincident overlaps', () => {
+    expect(MIN_MOTIF_SEPARATION).toBe(SHARED_MIN)
     const minD = minPairwiseCart(SEED)
     expect(minD).toBeGreaterThan(MIN_MOTIF_SEPARATION)
+    expect(minMotifSeparation(OPERATORS, SEED, CELL)).toBeCloseTo(minD, 9)
 
     // Regression: the old P21/c-shared seed collapses onto the mirror.
     const badSeed: Vec3 = [0.18, 0.22, 0.31]

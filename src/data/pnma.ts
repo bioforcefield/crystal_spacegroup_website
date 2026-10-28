@@ -17,7 +17,7 @@ import type {
 export const CELL: CellParams = { a: 1, b: 1.2, c: 1.5 }
 
 /** Seed off special positions (fractional). */
-export const SEED: Vec3 = [0.22, 0.15, 0.3]
+export const SEED: Vec3 = [0.13, 0.07, 0.13]
 
 /** Teaching palette — dedicated mirror class for pure m ⊥ b. */
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {

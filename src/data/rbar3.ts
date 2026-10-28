@@ -17,7 +17,7 @@ import { buildOperatorsFromTriplets } from './groups'
 export const CELL: CellParams = { a: 1, b: 1, c: 1.5, gammaDeg: 120 }
 
 /** Seed off special positions (fractional). */
-export const SEED: Vec3 = [0.17, 0.23, 0.31]
+export const SEED: Vec3 = [0.07, 0.37, 0.07]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },

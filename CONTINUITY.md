@@ -14,6 +14,12 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - Root cause: teaching seed reused P21/c’s `[0.18, 0.22, 0.31]` so Δy to the mirror ≈ 0.03; identity↔mirror (and 2₁↔inversion) sat ~0.07 apart with no c-glide to separate them.
 - Fix: seed → `[0.18, 0.08, 0.31]` (general position; min pairwise ≈ 0.39). Tests: `p21mPlacement.test.ts`.
 
+## Teaching AU seed clearance (2026-10-28)
+- Audit of all 230 demos: many shared default seeds (`[0.17,0.23,0.31]` / monoclinic `[0.18,0.22,0.31]` / ortho `[0.22,0.15,0.3]`) sat near mirrors or diagonal planes — same class of bug as SG 11.
+- Shared module `src/data/teachingSeed.ts`: `minMotifSeparation`, `pickTeachingSeed`, scaled clearance floors.
+- `generatedDemo` + `makeHandDemo` auto-pick seeds; 41 hand files retuned. No ITA operator bugs found.
+- Tests: `teachingSeed.test.ts` (+ link from `p21mPlacement.test.ts`). Suite 687 green.
+
 ## CIF map — camera + Cell HUD (2026-10-27 night)
 - Root cause of “invisible 3D until Cell click”: FitCifCamera ran once on a 0/pathological canvas size (or lagged R3F `size`); expanding the Cell chip reflowed the flex canvas and only then re-fit.
 - Fix: `aspectForFit` / `isUsableCanvasSize` / clamped aspect; retry + ResizeObserver + live `clientWidth/Height`; `updateProjectionMatrix`; pure `computeCifViewBounds`.

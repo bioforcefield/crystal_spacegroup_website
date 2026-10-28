@@ -21,8 +21,8 @@ import type {
   Operator,
   SpaceGroupDemo,
   SymmetryClassId,
-  Vec3,
 } from './types'
+import { pickTeachingSeed } from './teachingSeed'
 
 export interface ItaGroupRecord {
   number: number
@@ -46,8 +46,6 @@ const ITA = itaJson as ItaFile
 const itaByNumber = new Map(ITA.groups.map((g) => [g.number, g]))
 const catalogByNumber = new Map(SPACE_GROUPS.map((g) => [g.number, g]))
 const demoCache = new Map<number, SpaceGroupDemo>()
-
-const SEED: Vec3 = [0.17, 0.23, 0.31]
 
 /** Prefer these classes when building a short teaching focus list. */
 const FOCUS_CLASS_PRIORITY: SymmetryClassId[] = [
@@ -320,6 +318,7 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
     ? ' Some exotic loci are still listed as operators only.'
     : ` Overlays: ${derived.axes.length} axis locus(i), ${derived.glides.length} plane(s), ${derived.inversions.length} inversion(s).`
 
+  const cell = teachingCell(catalog.system)
   const demo: SpaceGroupDemo = {
     meta: {
       number: n,
@@ -330,8 +329,8 @@ export function buildGeneratedDemo(n: number): SpaceGroupDemo | undefined {
       multiplicity: raw.multiplicity,
       blurb: `ITA No. ${n} · ${catalog.hm} — ${systemName}, ${lattice.toLowerCase()} lattice, multiplicity ${raw.multiplicity}. ${summary}.${csdBit} Auto-generated from standard ITA general positions (not hand-tuned).${overlayBit} Click an operator to highlight BASE → IMAGE.`,
     },
-    cell: teachingCell(catalog.system),
-    seed: SEED,
+    cell,
+    seed: pickTeachingSeed(operators, cell, raw.multiplicity),
     operators,
     symmetryClasses: SYMMETRY_CLASSES,
     classLegendOrder,

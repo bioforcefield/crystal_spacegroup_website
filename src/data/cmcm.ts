@@ -16,7 +16,7 @@ import { buildOperatorsFromTriplets } from './groups'
 import itaJson from './itaSpaceGroups.json'
 
 export const CELL: CellParams = { a: 1, b: 1.2, c: 1.4 }
-export const SEED: Vec3 = [0.22, 0.15, 0.3]
+export const SEED: Vec3 = [0.21, 0.11, 0.11]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / C-centring', color: '#38bdf8' },
