@@ -264,12 +264,11 @@ function spaFallback404() {
   }
 }
 
-// GitHub Pages project site: /crystal_spacegroup_website/
-// Local `vite` / default build keep base "/" unless PAGES=1.
-const pages = process.env.PAGES === '1'
-
+// Custom domain crystalspacegroups.com is canonical → asset base "/".
+// (Project-pages path /crystal_spacegroup_website/ is no longer used.)
+// npm run build:pages still sets PAGES=1 for the deploy script; Vite base is always "/".
 export default defineConfig({
-  base: pages ? '/crystal_spacegroup_website/' : '/',
+  base: '/',
   plugins: [react(), spaFallback404(), codSearchDevProxy(), crossrefDevProxy()],
   build: {
     rollupOptions: {

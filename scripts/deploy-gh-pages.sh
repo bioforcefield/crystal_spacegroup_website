@@ -10,6 +10,8 @@ cleanup() { rm -rf "$TMP"; }
 trap cleanup EXIT
 cp -a dist/. "$TMP/"
 touch "$TMP/.nojekyll"
+# Preserve custom domain on orphan gh-pages (GitHub Pages Custom domain)
+printf '%s\n' 'crystalspacegroups.com' > "$TMP/CNAME"
 # Sanity: refuse if node_modules sneaks in
 if [[ -e "$TMP/node_modules" ]]; then
   echo "Refusing deploy: node_modules present in staging dir" >&2
