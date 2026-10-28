@@ -44,6 +44,29 @@ function nearScrewPair(d: SpaceGroupDemo, op: Operator) {
   return { base, img, raw }
 }
 
+
+/** Perpendicular fractional components relative to an axis origin. */
+function perpDeltas(p: Vec3, origin: Vec3, direction: Vec3): number[] {
+  const out: number[] = []
+  for (let i = 0; i < 3; i++) {
+    if (Math.abs(direction[i]!) > 0.5) continue
+    out.push(p[i]! - origin[i]!)
+  }
+  return out
+}
+
+/** True when BASE and IMAGE lie on opposite sides of the primary axis. */
+function straddlesPrimaryAxis(
+  base: Vec3,
+  image: Vec3,
+  origin: Vec3,
+  direction: Vec3,
+): boolean {
+  const b = perpDeltas(base, origin, direction)
+  const im = perpDeltas(image, origin, direction)
+  return b.some((v, i) => v * im[i]! < -1e-9)
+}
+
 describe('teachingScrewSense', () => {
   it('flips axis so dominant component is positive (+c preferred)', () => {
     expect(teachingScrewSense([0, 0, -1])).toEqual([0, 0, 1])
@@ -100,6 +123,32 @@ describe('Near screw placement — compact raw image', () => {
     ).toBeGreaterThan(0)
   })
 
+
+  it('C2 2₁ Near keeps compact raw image across (¼,y,0) — axis between units', () => {
+    const d = getDemo(5)!
+    expect(d.meta.hm).toBe('C2')
+    const { op: screw, ax } = primaryScrew(d)
+    expect(ax.origin).toEqual([0.25, 0, 0])
+    expect(ax.kind).toBe('21')
+    expect(ax.direction).toEqual([0, 1, 0])
+
+    const { base, img, raw } = nearScrewPair(d, screw)
+    // Raw mate peeks to z < 0; compact must NOT wrap +(0,0,1) (that puts
+    // both motifs on the +z side so the drawn screw misses the segment).
+    expect(raw[2]!).toBeLessThan(0)
+    expect(isCompactScrewImage(raw, img.fractional)).toBe(true)
+    expect(img.fractional[2]!).toBeLessThan(0)
+    expect(
+      straddlesPrimaryAxis(base.fractional, img.fractional, ax.origin, ax.direction),
+    ).toBe(true)
+    // a straddles ¼; c straddles 0 (axis at z=0).
+    expect((base.fractional[0]! - 0.25) * (img.fractional[0]! - 0.25)).toBeLessThan(0)
+    expect(base.fractional[2]! * img.fractional[2]!).toBeLessThan(0)
+    expect(
+      screwAdvanceAlongSense(base.fractional, img.fractional, ax.direction),
+    ).toBeGreaterThan(0)
+  })
+
   it('P212121 c-screw Near advances along +c without a wild lattice hop', () => {
     const d = getDemo(19)!
     const { op: screw } = primaryScrew(d, (o) => Math.abs(o.t[2]!) > 0.2)
@@ -120,6 +169,7 @@ describe('Near screw matrix — compact + axis sense', () => {
     /** Expect positive advance along teachingScrewSense when true. */
     sense?: boolean
   }[] = [
+    { n: 5, label: 'C2 2₁‖b', sense: true },
     { n: 14, label: 'P21/c 2₁‖b', sense: true },
     { n: 11, label: 'P21/m 2₁‖b', sense: true },
     { n: 15, label: 'C2/c 2₁‖b', sense: true },

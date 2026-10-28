@@ -3,6 +3,11 @@
 Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+## Near C2 2₁ compact (2026-10-28)
+- C2 screw (`classId === 'screw'`, axis at (¼,y,0)): bumped `SCREW_COMPACT_LATTICE_WEIGHT` 0.1 → 0.2 so Near keeps the raw Seitz mate (z≈−0.31) instead of wrapping +(0,0,1).
+- Outside-cell + pair-distance had beaten weight 0.1; the wrap put both motifs on the +z side so the drawn 2₁ missed the BASE–IMAGE segment.
+- Pure 2-fold weight inherits the same constant. Regression: `screwSense.test.ts` C2 2₁ straddle.
+
 ## Near twofold compact (2026-10-28)
 - Pure 2-fold (`classId === 'twofold'`) Near now uses the same compact raw-Seitz lattice weight as screws (`TWOFOLD_COMPACT_LATTICE_WEIGHT` = screw weight).
 - Fixes C2: BASE/IMAGE straddle the drawn axis at (0,y,0) instead of same-side +(1,0,1) wrap into the cell.

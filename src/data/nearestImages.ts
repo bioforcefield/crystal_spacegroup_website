@@ -295,12 +295,15 @@ function placedWrapped(demo: SpaceGroupDemo): PlacementResult {
 
 /**
  * Near axis scoring weights (ITA teaching cases: P21/c compact −a image,
- * C2 pure 2-fold across (0,y,0), P212121 +c advance, P41/I41 axial screws).
+ * C2 2₁ across (¼,y,0), C2 pure 2-fold across (0,y,0), P212121 +c advance,
+ * P41/I41 axial screws).
  * Do NOT reintroduce a hard “force Δc ≥ 0” lattice-hop rule — that parked
  * P21/c on the far +a side.
+ * SCREW_COMPACT must beat outsideCell + pair-distance for a modest peek
+ * outside the box (C2 2₁ raw z≈−0.31 vs wrap +(0,0,1)); 0.1 was too weak.
  */
 /** Prefer raw Seitz image over a same-side copy across the cell (a≈−¼ vs a≈¾). */
-const SCREW_COMPACT_LATTICE_WEIGHT = 0.1
+const SCREW_COMPACT_LATTICE_WEIGHT = 0.2
 /** Same compact raw-Seitz preference for pure 2-folds (C2 / P2). */
 const TWOFOLD_COMPACT_LATTICE_WEIGHT = SCREW_COMPACT_LATTICE_WEIGHT
 /** Soft penalty when advance along teachingScrewSense is negative (‖ b for P21/c). */
