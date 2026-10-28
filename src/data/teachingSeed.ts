@@ -322,3 +322,75 @@ export function minPlaneClearance(operators: Operator[], seed: Vec3): number {
   }
   return min
 }
+
+
+/**
+ * Projection-readable radial clearance target from screw / rotation axes
+ * (fractional, in the plane ⊥ the axis). P21/c aims ≈0.25–0.30. Dense packs
+ * with many axis families get a softer bar.
+ */
+export function scaledScrewClearance(multiplicity: number): number {
+  if (multiplicity <= 4) return 0.18
+  if (multiplicity <= 8) return 0.14
+  if (multiplicity <= 16) return 0.10
+  if (multiplicity <= 48) return 0.06
+  return 0.03
+}
+
+export type ScrewAxisLike = {
+  origin: Vec3
+  direction: Vec3
+}
+
+/**
+ * Smallest perpendicular distance (fractional L2 in the plane ⊥ the axis)
+ * from the seed to any screw/rotation axis, wrapping to the nearest lattice
+ * image of each axis (±1 cells). Returns Infinity when `screwAxes` is empty.
+ *
+ * When `cell` is provided, the same foot-of-perpendicular is measured in
+ * Cartesian teaching-cell units (useful for non-orthogonal cells).
+ */
+export function minScrewClearance(
+  seed: Vec3,
+  screwAxes: readonly ScrewAxisLike[],
+  cell?: CellParams,
+): number {
+  if (!screwAxes.length) return Infinity
+  let min = Infinity
+  for (const ax of screwAxes) {
+    const d = ax.direction
+    const len2 = d[0]! * d[0]! + d[1]! * d[1]! + d[2]! * d[2]!
+    if (len2 < 1e-18) continue
+    for (let ix = -1; ix <= 1; ix++) {
+      for (let iy = -1; iy <= 1; iy++) {
+        for (let iz = -1; iz <= 1; iz++) {
+          const O: Vec3 = [
+            ax.origin[0]! + ix,
+            ax.origin[1]! + iy,
+            ax.origin[2]! + iz,
+          ]
+          const v: Vec3 = [
+            seed[0]! - O[0],
+            seed[1]! - O[1],
+            seed[2]! - O[2],
+          ]
+          const t = (v[0]! * d[0]! + v[1]! * d[1]! + v[2]! * d[2]!) / len2
+          const foot: Vec3 = [
+            O[0]! + t * d[0]!,
+            O[1]! + t * d[1]!,
+            O[2]! + t * d[2]!,
+          ]
+          const dist = cell
+            ? cartDist(seed, foot, cell)
+            : Math.hypot(
+                seed[0]! - foot[0]!,
+                seed[1]! - foot[1]!,
+                seed[2]! - foot[2]!,
+              )
+          if (dist < min) min = dist
+        }
+      }
+    }
+  }
+  return min
+}

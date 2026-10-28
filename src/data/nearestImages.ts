@@ -26,6 +26,49 @@ import {
 } from './latticeNeighbors'
 
 export type PlacementMode = 'nearest' | 'wrapped'
+
+/**
+ * Teaching screw advance sense: flip `direction` so its dominant crystallographic
+ * component is positive, preferring +c, then +b, then +a (ITA right-hand /
+ * positive-axis convention). Used so Near-mode screw animations advance toward
+ * +c when the axis has a c-component (e.g. P21/c 2₁ with t_z = ½).
+ */
+export function teachingScrewSense(direction: Vec3): Vec3 {
+  let dx = direction[0]
+  let dy = direction[1]
+  let dz = direction[2]
+  const dominant =
+    Math.abs(dz) >= Math.abs(dy) && Math.abs(dz) >= Math.abs(dx)
+      ? 2
+      : Math.abs(dy) >= Math.abs(dx)
+        ? 1
+        : 0
+  const comp = dominant === 0 ? dx : dominant === 1 ? dy : dz
+  if (comp < 0) {
+    dx = -dx
+    dy = -dy
+    dz = -dz
+  }
+  // Avoid -0 from signed zero after flip (breaks strict equality in tests).
+  return [dx || 0, dy || 0, dz || 0]
+}
+
+/** Fractional displacement of image−base projected onto {@link teachingScrewSense}. */
+export function screwAdvanceAlongSense(
+  base: Vec3,
+  image: Vec3,
+  direction: Vec3,
+): number {
+  const s = teachingScrewSense(direction)
+  const len = Math.hypot(s[0], s[1], s[2]) || 1
+  return (
+    ((image[0] - base[0]) * s[0] +
+      (image[1] - base[1]) * s[1] +
+      (image[2] - base[2]) * s[2]) /
+    len
+  )
+}
+
 export {
   LATTICE_NEIGHBORS,
   outsideCellPenalty,
@@ -47,9 +90,8 @@ function distToScrewAxis(
   direction: Vec3,
   cell: CellParams,
 ): number {
-  const pc = fracToCart(p, cell)
-  const oc = fracToCart(origin, cell)
-  const tip = fracToCart(
+  // Direction length in Cartesian (independent of which lattice image of the axis).
+  const tip0 = fracToCart(
     [
       origin[0] + direction[0],
       origin[1] + direction[1],
@@ -57,19 +99,37 @@ function distToScrewAxis(
     ],
     cell,
   )
-  const dc: Vec3 = [tip[0] - oc[0], tip[1] - oc[1], tip[2] - oc[2]]
+  const oc0 = fracToCart(origin, cell)
+  const dc: Vec3 = [tip0[0] - oc0[0], tip0[1] - oc0[1], tip0[2] - oc0[2]]
   const len = Math.sqrt(dc[0] * dc[0] + dc[1] * dc[1] + dc[2] * dc[2]) || 1
   const ux = dc[0] / len
   const uy = dc[1] / len
   const uz = dc[2] / len
-  const vx = pc[0] - oc[0]
-  const vy = pc[1] - oc[1]
-  const vz = pc[2] - oc[2]
-  const dot = vx * ux + vy * uy + vz * uz
-  const cx = vx - dot * ux
-  const cy = vy - dot * uy
-  const cz = vz - dot * uz
-  return Math.sqrt(cx * cx + cy * cy + cz * cz)
+  const pc = fracToCart(p, cell)
+
+  // Nearest lattice image of the axis (±1 cells) so Near placements that
+  // advance by +1 along c (or a/b) are not falsely far from the element.
+  let best = Infinity
+  for (let ix = -1; ix <= 1; ix++) {
+    for (let iy = -1; iy <= 1; iy++) {
+      for (let iz = -1; iz <= 1; iz++) {
+        const oc = fracToCart(
+          [origin[0] + ix, origin[1] + iy, origin[2] + iz],
+          cell,
+        )
+        const vx = pc[0] - oc[0]
+        const vy = pc[1] - oc[1]
+        const vz = pc[2] - oc[2]
+        const dot = vx * ux + vy * uy + vz * uz
+        const cx = vx - dot * ux
+        const cy = vy - dot * uy
+        const cz = vz - dot * uz
+        const d = Math.sqrt(cx * cx + cy * cy + cz * cz)
+        if (d < best) best = d
+      }
+    }
+  }
+  return best
 }
 
 function distToGlidePlane(
@@ -229,12 +289,31 @@ function pairScore(
   image: Vec3,
   op: Operator,
 ): number {
-  return (
+  let score =
     distToElement(demo, base, op) +
     distToElement(demo, image, op) +
     0.25 * cartDist(base, image, demo.cell) +
     0.2 * (outsidePenalty(base) + outsidePenalty(image))
-  )
+
+  // Screws: prefer lattice images that advance along the teaching sense.
+  // Only the *sign* of advance / Δc is encoded — penalise the opposite sense
+  // without rewarding huge +Δc leaps (which would fight cartDist).
+  if (op.classId === 'screw') {
+    const axis =
+      demo.screwAxes.find((s) => s.opIndex === op.index && s.primary) ??
+      demo.screwAxes.find((s) => s.opIndex === op.index)
+    if (axis) {
+      const advance = screwAdvanceAlongSense(base, image, axis.direction)
+      if (advance < -1e-9) score += 0.45
+      // Unique-axis-b 2₁ with t_z = ½ (P21/c): require Δc ≥ 0 so Near
+      // animation reads as advancing toward +c.
+      const dc = image[2] - base[2]
+      if (Math.abs(op.t[2]) > 0.2 && dc < -1e-9) {
+        score += 0.55
+      }
+    }
+  }
+  return score
 }
 
 function placedNearest(

@@ -16,8 +16,8 @@ import type {
 /** Teaching monoclinic proportions (β ≠ 90°). */
 export const CELL: CellParams = { a: 1, b: 1.15, c: 1.35, betaDeg: 110 }
 
-/** Seed off special positions (fractional). */
-export const SEED: Vec3 = [0.18, 0.08, 0.31]
+/** Seed clear of c-glide (y) and radially clear of 2₁ at (0|½, y, ¼|¾). */
+export const SEED: Vec3 = [0.25, 0.08, 0.31]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },

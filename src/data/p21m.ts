@@ -21,9 +21,9 @@ export const CELL: CellParams = { a: 1, b: 1.15, c: 1.35, betaDeg: 110 }
  * Must stay well clear of the mirror at y = ¼ (and y = ¾): the same
  * seed as P21/c ([0.18, 0.22, 0.31]) sits Δy ≈ 0.03 from that plane, so
  * identity and mirror copies nearly coincide (no c-glide to separate them).
- * y = 0.08 → mirrored y = 0.42; min pairwise motif spacing ≈ 0.39 cell units.
+ * Seed also kept radially clear of the 2₁ loci at (0|½, y, 0|½).
  */
-export const SEED: Vec3 = [0.18, 0.08, 0.31]
+export const SEED: Vec3 = [0.25, 0.05, 0.5]
 
 export const SYMMETRY_CLASSES: Record<SymmetryClassId, SymmetryClass> = {
   identity: { id: 'identity', label: 'self / identity', color: '#38bdf8' },

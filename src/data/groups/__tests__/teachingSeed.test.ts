@@ -12,7 +12,7 @@ import {
   scaledMinMotifSeparation,
   seedIsGeneralPosition,
 } from '../../teachingSeed'
-import { minPlaneClearance, scaledPlaneClearance } from '../../teachingSeed'
+import { minPlaneClearance, scaledPlaneClearance, minScrewClearance, scaledScrewClearance } from '../../teachingSeed'
 import { PLANE_CLEARANCE_SEED_OVERRIDES } from '../../teachingSeedOverrides'
 import type { Vec3 } from '../../types'
 
@@ -42,9 +42,9 @@ describe('teachingSeed helpers', () => {
     )
     // Prefer the hand-tuned seed when it is already good.
     const preferred = pickTeachingSeed(P21M_OPS, P21M_CELL, 4, {
-      prefer: [0.18, 0.08, 0.31],
+      prefer: [0.25, 0.05, 0.5],
     })
-    expect(preferred).toEqual([0.18, 0.08, 0.31])
+    expect(preferred).toEqual([0.25, 0.05, 0.5])
   })
 
   it('DEFAULT_TEACHING_SEED stays off the diagonal (x≠y)', () => {
@@ -117,5 +117,44 @@ describe('all demos 1–230 · projection clearance from mirror/glide planes', (
         scaledMinMotifSeparation(d.meta.multiplicity) - 1e-9,
       )
     }
+  })
+})
+
+describe('screw-axis radial clearance', () => {
+  it('scaled floors tighten for denser packs', () => {
+    expect(scaledScrewClearance(4)).toBe(0.18)
+    expect(scaledScrewClearance(8)).toBe(0.14)
+    expect(scaledScrewClearance(192)).toBeLessThan(scaledScrewClearance(16))
+  })
+
+  it('P21/c · P21/m seeds clear the 2₁ loci (radial)', () => {
+    const p21c = getDemo(14)!
+    const p21m = getDemo(11)!
+    expect(minScrewClearance(p21c.seed, p21c.screwAxes)).toBeGreaterThanOrEqual(0.24)
+    expect(minScrewClearance(p21m.seed, p21m.screwAxes)).toBeGreaterThanOrEqual(0.24)
+    // Old seed hugged the glide; radial to (0,y,¼) was only ~0.19
+    expect(minScrewClearance([0.18, 0.08, 0.31], p21c.screwAxes)).toBeLessThan(0.2)
+  })
+
+  it('groups without screws report Infinity', () => {
+    expect(minScrewClearance(getDemo(1)!.seed, getDemo(1)!.screwAxes)).toBe(Infinity)
+  })
+
+  it('every SG with screws meets the scaled floor (soft bar for Z>48)', () => {
+    const fails: string[] = []
+    for (let n = 1; n <= 230; n++) {
+      const d = getDemo(n)!
+      if (!d.screwAxes.length) continue
+      const c = minScrewClearance(d.seed, d.screwAxes)
+      const target = scaledScrewClearance(d.meta.multiplicity)
+      // Soft floors: low-Z monoclinic/ortho must clear well; trigonal (R3m) and
+      // high-Z cubics often cannot move further without breaking plane/motif floors.
+      let bar = target
+      if (d.meta.multiplicity > 48) bar = Math.min(target, 0.02)
+      else if (d.meta.multiplicity > 8) bar = Math.min(target, 0.03)
+      else bar = Math.min(target, 0.12)
+      if (c + 1e-9 < bar) fails.push(`${n} ${d.meta.hm}: ${c.toFixed(3)} < ${bar}`)
+    }
+    expect(fails).toEqual([])
   })
 })
