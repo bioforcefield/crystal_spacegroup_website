@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { SYMMETRY_CLASSES } from '../data/pbca'
+import { iso, objectMap, screwEase, screwPose, SCREW_PRIMER } from '../data/primer/primerGeometry'
 
 type DemoId =
   | 'identity'
@@ -64,13 +65,6 @@ const DEMOS: DemoSpec[] = [
   },
 ]
 
-/** Classic isometric screen coords from object (x right, y up, z toward viewer). */
-function iso(x: number, y: number, z: number): [number, number] {
-  const sx = (x - z) * 0.8660254
-  const sy = (x + z) * 0.5 - y
-  return [sx, sy]
-}
-
 function shade(hex: string, factor: number): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
   if (!m) return hex
@@ -79,28 +73,6 @@ function shade(hex: string, factor: number): string {
   const g = Math.min(255, Math.max(0, Math.round(((n >> 8) & 255) * factor)))
   const b = Math.min(255, Math.max(0, Math.round((n & 255) * factor)))
   return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`
-}
-
-/**
- * Rotate object coords about +Y (screw / vertical axis), then optional enantiomorph
- * (mirror in YZ: x → −x). Order: yaw first (proper), then enantiomorph (improper).
- */
-function objectMap(
-  x: number,
-  y: number,
-  z: number,
-  yawDeg: number,
-  enantiomorph: boolean,
-): [number, number, number] {
-  const rad = (yawDeg * Math.PI) / 180
-  const c = Math.cos(rad)
-  const s = Math.sin(rad)
-  // yaw about +Y: (x,z) → (x c + z s, −x s + z c)
-  let X = x * c + z * s
-  const Y = y
-  let Z = -x * s + z * c
-  if (enantiomorph) X = -X
-  return [X, Y, Z]
 }
 
 /**
@@ -377,7 +349,7 @@ function CellFrame() {
  */
 function ScrewGhost({ color }: { color: string }) {
   const gRef = useRef<SVGGElement>(null)
-  const [pose, setPose] = useState({ x: 36, y: 22, yaw: 0, opacity: 1, active: true })
+  const [pose, setPose] = useState<{ x: number; y: number; yaw: number; opacity: number; active: boolean }>({ ...SCREW_PRIMER.B, opacity: 1, active: true })
 
   useEffect(() => {
     const el = gRef.current
@@ -392,7 +364,7 @@ function ScrewGhost({ color }: { color: string }) {
       const inview = !card || card.classList.contains('is-inview')
       const still = reduce?.matches || !inview
       if (still) {
-        setPose({ x: 36, y: 22, yaw: 0, opacity: 0, active: false })
+        setPose({ ...SCREW_PRIMER.B, opacity: 0, active: false })
         raf = requestAnimationFrame(tick)
         return
       }
@@ -412,14 +384,10 @@ function ScrewGhost({ color }: { color: string }) {
         opacity = (u - 0.92) / 0.08
       }
       // Ease in-out
-      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2
+      const e = screwEase(p)
       // Orbit in the horizontal plane about axis x=60: angle 0→π (left → right)
       // Start at screen-left of axis; after 180° about vertical, on the right.
-      const ang = Math.PI * e
-      const radius = 24
-      const x = 60 - radius * Math.cos(ang)
-      const y = 22 + 28 * e // +½ along axis (down the card)
-      const yaw = 180 * e
+      const { x, y, yaw } = screwPose(e)
       setPose({ x, y, yaw, opacity, active: true })
       raf = requestAnimationFrame(tick)
     }
@@ -594,8 +562,8 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           />
           {/* B: yaw 0 (foot toward). I: yaw 180 (foot away) — same enantiomorph, proper 2₁ */}
           <Motif
-            x={36}
-            y={22}
+            x={SCREW_PRIMER.B.x}
+            y={SCREW_PRIMER.B.y}
             fill={color}
             label="B"
             opacity={0.35}
@@ -604,8 +572,8 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             className="primer-marker"
           />
           <Motif
-            x={84}
-            y={50}
+            x={SCREW_PRIMER.I.x}
+            y={SCREW_PRIMER.I.y}
             fill={color}
             label="I"
             opacity={0.35}

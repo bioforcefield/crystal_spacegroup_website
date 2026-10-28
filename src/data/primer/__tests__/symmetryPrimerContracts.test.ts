@@ -11,7 +11,7 @@ const root = resolve(__dirname, '../../../..')
 const read = (rel: string) => readFileSync(resolve(root, rel), 'utf8')
 
 describe('SymmetryPrimer animation contracts', () => {
-  const tsx = read('src/components/SymmetryPrimer.tsx')
+  const tsx = read('src/components/SymmetryPrimer.tsx') + read('src/data/primer/primerGeometry.ts')
   const css = read('src/index.css')
 
   it('covers all six operation cards with geometric movers (not PoseGhost)', () => {
@@ -87,8 +87,8 @@ describe('SymmetryPrimer animation contracts', () => {
     expect(screwCase).not.toMatch(/enantiomorph=\{true\}/)
     expect(screwCase).toMatch(/yawDeg=\{0\}/)
     expect(screwCase).toMatch(/yawDeg=\{180\}/)
-    expect(tsx).toMatch(/yaw = 180 \* e/)
-    expect(tsx).toMatch(/60 - radius \* Math\.cos/)
+    expect(tsx).toMatch(/yaw: 180 \* e/)
+    expect(tsx).toMatch(/axisX - radius \* Math\.cos/)
     expect(css).not.toMatch(/@keyframes primer-screw/)
   })
 
