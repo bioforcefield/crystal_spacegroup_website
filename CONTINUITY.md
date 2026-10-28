@@ -3,6 +3,11 @@
 Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
+## Primer animations (2026-10-28)
+- Home `#primer` cards loop CSS/SVG demos (identity pulse, inversion through ⊙, 2-fold constant-height 180°, 2₁ helix +½, mirror flip, glide reflect→translate).
+- Pause off-screen (`IntersectionObserver` + `.is-inview`); `prefers-reduced-motion: reduce` → static B/I markers.
+- Contracts: `src/data/primer/__tests__/symmetryPrimerContracts.test.ts`.
+
 ## Visitor counter (2026-10-28)
 - Footer chip `Visits: N` via `VisitCounter` in `SiteCopyright` (index shell) + demo `viewport-footer` (SG / CIF).
 - Worker: `GET /visits` (+ `?peek=1`) on `crystal-cod-proxy` Durable Object `VisitsCounter` (`scripts/cod-cors-worker.js`, wrangler DO migration `v1-visits-counter`).
