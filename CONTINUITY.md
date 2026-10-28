@@ -50,5 +50,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `PENDING` · InvGhost inversion (objectScale 1→−1); tip rays; 763 tests
-- gh-pages: `PENDING`
+- main: `626d4b5` · InvGhost inversion (objectScale 1→−1); tip rays; 763 tests
+- gh-pages: `6c2c8f2` (COD/visits; CNAME; InvGhost)
