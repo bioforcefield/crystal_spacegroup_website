@@ -43,6 +43,26 @@ export interface CifViewportProps {
   onHBondModeChange: (m: CifHBondMode) => void
 }
 
+function displaySummary(
+  thermalMode: CifThermalMode,
+  hbondMode: CifHBondMode,
+  hbondCount: number | undefined,
+): string {
+  const thermal =
+    thermalMode === 'off'
+      ? 'No thermal'
+      : thermalMode === 'uiso'
+        ? 'Uiso'
+        : 'Ellipsoid'
+  const hbond =
+    hbondMode === 'off'
+      ? 'No H-bonds'
+      : hbondMode === 'links'
+        ? `H-bonds${hbondCount ? ` · ${hbondCount}` : ''}`
+        : 'Partners'
+  return `${thermal} · ${hbond}`
+}
+
 export default function CifViewport({
   structure,
   selectedOp,
@@ -66,9 +86,14 @@ export default function CifViewport({
   onHBondModeChange,
 }: CifViewportProps) {
   const [viewOpen, setViewOpen] = useState(false)
+  const [displayOpen, setDisplayOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
   const viewToggleRef = useRef<HTMLButtonElement>(null)
   const viewSheetRef = useRef<HTMLDivElement>(null)
+  const displayToggleRef = useRef<HTMLButtonElement>(null)
+  const displaySheetRef = useRef<HTMLDivElement>(null)
   const prevOpenRef = useRef(false)
+  const prevDisplayRef = useRef(false)
 
   useEffect(() => {
     if (!viewOpen) {
@@ -88,7 +113,6 @@ export default function CifViewport({
             ),
           ).filter((el) => !el.hasAttribute('disabled'))
         : []
-    // Move focus into the sheet when it opens
     const id = window.setTimeout(() => {
       const list = focusables()
       ;(list[0] ?? sheet)?.focus()
@@ -122,6 +146,59 @@ export default function CifViewport({
     }
   }, [viewOpen])
 
+  useEffect(() => {
+    if (!displayOpen) {
+      if (prevDisplayRef.current) {
+        displayToggleRef.current?.focus()
+      }
+      prevDisplayRef.current = false
+      return
+    }
+    prevDisplayRef.current = true
+    const sheet = displaySheetRef.current
+    const id = window.setTimeout(() => {
+      const first = sheet?.querySelector<HTMLElement>(
+        'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      )
+      ;(first ?? sheet)?.focus()
+    }, 0)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setDisplayOpen(false)
+      }
+    }
+    const onPointer = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (
+        displaySheetRef.current?.contains(t) ||
+        displayToggleRef.current?.contains(t)
+      ) {
+        return
+      }
+      setDisplayOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('mousedown', onPointer)
+    return () => {
+      window.clearTimeout(id)
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('mousedown', onPointer)
+    }
+  }, [displayOpen])
+
+  const applyTeachingView = () => {
+    onPlacementModeChange('nearest')
+    onVisibilityChange('molecules')
+    onColorModeChange('operator')
+    onThermalModeChange('off')
+    onHBondModeChange('off')
+    if (canShowElements && !showSymmetryElements) {
+      onToggleSymmetryElements()
+    }
+    setDisplayOpen(false)
+  }
+
   const hbondLive =
     hbondMode === 'off'
       ? 'H-bond contacts hidden'
@@ -133,10 +210,175 @@ export default function CifViewport({
     ? describeCifStructure(structure)
     : 'Crystal structure 3D view. Upload a CIF to begin.'
 
+  const displayLabel = displaySummary(
+    thermalMode,
+    hbondMode,
+    structure?.hbonds?.length,
+  )
+
+  const thermalControls = (
+    <div className="segmented" role="group" aria-label="Thermal displacement">
+      <button
+        type="button"
+        className={thermalMode === 'off' ? 'seg active' : 'seg'}
+        onClick={() => onThermalModeChange('off')}
+        aria-pressed={thermalMode === 'off'}
+        title="Hide thermal displacement parameters (No U)"
+      >
+        No thermal
+      </button>
+      <button
+        type="button"
+        className={thermalMode === 'uiso' ? 'seg active' : 'seg'}
+        onClick={() => onThermalModeChange('uiso')}
+        aria-pressed={thermalMode === 'uiso'}
+        title="Scale ball radius by Uiso when present"
+      >
+        Uiso
+      </button>
+      <button
+        type="button"
+        className={thermalMode === 'ellipsoid' ? 'seg active' : 'seg'}
+        onClick={() => onThermalModeChange('ellipsoid')}
+        aria-pressed={thermalMode === 'ellipsoid'}
+        title="Draw anisotropic ellipsoids when Uij present; else Uiso balls"
+      >
+        Ellipsoid
+      </button>
+    </div>
+  )
+
+  const hbondControls = (
+    <div className="segmented" role="group" aria-label="H-bond contacts">
+      <button
+        type="button"
+        className={hbondMode === 'off' ? 'seg active' : 'seg'}
+        onClick={() => onHBondModeChange('off')}
+        aria-pressed={hbondMode === 'off'}
+        title="Hide H-bond contacts"
+      >
+        No H-bonds
+      </button>
+      <button
+        type="button"
+        className={hbondMode === 'links' ? 'seg active' : 'seg'}
+        onClick={() => onHBondModeChange('links')}
+        aria-pressed={hbondMode === 'links'}
+        disabled={!structure?.hbonds?.length}
+        title="Dashed H···A contacts (pink = cross-operator)"
+      >
+        H-bonds{structure?.hbonds?.length ? ` · ${structure.hbonds.length}` : ''}
+      </button>
+      <button
+        type="button"
+        className={hbondMode === 'partners' ? 'seg active' : 'seg'}
+        onClick={() => onHBondModeChange('partners')}
+        aria-pressed={hbondMode === 'partners'}
+        disabled={!structure?.hbonds?.length}
+        title="Show H-bonds and dim molecules not partnered with the asymmetric unit"
+      >
+        Partners
+      </button>
+    </div>
+  )
+
+  const visibilityControls = (compact: boolean) => (
+    <div className="segmented" role="group" aria-label="Copy visibility">
+      <button
+        type="button"
+        className={visibility === 'molecules' ? 'seg active' : 'seg'}
+        onClick={() => onVisibilityChange('molecules')}
+        aria-pressed={visibility === 'molecules'}
+        title="Show intact molecules (one copy per operator)"
+      >
+        Molecules
+      </button>
+      <button
+        type="button"
+        className={visibility === 'all' ? 'seg active' : 'seg'}
+        onClick={() => onVisibilityChange('all')}
+        aria-pressed={visibility === 'all'}
+        title="Show all symmetry copies"
+      >
+        {compact ? 'All' : 'All copies'}
+      </button>
+      <button
+        type="button"
+        className={visibility === 'selected' ? 'seg active' : 'seg'}
+        onClick={() => onVisibilityChange('selected')}
+        aria-pressed={visibility === 'selected'}
+        title="BASE + IMAGE — asymmetric unit and the selected operator copy"
+      >
+        Selected pair
+      </button>
+      <button
+        type="button"
+        className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
+        onClick={() => onVisibilityChange('asymmetric')}
+        aria-pressed={visibility === 'asymmetric'}
+        title="Asymmetric unit only (AU)"
+      >
+        {compact ? 'Asym. unit' : 'Asym. unit'}
+      </button>
+    </div>
+  )
+
+  const colorControls = (
+    <div className="segmented" role="group" aria-label="Atom coloring">
+      <button
+        type="button"
+        className={colorMode === 'operator' ? 'seg active' : 'seg'}
+        onClick={() => onColorModeChange('operator')}
+        aria-pressed={colorMode === 'operator'}
+        title="Tint by symmetry operator (By op)"
+      >
+        By operator
+      </button>
+      <button
+        type="button"
+        className={colorMode === 'residue' ? 'seg active' : 'seg'}
+        onClick={() => onColorModeChange('residue')}
+        aria-pressed={colorMode === 'residue'}
+        title="Color by residue / component id when present"
+      >
+        Residue
+      </button>
+    </div>
+  )
+
+  const symmetryButton = (
+    <button
+      type="button"
+      className={`btn${showSymmetryElements && canShowElements ? ' btn-primary' : ''}`}
+      onClick={onToggleSymmetryElements}
+      disabled={!structure || !canShowElements}
+      aria-pressed={showSymmetryElements && canShowElements}
+      title={
+        !structure
+          ? 'Load a CIF first'
+          : !elementDemo
+            ? 'Needs a resolvable space-group number (1–230)'
+            : elementCount === 0
+              ? 'No drawable loci for this group yet (operators still listed)'
+              : showSymmetryElements
+                ? 'Hide screw / glide / inversion overlays'
+                : 'Show screw / glide / inversion overlays'
+      }
+    >
+      Symmetry elements
+      {canShowElements
+        ? showSymmetryElements
+          ? ' · on'
+          : ' · off'
+        : ''}
+    </button>
+  )
+
   return (
     <main className="viewport">
       <div className="viewport-toolbar">
-        <div className="legend-stack">
+        <div className="legend-stack" aria-label="Legend">
+          <div className="cif-chrome-label">Legend</div>
           <div className="legend class-legend">
             {structure ? (
               structure.operators.slice(0, 12).map((op) => (
@@ -168,13 +410,27 @@ export default function CifViewport({
               </span>
             )}
           </div>
-          <div className="legend chirality">
-            Ball ≈ element · tint ≈ operator · bonds keep each molecule intact
-            (min-image unwrap)
-            {canShowElements && showSymmetryElements
-              ? ' · overlays: screws / glides / inversions / mirrors (loci on this cell)'
-              : ''}
-          </div>
+          {structure && (
+            <div className="cif-legend-help">
+              <button
+                type="button"
+                className="cif-help-toggle"
+                aria-expanded={helpOpen}
+                onClick={() => setHelpOpen((o) => !o)}
+              >
+                {helpOpen ? 'Hide tip' : 'How to read'}
+              </button>
+              {helpOpen && (
+                <p className="legend chirality cif-help-tip">
+                  Ball ≈ element · tint ≈ operator · bonds keep each molecule
+                  intact (min-image unwrap)
+                  {canShowElements && showSymmetryElements
+                    ? ' · overlays: screws / glides / inversions / mirrors'
+                    : ''}
+                </p>
+              )}
+            </div>
+          )}
           {elementDemo && showSymmetryElements && canShowElements && (
             <div
               className="legend elements-legend"
@@ -206,8 +462,10 @@ export default function CifViewport({
             </div>
           )}
         </div>
-        <div className="toolbar-actions cif-toolbar-actions">
-          {/* Always one-tap: Near/Cell + Molecules */}
+
+        <div className="toolbar-actions cif-toolbar-actions" aria-label="Actions">
+          <div className="cif-chrome-label cif-chrome-label-actions">Actions</div>
+          {/* Always one-tap: Near/Cell + Molecules (phone) */}
           <div className="cif-toolbar-primary">
             <div className="segmented" role="group" aria-label="Motif placement">
               <button
@@ -249,7 +507,10 @@ export default function CifViewport({
               type="button"
               ref={viewToggleRef}
               className={`btn cif-view-toggle${viewOpen ? ' btn-primary' : ''}`}
-              onClick={() => setViewOpen((o) => !o)}
+              onClick={() => {
+                setViewOpen((o) => !o)
+                setDisplayOpen(false)
+              }}
               aria-expanded={viewOpen}
               aria-controls="cif-view-sheet"
             >
@@ -257,147 +518,48 @@ export default function CifViewport({
             </button>
           </div>
 
-          {/* Desktop secondary row (hidden on phone — lives in View sheet) */}
+          {/* Desktop: visibility, symmetry, color, Display, Teaching, Reset */}
           <div className="cif-toolbar-secondary cif-toolbar-desktop-only">
-            <div className="segmented" role="group" aria-label="Copy visibility">
+            {visibilityControls(false)}
+            {symmetryButton}
+            {colorControls}
+            <div className="cif-display-wrap">
               <button
                 type="button"
-                className={visibility === 'molecules' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('molecules')}
-              aria-pressed={visibility === 'molecules'}
+                ref={displayToggleRef}
+                className={`btn cif-display-toggle${displayOpen ? ' btn-primary' : ''}`}
+                onClick={() => setDisplayOpen((o) => !o)}
+                aria-expanded={displayOpen}
+                aria-controls="cif-display-sheet"
+                title={`Display options (${displayLabel})`}
               >
-                Molecules
+                Display{displayOpen ? ' · close' : ''}
               </button>
-              <button
-                type="button"
-                className={visibility === 'all' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('all')}
-              aria-pressed={visibility === 'all'}
-              >
-                All copies
-              </button>
-              <button
-                type="button"
-                className={visibility === 'selected' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('selected')}
-              aria-pressed={visibility === 'selected'}
-              >
-                BASE + IMAGE
-              </button>
-              <button
-                type="button"
-                className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('asymmetric')}
-              aria-pressed={visibility === 'asymmetric'}
-              >
-                AU only
-              </button>
+              {displayOpen && (
+                <div
+                  id="cif-display-sheet"
+                  className="cif-display-sheet"
+                  role="dialog"
+                  aria-label="Display options"
+                  tabIndex={-1}
+                  ref={displaySheetRef}
+                >
+                  <div className="cif-display-section-label">Thermal</div>
+                  {thermalControls}
+                  <div className="cif-display-section-label">H-bonds</div>
+                  {hbondControls}
+                </div>
+              )}
             </div>
             <button
               type="button"
-              className={`btn${showSymmetryElements && canShowElements ? ' btn-primary' : ''}`}
-              onClick={onToggleSymmetryElements}
-              disabled={!structure || !canShowElements}
-              aria-pressed={showSymmetryElements && canShowElements}
-              title={
-                !structure
-                  ? 'Load a CIF first'
-                  : !elementDemo
-                    ? 'Needs a resolvable space-group number (1–230)'
-                    : elementCount === 0
-                      ? 'No drawable loci for this group yet (operators still listed)'
-                      : showSymmetryElements
-                        ? 'Hide screw / glide / inversion overlays'
-                        : 'Show screw / glide / inversion overlays'
-              }
+              className="btn"
+              onClick={applyTeachingView}
+              disabled={!structure}
+              title="Molecules + Nearest + Symmetry on + By operator; thermal and H-bonds off"
             >
-              Symmetry elements
-              {canShowElements
-                ? showSymmetryElements
-                  ? ' · on'
-                  : ' · off'
-                : ''}
+              Teaching view
             </button>
-            <div className="segmented" role="group" aria-label="Atom coloring">
-              <button
-                type="button"
-                className={colorMode === 'operator' ? 'seg active' : 'seg'}
-                onClick={() => onColorModeChange('operator')}
-                aria-pressed={colorMode === 'operator'}
-                title="Tint by symmetry operator"
-              >
-                By op
-              </button>
-              <button
-                type="button"
-                className={colorMode === 'residue' ? 'seg active' : 'seg'}
-                onClick={() => onColorModeChange('residue')}
-                aria-pressed={colorMode === 'residue'}
-                title="Color by residue / component id when present"
-              >
-                Residue
-              </button>
-            </div>
-            <div className="segmented" role="group" aria-label="Thermal ellipsoids">
-              <button
-                type="button"
-                className={thermalMode === 'off' ? 'seg active' : 'seg'}
-                onClick={() => onThermalModeChange('off')}
-              aria-pressed={thermalMode === 'off'}
-              >
-                No U
-              </button>
-              <button
-                type="button"
-                className={thermalMode === 'uiso' ? 'seg active' : 'seg'}
-                onClick={() => onThermalModeChange('uiso')}
-                aria-pressed={thermalMode === 'uiso'}
-                title="Scale ball radius by Uiso when present"
-              >
-                Uiso
-              </button>
-              <button
-                type="button"
-                className={thermalMode === 'ellipsoid' ? 'seg active' : 'seg'}
-                onClick={() => onThermalModeChange('ellipsoid')}
-                aria-pressed={thermalMode === 'ellipsoid'}
-                title="Draw anisotropic ellipsoids when Uij present; else Uiso balls"
-              >
-                Ellipsoid
-              </button>
-            </div>
-
-            <div className="segmented" role="group" aria-label="H-bond contacts">
-              <button
-                type="button"
-                className={hbondMode === 'off' ? 'seg active' : 'seg'}
-                onClick={() => onHBondModeChange('off')}
-                aria-pressed={hbondMode === 'off'}
-                title="Hide H-bond contacts"
-              >
-                No H-bonds
-              </button>
-              <button
-                type="button"
-                className={hbondMode === 'links' ? 'seg active' : 'seg'}
-                onClick={() => onHBondModeChange('links')}
-                aria-pressed={hbondMode === 'links'}
-                disabled={!structure?.hbonds?.length}
-                title="Dashed H···A contacts (pink = cross-operator)"
-              >
-                H-bonds{structure?.hbonds?.length ? ` · ${structure.hbonds.length}` : ''}
-              </button>
-              <button
-                type="button"
-                className={hbondMode === 'partners' ? 'seg active' : 'seg'}
-                onClick={() => onHBondModeChange('partners')}
-                aria-pressed={hbondMode === 'partners'}
-                disabled={!structure?.hbonds?.length}
-                title="Show H-bonds and dim molecules not partnered with the AU"
-              >
-                Partners
-              </button>
-            </div>
             <button
               type="button"
               className="btn"
@@ -409,10 +571,11 @@ export default function CifViewport({
           </div>
         </div>
 
-        {/* Phone View sheet / drawer — does not cover the canvas (sits in toolbar flow) */}
         <p className="sr-only" aria-live="polite" aria-atomic="true">
           {structure ? hbondLive : ''}
         </p>
+
+        {/* Phone View sheet */}
         {viewOpen && (
           <div
             id="cif-view-sheet"
@@ -423,131 +586,19 @@ export default function CifViewport({
             tabIndex={-1}
             ref={viewSheetRef}
           >
-            <div className="segmented" role="group" aria-label="Copy visibility">
-              <button
-                type="button"
-                className={visibility === 'molecules' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('molecules')}
-              aria-pressed={visibility === 'molecules'}
-              >
-                Molecules
-              </button>
-              <button
-                type="button"
-                className={visibility === 'all' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('all')}
-              aria-pressed={visibility === 'all'}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                className={visibility === 'selected' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('selected')}
-              aria-pressed={visibility === 'selected'}
-              >
-                BASE+IMAGE
-              </button>
-              <button
-                type="button"
-                className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('asymmetric')}
-              aria-pressed={visibility === 'asymmetric'}
-              >
-                AU
-              </button>
-            </div>
-            <div className="segmented" role="group" aria-label="Atom coloring">
-              <button
-                type="button"
-                className={colorMode === 'operator' ? 'seg active' : 'seg'}
-                onClick={() => onColorModeChange('operator')}
-              aria-pressed={colorMode === 'operator'}
-              >
-                By op
-              </button>
-              <button
-                type="button"
-                className={colorMode === 'residue' ? 'seg active' : 'seg'}
-                onClick={() => onColorModeChange('residue')}
-              aria-pressed={colorMode === 'residue'}
-              >
-                Residue
-              </button>
-            </div>
-            <div className="segmented" role="group" aria-label="Thermal ellipsoids">
-              <button
-                type="button"
-                className={thermalMode === 'off' ? 'seg active' : 'seg'}
-                onClick={() => onThermalModeChange('off')}
-              aria-pressed={thermalMode === 'off'}
-              >
-                No U
-              </button>
-              <button
-                type="button"
-                className={thermalMode === 'uiso' ? 'seg active' : 'seg'}
-                onClick={() => onThermalModeChange('uiso')}
-              aria-pressed={thermalMode === 'uiso'}
-              >
-                Uiso
-              </button>
-              <button
-                type="button"
-                className={thermalMode === 'ellipsoid' ? 'seg active' : 'seg'}
-                onClick={() => onThermalModeChange('ellipsoid')}
-              aria-pressed={thermalMode === 'ellipsoid'}
-              >
-                Ellipsoid
-              </button>
-            </div>
+            {visibilityControls(true)}
+            {colorControls}
             <div className="cif-view-sheet-actions">
+              {symmetryButton}
               <button
                 type="button"
-                className={`btn${showSymmetryElements && canShowElements ? ' btn-primary' : ''}`}
-                onClick={onToggleSymmetryElements}
-                disabled={!structure || !canShowElements}
-                aria-pressed={showSymmetryElements && canShowElements}
+                className="btn"
+                onClick={applyTeachingView}
+                disabled={!structure}
+                title="Molecules + Nearest + Symmetry on + By operator; advanced off"
               >
-                Symmetry elements
-                {canShowElements
-                  ? showSymmetryElements
-                    ? ' · on'
-                    : ' · off'
-                  : ''}
+                Teaching view
               </button>
-
-            <div className="segmented" role="group" aria-label="H-bond contacts">
-              <button
-                type="button"
-                className={hbondMode === 'off' ? 'seg active' : 'seg'}
-                onClick={() => onHBondModeChange('off')}
-                aria-pressed={hbondMode === 'off'}
-                title="Hide H-bond contacts"
-              >
-                No H-bonds
-              </button>
-              <button
-                type="button"
-                className={hbondMode === 'links' ? 'seg active' : 'seg'}
-                onClick={() => onHBondModeChange('links')}
-                aria-pressed={hbondMode === 'links'}
-                disabled={!structure?.hbonds?.length}
-                title="Dashed H···A contacts (pink = cross-operator)"
-              >
-                H-bonds{structure?.hbonds?.length ? ` · ${structure.hbonds.length}` : ''}
-              </button>
-              <button
-                type="button"
-                className={hbondMode === 'partners' ? 'seg active' : 'seg'}
-                onClick={() => onHBondModeChange('partners')}
-                aria-pressed={hbondMode === 'partners'}
-                disabled={!structure?.hbonds?.length}
-                title="Show H-bonds and dim molecules not partnered with the AU"
-              >
-                Partners
-              </button>
-            </div>
               <button
                 type="button"
                 className="btn"
@@ -557,6 +608,9 @@ export default function CifViewport({
                 Reset view
               </button>
             </div>
+            <div className="cif-display-section-label">Display</div>
+            {thermalControls}
+            {hbondControls}
           </div>
         )}
       </div>
@@ -611,7 +665,7 @@ export default function CifViewport({
                 }
                 colorMode={colorMode}
                 thermalMode={thermalMode}
-            hbondMode={hbondMode}
+                hbondMode={hbondMode}
               />
             </Suspense>
           ) : (
