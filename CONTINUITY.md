@@ -3,14 +3,14 @@
 Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
-## Primer animations (2026-10-28)
-- Home `#primer`: isometric chiral L (stem +Y, arm +X, foot +Z, face shading, RGB tips). No flat ●/○ badges.
-- Shared `PRIMER_POSES` B/I endpoints; `PoseGhost` drives the **same** Motif props (x,y,yaw,spin,enantiomorph) so animation t=0 ≡ B and t=1 ≡ I. No CSS scale/rotate approximations.
-- `enantiomorph` = object-space mirror (x→−x); `yawDeg` = proper rotation about +Y; `spinDeg` = in-page spin (2-fold ⊥ page).
-- **2₁**: yaw 0→180 about vertical axis + translate +½ along it; B yaw=0 / I yaw=180; same enantiomorph. Distinct from 2-fold (lens, spin 180, no slide) and mirror (enant, yaw 0).
-- **Proper** (2-fold, 2₁): same enantiomorph. **Improper** (mirror, glide, inversion): opposite enantiomorph. Captions: “proper — hand kept” / “improper — hand flips”.
-- Pause off-screen; reduced-motion → static B/I. Contracts: `symmetryPrimerContracts.test.ts` (endpoint nearly-equal asserts).
-- Deploy: main `906fa3a`, gh-pages `2935ab8` (743 tests).
+## Primer animations (2026-10-28) — course-correct
+- Home `#primer`: isometric chiral L. **Animations are authoritative**; static B/I match their endpoints (not PoseGhost→markers).
+- Movers: CSS `primer-inv` / `primer-twofold` / `primer-mirror` / `primer-glide` + JS `ScrewGhost`. No `PoseGhost`.
+- `PRIMER_ENDPOINT_TRANSFORMS` + `StaticEndpoint` share CSS keyframe from/to transforms for improper ops; 2-fold static I = `rotate(180 60 36)` of the B Motif; 2₁ B/I = yaw 0 / 180 Motif (same as ScrewGhost ends).
+- **2-fold**: top-down lens, CSS rotate 180° about (60,36), hand kept, no slide.
+- **2₁**: side view, orbit + yaw 0→180 + +½ along axis, hand kept.
+- **Improper** (inversion/mirror/glide): continuous CSS scale through center/plane (hand flips). Captions kept.
+- Pause off-screen; reduced-motion → static B/I. Contracts assert CSS keyframes ≡ `PRIMER_ENDPOINT_TRANSFORMS`.
 
 ## Visitor counter (2026-10-28)
 - Footer chip `(N)` (number only) via `VisitCounter` in `SiteCopyright` (index shell) + demo `viewport-footer` (SG / CIF).
@@ -49,5 +49,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `0a9bcba` · isometric chiral L + crystallographic 2₁ (yaw 0→180 + ½)
-- gh-pages: `3df3e63` (COD/visits; CNAME; 736 tests; isometric L, no flat ●/○)
+- main: _(pending commit)_ · primer course-correct: restore geometric movers; static ≡ anim ends
+- gh-pages: _(pending deploy)_
