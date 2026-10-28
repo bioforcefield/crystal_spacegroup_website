@@ -66,5 +66,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `f4a8b02` · Near C2 2₁ compact weight 0.2 (axis between units); 767 tests
-- gh-pages: `17b9e01` (COD/visits; CNAME; C2 screw Near)
+- main: `ac3674b` · SEO meta/robots/sitemap; 770 tests
+- gh-pages: `568aa7b` (SEO live; CNAME crystalspacegroups.com)
