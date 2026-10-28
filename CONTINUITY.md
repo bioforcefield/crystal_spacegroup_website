@@ -47,5 +47,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main:  · isometric chiral L + crystallographic 2₁ (yaw 0→180 + ½)
-- gh-pages:  (COD/visits; CNAME; 736 tests; no flat ●/○)
+- main: `0a9bcba` · isometric chiral L + crystallographic 2₁ (yaw 0→180 + ½)
+- gh-pages: `3df3e63` (COD/visits; CNAME; 736 tests; isometric L, no flat ●/○)
