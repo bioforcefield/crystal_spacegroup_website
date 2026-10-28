@@ -1,5 +1,5 @@
 import { useMemo, useRef, useEffect, type RefObject } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
@@ -33,6 +33,7 @@ import {
   residueColor,
   uIsoRadiusScale,
 } from '../data/cif/thermal'
+import { CIF_FOV, fitDistanceForSphere } from '../data/cif/fitCamera'
 
 export type { CifPlacementMode }
 export type { CifVisibility }
@@ -42,6 +43,9 @@ function fmtLen(v: number): string {
   return v >= 10 ? v.toFixed(2) : v.toFixed(3)
 }
 
+const CIF_BOUND_PAD = 0.45
+/** Match SG demos: origin toward the front of Reset view. */
+const CIF_CAM_DIR = new THREE.Vector3(-2.4, 1.35, -2.6).normalize()
 
 interface Props {
   structure: ExpandedStructure
@@ -146,6 +150,74 @@ function AxisLabels({ cell }: { cell: CellParams }) {
   )
 }
 
+
+function applyCifFit(
+  camera: THREE.Camera,
+  ctrl: OrbitControlsImpl,
+  bounds: { center: THREE.Vector3; radius: number },
+  aspect: number,
+) {
+  const dist = fitDistanceForSphere(bounds.radius, CIF_FOV, aspect)
+  const dir = CIF_CAM_DIR.clone()
+  const target = bounds.center
+  camera.position.set(
+    target.x + dir.x * dist,
+    target.y + dir.y * dist,
+    target.z + dir.z * dist,
+  )
+  ctrl.target.copy(target)
+  ctrl.update()
+}
+
+function FitCifCamera({
+  bounds,
+  controlsRef,
+  resetToken,
+}: {
+  bounds: { center: THREE.Vector3; radius: number }
+  controlsRef: RefObject<OrbitControlsImpl | null>
+  resetToken: number
+}) {
+  const { camera, size } = useThree()
+
+  useEffect(() => {
+    const aspect =
+      size.width > 0 && size.height > 0
+        ? size.width / size.height
+        : camera instanceof THREE.PerspectiveCamera
+          ? camera.aspect
+          : 1
+
+    const tryFit = () => {
+      const ctrl = controlsRef.current
+      if (!ctrl) return false
+      applyCifFit(camera, ctrl, bounds, aspect)
+      return true
+    }
+
+    if (tryFit()) return
+
+    // OrbitControls ref is assigned after first commit — retry next frame.
+    const id = window.requestAnimationFrame(() => {
+      tryFit()
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [
+    bounds.center.x,
+    bounds.center.y,
+    bounds.center.z,
+    bounds.radius,
+    resetToken,
+    size.width,
+    size.height,
+    camera,
+    controlsRef,
+    bounds,
+  ])
+
+  return null
+}
+
 function SceneBody({
   structure,
   selectedOp,
@@ -203,38 +275,27 @@ function SceneBody({
     })
   }, [structure.bonds, visibleIndexSet, placementMode, placement.positions])
 
-  const boundsRadius = useMemo(() => {
-    const corners = cellCornersCart(structure.cell)
-    let maxR = 0
-    for (const p of corners) {
-      const d = Math.hypot(
-        p[0] - center[0],
-        p[1] - center[1],
-        p[2] - center[2],
+  /** AABB of cell + visible atoms in cell-centred coords (nearest images can sit off-centre). */
+  const viewBounds = useMemo(() => {
+    const box = new THREE.Box3()
+    for (const p of cellCornersCart(structure.cell)) {
+      box.expandByPoint(
+        new THREE.Vector3(p[0] - center[0], p[1] - center[1], p[2] - center[2]),
       )
-      maxR = Math.max(maxR, d)
     }
     for (const i of visibleIndices) {
       const p = placement.positions[i]!
-      const d = Math.hypot(
-        p[0] - center[0],
-        p[1] - center[1],
-        p[2] - center[2],
+      box.expandByPoint(
+        new THREE.Vector3(p[0] - center[0], p[1] - center[1], p[2] - center[2]),
       )
-      maxR = Math.max(maxR, d)
     }
-    return Math.max(maxR, 1)
+    const mid = new THREE.Vector3()
+    const size = new THREE.Vector3()
+    box.getCenter(mid)
+    box.getSize(size)
+    const radius = 0.5 * size.length() + CIF_BOUND_PAD
+    return { center: mid, radius: Math.max(radius, 1) }
   }, [structure.cell, center, visibleIndices, placement.positions])
-
-  useEffect(() => {
-    const ctrl = controlsRef.current
-    if (!ctrl) return
-    const dist = boundsRadius * 2.6
-    const dir = new THREE.Vector3(1.1, 0.85, 1.35).normalize()
-    ctrl.object.position.copy(dir.multiplyScalar(dist))
-    ctrl.target.set(0, 0, 0)
-    ctrl.update()
-  }, [resetToken, boundsRadius, controlsRef])
 
 
   const partnerMols = useMemo(() => {
@@ -254,6 +315,11 @@ function SceneBody({
 
   return (
     <>
+      <FitCifCamera
+        bounds={viewBounds}
+        controlsRef={controlsRef}
+        resetToken={resetToken}
+      />
       <color attach="background" args={['#0b1220']} />
       <ambientLight intensity={0.6} />
       <directionalLight position={[4, 5, 6]} intensity={1.1} />
@@ -423,7 +489,7 @@ function SceneBody({
         enableDamping
         dampingFactor={0.08}
         minDistance={0.5}
-        maxDistance={80}
+        maxDistance={250}
       />
     </>
   )
@@ -434,9 +500,19 @@ export default function CifStructureScene(props: Props) {
   return (
     <div className="cif-canvas-frame">
       <Canvas
-        camera={{ position: [8, 6, 10], fov: 42, near: 0.1, far: 200 }}
+        camera={{
+          position: [
+            CIF_CAM_DIR.x * 12,
+            CIF_CAM_DIR.y * 12,
+            CIF_CAM_DIR.z * 12,
+          ],
+          fov: CIF_FOV,
+          near: 0.1,
+          far: 400,
+        }}
         dpr={[1, 2]}
         gl={{ antialias: true }}
+        style={{ width: '100%', height: '100%' }}
       >
         <SceneBody {...props} controlsRef={controlsRef} />
       </Canvas>

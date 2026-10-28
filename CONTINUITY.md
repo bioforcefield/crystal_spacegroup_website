@@ -1,6 +1,6 @@
 # Crystal space-group site — resume notes (2026-10-27)
 
-Live: https://bioforcefield.github.io/crystal_spacegroup_website/  
+Live: https://crystalspacegroups.com/ (also https://bioforcefield.github.io/crystal_spacegroup_website/)  
 Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space-groups`
 
 ## Front-page spotlights
@@ -9,13 +9,10 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - Hero uses same 1.4rem inset column as spotlights/main (no double outer pad)
 - System cards stretch evenly in the explore grid
 
-## Review leftovers addressed (P1 later + P2)
-- Peak-shift: same-hkl preferred; nearest-2θ labeled in UI
-- Powder sliders debounced (~80 ms)
-- MorphologyBfdhSection + CifPolymorphCompare extracted; optional 3D Wulff habit
-- Screw/glide extinctions from operators (`extinctions.ts`) when CIF/SG ops present
-- Expanded Cromer–Mann form-factor table; merge-label cleanup; safe `{h,k,l}` labels
-- Kinetics amber disclaimer; polymorph chips default to Load pair into map
+## CIF map layout (2026-10-27 evening)
+- Desktop toolbar wraps in-bounds (no `width:100%` primary on desktop; actions can shrink)
+- Canvas frame absolutely fills `.canvas-wrap`; R3F wrapper forced to 100%
+- Camera frames AABB of cell + visible atoms (nearest images), aspect-aware distance, origin-front dir
 
 ## Cloudflare COD proxy
 - Worker: https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif
@@ -25,5 +22,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `9dad271`
-- gh-pages: `6cf0a0c` (VITE_COD_PROXY baked)
+- main: (update after commit)
+- gh-pages: (update after deploy)
