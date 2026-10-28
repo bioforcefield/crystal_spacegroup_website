@@ -60,5 +60,5 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 - `npm test` · deploy script above
 
 ## SHAs
-- main: `d834297` · Near twofold compact raw-Seitz (C2 straddle); 765 tests
-- gh-pages: `789d727` (COD/visits; CNAME; twofold Near)
+- main: `f4a8b02` · Near C2 2₁ compact weight 0.2 (axis between units); 767 tests
+- gh-pages: `17b9e01` (COD/visits; CNAME; C2 screw Near)
