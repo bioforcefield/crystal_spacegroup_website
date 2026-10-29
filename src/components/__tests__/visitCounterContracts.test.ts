@@ -18,7 +18,8 @@ describe('Visit counter footer contracts', () => {
     expect(src).not.toMatch(/site-copyright-meta/)
     expect(src).toMatch(/Powered by Grok Bot\. \(\s*<VisitCounter\s*\/>\)\s*<\/p>/)
     expect(src).not.toMatch(/bioforcefield/)
-    expect(src).not.toMatch(/mailto:/)
+    expect(src).toMatch(/href="mailto:contact@crystalspacegroups\.com"/)
+    expect(src).toMatch(/Contact:\{' '\}\s*<a [^>]*>contact@crystalspacegroups\.com<\/a>\. Powered by Grok Bot/)
     expect((src.match(/<p\b/g) ?? []).length).toBe(1)
   })
 
