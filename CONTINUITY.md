@@ -67,4 +67,4 @@ Repo: bioforcefield/crystal_spacegroup_website · box: `/workspace/crystal-space
 
 ## SHAs
 - main: `b4464cd` · Footer: drop bioforcefield name + contact email; 770 tests
-- gh-pages: `6ad50e2` (CNAME; footer cleanup)
+- gh-pages: `4e3bd12` (CNAME; footer contact email)
