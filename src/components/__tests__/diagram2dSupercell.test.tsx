@@ -27,3 +27,18 @@ describe('2D diagram supercell', () => {
     expect(h).toContain('×3 along b')
   })
 })
+
+import { getDemo } from '../../data/registry'
+describe('2D supercell, all 230 groups', () => {
+  it.each(Array.from({ length: 230 }, (_, i) => i + 1))('SG %i', (n) => {
+    const demo = getDemo(n)!
+    const r = (m?: [number, number, number]) =>
+      renderToStaticMarkup(
+        <SpaceGroupDiagram2D demo={demo} selectedIndex={1} onSelect={() => {}} multiples={m} />,
+      )
+    expect(r([1, 1, 1])).toBe(r(undefined))
+    const h = r([2, 2, 2])
+    expect(count(h, /d2-site replica/g)).toBe(demo.operators.length * 3)
+    expect(h).toContain('×2 along')
+  })
+})

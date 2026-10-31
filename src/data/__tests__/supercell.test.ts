@@ -25,10 +25,11 @@ describe('parseCellMultiples', () => {
 })
 
 describe('supercell replication', () => {
-  it('only C2 enabled', () => {
+  it('enabled for 1..230 only', () => {
     expect(supercellEnabled(5)).toBe(true)
-    expect(supercellEnabled(4)).toBe(false)
-    expect(supercellEnabled(14)).toBe(false)
+    expect(supercellEnabled(230)).toBe(true)
+    expect(supercellEnabled(0)).toBe(false)
+    expect(supercellEnabled(231)).toBe(false)
   })
   it('count = Z×na×nb×nc and default unchanged', () => {
     const { points } = placedPositions(c2, 1, 'wrapped')

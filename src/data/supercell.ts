@@ -1,7 +1,9 @@
 import type { GeneralPoint, Vec3 } from './types'
 
 /** Space groups (ITA number) where the 3D view offers a cell-multiples (supercell) input. */
-export const SUPERCELL_ALLOWLIST: ReadonlySet<number> = new Set([5])
+export const SUPERCELL_ALLOWLIST: ReadonlySet<number> = new Set(
+  Array.from({ length: 230 }, (_, i) => i + 1),
+)
 export const SUPERCELL_MAX = 5
 
 export type CellMultiples = [number, number, number]
@@ -78,4 +80,49 @@ export function replicatePoints(
     }
   }
   return out
+}
+
+/** Max motifs drawn in the SG 3D view (ChiralMotif meshes are not instanced). */
+export const SG_MOTIF_CAP = 3000
+/** Max atoms drawn in the CIF 3D view (replicas are instanced). */
+export const CIF_ATOM_CAP = 40000
+
+export function cellCount(m: CellMultiples): number {
+  return m[0] * m[1] * m[2]
+}
+
+/** True if perCell × na×nb×nc stays within cap (1×1×1 always fits). */
+export function fitsCap(m: CellMultiples, perCell: number, cap: number): boolean {
+  return isDefaultMultiples(m) || perCell * cellCount(m) <= cap
+}
+
+/** Set one axis, then lower the *other* axes (largest first) until the cap fits. */
+export function setAxisCapped(
+  m: CellMultiples,
+  axis: 0 | 1 | 2,
+  n: number,
+  perCell: number,
+  cap: number,
+): CellMultiples {
+  const next = [...m] as CellMultiples
+  next[axis] = clampMultiple(n)
+  while (!fitsCap(next, perCell, cap)) {
+    const others = ([0, 1, 2] as const).filter((i) => i !== axis && next[i] > 1)
+    if (others.length) {
+      const i = others.reduce((a, b) => (next[b] > next[a] ? b : a))
+      next[i] -= 1
+    } else if (next[axis] > 1) next[axis] -= 1
+    else break
+  }
+  return next
+}
+
+/** Cartesian translation vectors (excluding origin) for a supercell. */
+export function replicaOffsets(
+  m: CellMultiples,
+  toCart: (f: Vec3) => Vec3,
+): Vec3[] {
+  return supercellTranslations(m)
+    .filter((t) => t[0] || t[1] || t[2])
+    .map(toCart)
 }

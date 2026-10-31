@@ -18,6 +18,13 @@ import type { ExpandedStructure } from '../../data/cif/types'
 import { describeCifStructure } from '../../data/a11y/structureSummary'
 import type { SpaceGroupDemo } from '../../data/types'
 import VisitCounter from '../VisitCounter'
+import SupercellPicker from '../SupercellPicker'
+import {
+  CIF_ATOM_CAP,
+  DEFAULT_MULTIPLES,
+  setAxisCapped,
+  type CellMultiples,
+} from '../../data/supercell'
 
 const CifStructureScene = lazy(() => import('../CifStructureScene'))
 
@@ -87,6 +94,13 @@ export default function CifViewport({
   onHBondModeChange,
 }: CifViewportProps) {
   const [viewOpen, setViewOpen] = useState(false)
+  const [mult, setMult] = useState<{ s: ExpandedStructure | null; v: CellMultiples }>({
+    s: null,
+    v: DEFAULT_MULTIPLES,
+  })
+  const multiples: CellMultiples =
+    structure && mult.s === structure ? mult.v : DEFAULT_MULTIPLES
+  const perCell = structure?.atoms.length ?? 0
   const [displayOpen, setDisplayOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const viewToggleRef = useRef<HTMLButtonElement>(null)
@@ -642,6 +656,23 @@ export default function CifViewport({
         <CellParamsBadge cell={structure.cell} variant="strip" />
       )}
 
+      {structure && (
+        <SupercellPicker
+          id="cif-supercell"
+          multiples={multiples}
+          onAxis={(axis, n) =>
+            setMult({ s: structure, v: setAxisCapped(multiples, axis, n, perCell, CIF_ATOM_CAP) })
+          }
+          onReset={() => {
+            setMult({ s: structure, v: DEFAULT_MULTIPLES })
+            onResetView()
+          }}
+          perCell={perCell}
+          cap={CIF_ATOM_CAP}
+          unit="atoms"
+        />
+      )}
+
       <div className="viewport-body cif-viewport-body">
         <div
           id="demo-main"
@@ -671,6 +702,7 @@ export default function CifViewport({
                 colorMode={colorMode}
                 thermalMode={thermalMode}
                 hbondMode={hbondMode}
+                multiples={multiples}
               />
             </Suspense>
           ) : (

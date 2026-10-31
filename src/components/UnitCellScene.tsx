@@ -11,11 +11,11 @@ import {
 import type { GeneralPoint, Mat3, SpaceGroupDemo, Vec3 } from '../data/types'
 import { ChiralMotifMesh, orientationFromR } from './ChiralMotif'
 import SymmetryElements from './SymmetryElements'
+import SupercellWire from './SupercellWire'
 import {
   DEFAULT_MULTIPLES,
   isDefaultMultiples,
   replicatePoints,
-  supercellTranslations,
   type CellMultiples,
 } from '../data/supercell'
 
@@ -82,54 +82,8 @@ function UnitCellWireframe({ demo }: { demo: SpaceGroupDemo }) {
   )
 }
 
-const CELL_EDGES: [number, number][] = [
-  [0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7],
-]
-
-/** Faint copies of the unit-cell outline for every translated cell, plus a bright supercell outline. */
 function SupercellWireframe({ demo, multiples }: { demo: SpaceGroupDemo; multiples: CellMultiples }) {
-  const corners = cellCornersCart(demo.cell)
-  const lines = useMemo(() => {
-    const out: { pts: [Vec3, Vec3]; outer: boolean }[] = []
-    const sc = (f: Vec3) => fracToCart(f, demo.cell)
-    for (const t of supercellTranslations(multiples)) {
-      if (t[0] === 0 && t[1] === 0 && t[2] === 0) continue
-      const d = sc(t)
-      for (const [i, j] of CELL_EDGES) {
-        const a = corners[i], b = corners[j]
-        out.push({
-          pts: [
-            [a[0] + d[0], a[1] + d[1], a[2] + d[2]],
-            [b[0] + d[0], b[1] + d[1], b[2] + d[2]],
-          ],
-          outer: false,
-        })
-      }
-    }
-    // Supercell outline from fractional corners.
-    const [na, nb, nc] = multiples
-    const fc: Vec3[] = [
-      [0, 0, 0], [na, 0, 0], [na, nb, 0], [0, nb, 0],
-      [0, 0, nc], [na, 0, nc], [na, nb, nc], [0, nb, nc],
-    ]
-    const cc = fc.map(sc)
-    for (const [i, j] of CELL_EDGES) out.push({ pts: [cc[i], cc[j]], outer: true })
-    return out
-  }, [demo.cell, multiples, corners])
-  return (
-    <group>
-      {lines.map((l, k) => (
-        <Line
-          key={k}
-          points={l.pts}
-          color={l.outer ? '#fbbf24' : '#7dd3fc'}
-          lineWidth={l.outer ? 1.8 : 1}
-          transparent
-          opacity={l.outer ? 0.8 : 0.3}
-        />
-      ))}
-    </group>
-  )
+  return <SupercellWire cell={demo.cell} multiples={multiples} />
 }
 
 /** Translated copy of a motif (no labels / rings); clicking selects its operator. */

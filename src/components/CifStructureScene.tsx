@@ -1,3 +1,10 @@
+import SupercellWire from './SupercellWire'
+import {
+  DEFAULT_MULTIPLES,
+  isDefaultMultiples,
+  replicaOffsets,
+  type CellMultiples,
+} from '../data/supercell'
 import { useMemo, useRef, useEffect, type RefObject } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
@@ -65,6 +72,82 @@ interface Props {
   colorMode?: CifColorMode
   thermalMode?: CifThermalMode
   hbondMode?: CifHBondMode
+  /** Supercell na×nb×nc; default 1×1×1 = single cell (unchanged). */
+  multiples?: CellMultiples
+}
+
+/** Instanced, dimmed lattice-translated copies of the visible atoms + bonds. */
+function CifReplicas({
+  structure,
+  positions,
+  visibleIndices,
+  bonds,
+  offsets,
+}: {
+  structure: ExpandedStructure
+  positions: Vec3[]
+  visibleIndices: number[]
+  bonds: { a: number; b: number }[]
+  offsets: Vec3[]
+}) {
+  const groups = useMemo(() => {
+    const byEl = new Map<string, Vec3[]>()
+    for (const ai of visibleIndices) {
+      const el = structure.atoms[ai]!.element
+      const p = positions[ai]!
+      let arr = byEl.get(el)
+      if (!arr) byEl.set(el, (arr = []))
+      for (const d of offsets) arr.push([p[0] + d[0], p[1] + d[1], p[2] + d[2]])
+    }
+    return [...byEl.entries()]
+  }, [structure.atoms, positions, visibleIndices, offsets])
+  const bondGeom = useMemo(() => {
+    const arr = new Float32Array(bonds.length * offsets.length * 6)
+    let k = 0
+    for (const d of offsets) {
+      for (const b of bonds) {
+        const p = positions[b.a]!, q = positions[b.b]!
+        arr[k++] = p[0] + d[0]; arr[k++] = p[1] + d[1]; arr[k++] = p[2] + d[2]
+        arr[k++] = q[0] + d[0]; arr[k++] = q[1] + d[1]; arr[k++] = q[2] + d[2]
+      }
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(arr, 3))
+    return g
+  }, [bonds, positions, offsets])
+  useEffect(() => () => bondGeom.dispose(), [bondGeom])
+  return (
+    <group>
+      {groups.map(([el, pts]) => (
+        <InstancedAtoms key={el} element={el} points={pts} />
+      ))}
+      <lineSegments geometry={bondGeom}>
+        <lineBasicMaterial color="#94a3b8" transparent opacity={0.45} />
+      </lineSegments>
+    </group>
+  )
+}
+
+function InstancedAtoms({ element, points }: { element: string; points: Vec3[] }) {
+  const ref = useRef<THREE.InstancedMesh>(null)
+  useEffect(() => {
+    const m = ref.current
+    if (!m) return
+    const mat = new THREE.Matrix4()
+    points.forEach((p, i) => {
+      mat.makeTranslation(p[0], p[1], p[2])
+      m.setMatrixAt(i, mat)
+    })
+    m.instanceMatrix.needsUpdate = true
+    m.computeBoundingSphere()
+  }, [points])
+  const r = elementRadius(element) * 0.82
+  return (
+    <instancedMesh ref={ref} args={[undefined, undefined, points.length]} frustumCulled={false}>
+      <sphereGeometry args={[r, 10, 10]} />
+      <meshStandardMaterial color={elementColor(element)} roughness={0.5} transparent opacity={0.7} />
+    </instancedMesh>
+  )
 }
 
 function CellWire({ cell }: { cell: CellParams }) {
@@ -293,8 +376,20 @@ function SceneBody({
   colorMode = 'operator',
   thermalMode = 'off',
   hbondMode = 'off',
+  multiples = DEFAULT_MULTIPLES,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
-  const center = cellCenterCart(structure.cell)
+  const supercell = !isDefaultMultiples(multiples)
+  const center = useMemo(
+    () =>
+      supercell
+        ? fracToCart([multiples[0] / 2, multiples[1] / 2, multiples[2] / 2], structure.cell)
+        : cellCenterCart(structure.cell),
+    [supercell, multiples, structure.cell],
+  )
+  const offsets = useMemo(
+    () => (supercell ? replicaOffsets(multiples, (f) => fracToCart(f, structure.cell)) : []),
+    [supercell, multiples, structure.cell],
+  )
 
   const placement = useMemo(
     () =>
@@ -347,12 +442,22 @@ function SceneBody({
       const p = placement.positions[i]!
       pts.push([p[0] - center[0], p[1] - center[1], p[2] - center[2]])
     }
+    if (supercell) {
+      const [na, nb, nc] = multiples
+      for (const f of [
+        [0, 0, 0], [na, 0, 0], [0, nb, 0], [0, 0, nc],
+        [na, nb, 0], [na, 0, nc], [0, nb, nc], [na, nb, nc],
+      ] as Vec3[]) {
+        const p = fracToCart(f, structure.cell)
+        pts.push([p[0] - center[0], p[1] - center[1], p[2] - center[2]])
+      }
+    }
     const b = computeCifViewBounds(pts)
     return {
       center: new THREE.Vector3(b.center.x, b.center.y, b.center.z),
       radius: b.radius,
     }
-  }, [structure.cell, center, visibleIndices, placement.positions])
+  }, [structure.cell, center, visibleIndices, placement.positions, supercell, multiples])
 
 
   const partnerMols = useMemo(() => {
@@ -384,6 +489,18 @@ function SceneBody({
 
       <group position={[-center[0], -center[1], -center[2]]}>
         <CellWire cell={structure.cell} />
+        {supercell && (
+          <>
+            <SupercellWire cell={structure.cell} multiples={multiples} />
+            <CifReplicas
+              structure={structure}
+              positions={placement.positions as Vec3[]}
+              visibleIndices={visibleIndices}
+              bonds={visibleBonds}
+              offsets={offsets}
+            />
+          </>
+        )}
         <AxisLabels cell={structure.cell} />
         {showSymmetryElements && elementDemo && (
           <SymmetryElements

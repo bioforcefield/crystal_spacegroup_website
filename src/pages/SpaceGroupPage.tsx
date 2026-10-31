@@ -15,12 +15,12 @@ import type { SpaceGroupDemo } from '../data/types'
 import { describeSpaceGroupCanvas } from '../data/a11y/structureSummary'
 import {
   DEFAULT_MULTIPLES,
-  SUPERCELL_MAX,
-  clampMultiple,
-  isDefaultMultiples,
+  SG_MOTIF_CAP,
+  setAxisCapped,
   supercellEnabled,
   type CellMultiples,
 } from '../data/supercell'
+import SupercellPicker from '../components/SupercellPicker'
 import VisitCounter from '../components/VisitCounter'
 
 interface Props {
@@ -43,9 +43,10 @@ export default function SpaceGroupPage({ demo }: Props) {
       ? multState.value
       : DEFAULT_MULTIPLES
   const setAxis = (axis: 0 | 1 | 2, n: number) => {
-    const next = [...multiples] as CellMultiples
-    next[axis] = clampMultiple(n)
-    setMultState({ sg: demo.meta.number, value: next })
+    setMultState({
+      sg: demo.meta.number,
+      value: setAxisCapped(multiples, axis, n, demo.operators.length, SG_MOTIF_CAP),
+    })
   }
   const [showAllSites, setShowAllSites] = useState(
     () => demo.meta.multiplicity <= 48,
@@ -247,50 +248,17 @@ export default function SpaceGroupPage({ demo }: Props) {
           </div>
         </div>
         {canSupercell && (
-          <div
-            className="supercell-control"
-            role="group"
-            aria-labelledby="supercell-label"
-          >
-            <span id="supercell-label" className="supercell-title">
-              Supercell
-            </span>
-            {(['a', 'b', 'c'] as const).map((ax, i) => (
-              <label key={ax} className="supercell-axis">
-                <span className="supercell-axis-name">{ax}</span>
-                <select
-                  value={multiples[i]}
-                  onChange={(e) => setAxis(i as 0 | 1 | 2, Number(e.target.value))}
-                  aria-label={`Cells along ${ax}`}
-                  title={`Number of unit cells along ${ax}`}
-                >
-                  {Array.from({ length: SUPERCELL_MAX }, (_, k) => k + 1).map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-                {i < 2 && <span className="supercell-times" aria-hidden="true">×</span>}
-              </label>
-            ))}
-            <button
-              type="button"
-              className="btn btn-small"
-              onClick={() => {
-                setMultState({ sg: demo.meta.number, value: DEFAULT_MULTIPLES })
-                setResetToken((t) => t + 1)
-              }}
-              disabled={isDefaultMultiples(multiples)}
-              title="Reset a, b, c to 1×1×1 and reframe the camera on the unit cell"
-            >
-              Reset to unit cell
-            </button>
-            <span className="supercell-help" aria-live="polite">
-              {isDefaultMultiples(multiples)
-                ? 'Repeat the cell along a, b, c'
-                : `${multiples.join('×')} cells · ${demo.meta.multiplicity * multiples[0] * multiples[1] * multiples[2]} motifs`}
-            </span>
-          </div>
+          <SupercellPicker
+            id="sg-supercell"
+            multiples={multiples}
+            onAxis={setAxis}
+            onReset={() => {
+              setMultState({ sg: demo.meta.number, value: DEFAULT_MULTIPLES })
+              setResetToken((t) => t + 1)
+            }}
+            perCell={demo.operators.length}
+            cap={SG_MOTIF_CAP}
+          />
         )}
         {demo.geometryLimited && demo.geometryNote && (
           <p className="geometry-note" role="note">
