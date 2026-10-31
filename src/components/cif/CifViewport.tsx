@@ -32,6 +32,15 @@ import { atomInfo, samePick, type AtomPick, type AtomInfo } from '../../data/cif
 import { fracToCart } from '../../data/math'
 import { placeCifStructure } from '../../data/cif/placement'
 import {
+  measureOf,
+  relateMolecules,
+  resolvePick,
+  SymCodes,
+  type Measurement,
+} from '../../data/cif/measureModel'
+import type { SceneAnnotations } from './MeasureOverlay'
+import type { Vec3 } from '../../data/types'
+import {
   elementsPresent,
   equivalenceClasses,
   equivalenceColor,
@@ -162,6 +171,13 @@ export default function CifViewport({
   }, [structure, highlightElement])
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName
+      if (measureOnRef.current && (e.key === 'Escape' || e.key === 'Backspace')) {
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        e.preventDefault()
+        undoRef.current()
+        return
+      }
       if (e.key === 'Escape') {
         setPin(null)
         setHl(null)
@@ -171,9 +187,125 @@ export default function CifViewport({
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+  // —— Measure mode ——
+  const [measureOn, setMeasureOn] = useState(false)
+  const [mp, setMp] = useState<{ s: ExpandedStructure | null; picks: AtomPick[]; saved: AtomPick[][] }>({
+    s: null,
+    picks: [],
+    saved: [],
+  })
+  const [showElement, setShowElement] = useState(true)
+  const [copied, setCopied] = useState(false)
+  const mPicks = structure && mp.s === structure ? mp.picks : []
+  const mSaved = structure && mp.s === structure ? mp.saved : []
+  const setPicks = (picks: AtomPick[], saved = mSaved) => structure && setMp({ s: structure, picks, saved })
+  const measureModel = useMemo(() => {
+    if (!structure) return null
+    const pos = placedPositions as Vec3[]
+    const codes = new SymCodes()
+    const res = (ps: AtomPick[]) => ps.map((p) => resolvePick(structure, pos, p)).filter((x) => !!x)
+    const saved = mSaved.map((ps) => measureOf(res(ps), codes)).filter((m): m is Measurement => !!m)
+    const curAtoms = res(mPicks)
+    curAtoms.forEach((a) => codes.code(a))
+    const current = measureOf(curAtoms, codes)
+    const relation = curAtoms.length >= 2 ? relateMolecules(structure, pos, curAtoms) : null
+    return { codes, saved, current, curAtoms, relation, footnotes: codes.footnotes() }
+  }, [structure, placedPositions, mPicks, mSaved])
+  const supercellSpan = structure
+    ? Math.max(structure.cell.a * multiples[0], structure.cell.b * multiples[1], structure.cell.c * multiples[2])
+    : 10
+  const annotations = useMemo<SceneAnnotations | null>(() => {
+    if (!measureOn || !measureModel) return null
+    const ann: SceneAnnotations = { markers: [], lines: [], labels: [], element: null }
+    const V = (a: Vec3, b: Vec3, k = 1): Vec3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k]
+    const D = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
+    const N = (a: Vec3): Vec3 => {
+      const n = Math.hypot(...a) || 1
+      return [a[0] / n, a[1] / n, a[2] / n]
+    }
+    const draw = (m: Measurement, color: string) => {
+      const p = m.atoms.map((a) => a.cart)
+      ann.lines.push({ points: p, color })
+      let lp: Vec3
+      if (m.kind === 'distance') lp = V(p[0]!, D(p[1]!, p[0]!), 0.5)
+      else if (m.kind === 'angle') {
+        const u = N(D(p[0]!, p[1]!))
+        const w = N(D(p[2]!, p[1]!))
+        const r = 0.6
+        const arc: Vec3[] = []
+        for (let i = 0; i <= 16; i++) {
+          const f = i / 16
+          arc.push(V(p[1]!, N(V(V([0, 0, 0], u, 1 - f), w, f)), r))
+        }
+        ann.lines.push({ points: arc, color, dashed: false, width: 2 })
+        lp = V(p[1]!, N(V(u, w)), 1.05)
+      } else lp = V(V(p[1]!, D(p[2]!, p[1]!), 0.5), [0, 0.35, 0])
+      const val = m.text.slice(m.text.lastIndexOf('  ') + 2)
+      ann.labels.push({ pos: lp, text: val, color })
+    }
+    measureModel.saved.forEach((m) => draw(m, '#93c5fd'))
+    if (measureModel.current) draw(measureModel.current, '#fbbf24')
+    measureModel.curAtoms.forEach((a) =>
+      ann.markers.push({ pos: a.cart, r: 0.42, color: '#fbbf24' }),
+    )
+    const rel = measureModel.relation
+    if (rel && showElement) {
+      const e = rel.element
+      const m = V(rel.centroidA, D(rel.centroidB, rel.centroidA), 0.5)
+      const L = supercellSpan * 0.75
+      if ((e.kind === 'inversion' || e.kind === 'rotoinversion') && e.pointCart)
+        ann.element = { kind: 'point', p: e.pointCart, color: '#f472b6' }
+      if (e.kind === 'rotoinversion' && e.pointCart && e.axisCart)
+        ann.lines.push({ points: [V(e.pointCart, e.axisCart, -L), V(e.pointCart, e.axisCart, L)], color: '#f472b6', dashed: false, width: 3 })
+      if ((e.kind === 'rotation' || e.kind === 'screw') && e.pointCart && e.axisCart) {
+        const q = V(e.pointCart, e.axisCart, (D(m, e.pointCart)[0] * e.axisCart[0] + D(m, e.pointCart)[1] * e.axisCart[1] + D(m, e.pointCart)[2] * e.axisCart[2]))
+        ann.element = { kind: 'line', a: V(q, e.axisCart, -L), b: V(q, e.axisCart, L), color: '#34d399' }
+      }
+      if ((e.kind === 'mirror' || e.kind === 'glide') && e.pointCart && e.normalCart) {
+        const n = e.normalCart
+        const dd = D(m, e.pointCart)
+        const c = V(m, n, -(dd[0] * n[0] + dd[1] * n[1] + dd[2] * n[2]))
+        ann.element = { kind: 'plane', center: c, normal: n, size: L * 1.6, color: '#a78bfa' }
+      }
+      if (e.kind === 'translation')
+        ann.lines.push({ points: [rel.centroidA, rel.centroidB], color: '#e2e8f0', dashed: false, width: 3 })
+      ann.labels.push({ pos: V(m, [0, 0.6, 0]), text: e.symbol, color: '#f9a8d4' })
+    }
+    return ann
+  }, [measureOn, measureModel, showElement, supercellSpan])
+  const measureText = () => {
+    if (!measureModel) return ''
+    const all = [...measureModel.saved, ...(measureModel.current ? [measureModel.current] : [])]
+    const lines = all.map((m) => m.text)
+    if (measureModel.footnotes.length) lines.push('', 'Symmetry codes:', ...measureModel.footnotes)
+    if (measureModel.relation)
+      lines.push('', `Molecule pair: ${measureModel.relation.triplet}`, ...measureModel.relation.element.lines)
+    return lines.join('\n')
+  }
+  const measureBtn = (
+    <button
+      type="button"
+      className={`btn${measureOn ? ' btn-primary' : ''}`}
+      onClick={() => {
+        setMeasureOn((o) => !o)
+        setPin(null)
+      }}
+      disabled={!structure}
+      aria-pressed={measureOn}
+      title="Measure distances, angles and torsions; pick atoms on two molecules to get the symmetry element relating them"
+    >
+      Measure{measureOn ? ' · on' : ''}
+    </button>
+  )
+  const measureOnRef = useRef(false)
+  measureOnRef.current = measureOn
+  const undoRef = useRef(() => {})
+  undoRef.current = () => {
+    if (mPicks.length) setPicks(mPicks.slice(0, -1))
+  }
   const toggleHighlight = (el: string) =>
     structure && setHl(highlightElement === el ? null : { s: structure, el })
-  const showPanel = !!structure && (!!pinnedInfo || !!highlightElement)
+  const showPanel = !!structure && (!!pinnedInfo || !!highlightElement || measureOn)
 
   // —— Download ——
   const [dlOpen, setDlOpen] = useState(false)
@@ -762,6 +894,7 @@ export default function CifViewport({
             >
               Reset view
             </button>
+            {measureBtn}
             {downloadMenu}
           </div>
         </div>
@@ -802,7 +935,8 @@ export default function CifViewport({
               >
                 Reset view
               </button>
-              {downloadMenu}
+              {measureBtn}
+            {downloadMenu}
             </div>
             <div className="cif-display-section-label">Display</div>
             {thermalControls}
@@ -885,7 +1019,15 @@ export default function CifViewport({
                 hbondMode={hbondMode}
                 multiples={multiples}
                 onAtomHover={(pick, x, y) => setHover(pick ? { pick, x, y } : null)}
+                annotations={annotations}
                 onAtomPick={(pick) => {
+                  if (measureOn) {
+                    const last = mPicks[mPicks.length - 1]
+                    if (samePick(last ?? null, pick)) return
+                    setPicks(mPicks.length >= 4 ? [pick] : [...mPicks, pick])
+                    setHover(null)
+                    return
+                  }
                   setPin(samePick(pick, pinned) ? null : { s: structure, pick })
                   setHover(null)
                 }}
@@ -913,6 +1055,7 @@ export default function CifViewport({
                 onClick={() => {
                   setPin(null)
                   setHl(null)
+                  setMeasureOn(false)
                 }}
                 aria-label="Close atom details (Esc)"
                 title="Close (Esc)"
@@ -920,6 +1063,106 @@ export default function CifViewport({
                 ×
               </button>
             </div>
+            {measureOn && measureModel && (
+              <div className="cif-measure">
+                <div className="cif-measure-hint">
+                  Click 2 atoms → distance, 3 → angle, 4 → torsion. Atoms on two molecules → their
+                  symmetry element. Esc / ⌫ undoes the last pick.
+                </div>
+                {measureModel.curAtoms.length > 0 && (
+                  <div className="cif-measure-current">
+                    <div className="cif-measure-names">
+                      {measureModel.curAtoms.map((a) => measureModel.codes.name(a)).join(' – ')}
+                    </div>
+                    {measureModel.current && (
+                      <div className="cif-measure-value">
+                        {measureModel.current.kind}:{' '}
+                        <b>{measureModel.current.text.slice(measureModel.current.text.lastIndexOf('  ') + 2)}</b>
+                      </div>
+                    )}
+                    <div className="cif-measure-btns">
+                      <button
+                        type="button"
+                        className="btn btn-small"
+                        disabled={!measureModel.current}
+                        onClick={() => setPicks([], [...mSaved, mPicks])}
+                      >
+                        Save
+                      </button>
+                      <button type="button" className="btn btn-small" onClick={() => setPicks(mPicks.slice(0, -1))}>
+                        Undo
+                      </button>
+                      <button type="button" className="btn btn-small" onClick={() => setPicks([])}>
+                        Clear picks
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {measureModel.relation && (
+                  <div className="cif-measure-relation">
+                    <div className="cif-chrome-label">Molecule A → B</div>
+                    <div className="mono">{measureModel.relation.triplet}</div>
+                    {measureModel.relation.note && <div className="muted">{measureModel.relation.note}</div>}
+                    {measureModel.relation.element.lines.map((l, i) => (
+                      <div key={i} className={i === 0 ? 'cif-rel-head' : 'mono cif-rel-line'}>
+                        {l}
+                      </div>
+                    ))}
+                    <label className="cif-rel-show">
+                      <input type="checkbox" checked={showElement} onChange={(e) => setShowElement(e.target.checked)} />{' '}
+                      Show element in 3D
+                    </label>
+                  </div>
+                )}
+                {measureModel.saved.length > 0 && (
+                  <ul className="cif-measure-list">
+                    {measureModel.saved.map((m, i) => (
+                      <li key={i}>
+                        <span className="mono">{m.text}</span>
+                        <button
+                          type="button"
+                          className="btn btn-small"
+                          aria-label="Delete measurement"
+                          onClick={() => setPicks(mPicks, mSaved.filter((_, j) => j !== i))}
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {measureModel.footnotes.length > 0 && (
+                  <div className="cif-measure-foot mono">
+                    {measureModel.footnotes.map((f) => (
+                      <div key={f}>{f}</div>
+                    ))}
+                  </div>
+                )}
+                <div className="cif-measure-btns">
+                  <button
+                    type="button"
+                    className="btn btn-small"
+                    disabled={!measureModel.saved.length && !measureModel.current}
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(measureText()).then(() => {
+                        setCopied(true)
+                        setTimeout(() => setCopied(false), 1200)
+                      })
+                    }}
+                  >
+                    {copied ? 'Copied' : 'Copy as text'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-small"
+                    disabled={!measureModel.saved.length && !mPicks.length}
+                    onClick={() => setPicks([], [])}
+                  >
+                    Clear all
+                  </button>
+                </div>
+              </div>
+            )}
             {pinnedInfo && <AtomInfoBlock info={pinnedInfo} />}
             <label className="cif-atom-filter">
               Highlight element{' '}

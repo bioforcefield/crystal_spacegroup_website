@@ -2,6 +2,7 @@ import type { AtomPick } from '../data/cif/atomInfo'
 import type { ThreeEvent } from '@react-three/fiber'
 import { equivalenceClasses, equivalenceColor, jmolColor } from '../data/cif/colorSchemes'
 import SupercellWire from './SupercellWire'
+import MeasureOverlay, { type SceneAnnotations } from './cif/MeasureOverlay'
 import {
   DEFAULT_MULTIPLES,
   isDefaultMultiples,
@@ -83,6 +84,8 @@ interface Props {
   onAtomPick?: (pick: AtomPick) => void
   pinnedAtom?: AtomPick | null
   highlightElement?: string | null
+  /** Measure / relate overlay. */
+  annotations?: SceneAnnotations | null
 }
 
 /** Instanced, dimmed lattice-translated copies of the visible atoms + bonds. */
@@ -557,6 +560,7 @@ function SceneBody({
   onAtomPick,
   pinnedAtom = null,
   highlightElement = null,
+  annotations = null,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const supercell = !isDefaultMultiples(multiples)
   const center = useMemo(
@@ -921,6 +925,7 @@ function SceneBody({
           pinned={pinnedAtom}
           element={highlightElement}
         />
+        {annotations && <MeasureOverlay ann={annotations} />}
       </group>
 
       <OrbitControls

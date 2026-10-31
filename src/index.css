@@ -5232,3 +5232,19 @@ button.linkish {
 }
 .cif-download-menu button:hover:not(:disabled) { background: rgba(125, 211, 252, 0.12); }
 .cif-download-menu button:disabled { opacity: 0.4; cursor: not-allowed; }
+.cif-measure { display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.8rem; margin-bottom: 0.6rem; }
+.cif-measure-hint { color: #94a3b8; font-size: 0.74rem; line-height: 1.35; }
+.cif-measure-current, .cif-measure-relation { border: 1px solid #334155; border-radius: 8px; padding: 0.45rem 0.55rem; background: rgba(15, 23, 42, 0.6); }
+.cif-measure-names { color: #fbbf24; font-weight: 600; }
+.cif-measure-value b { color: #fde68a; font-size: 0.95rem; }
+.cif-measure-btns { display: flex; gap: 0.3rem; flex-wrap: wrap; margin-top: 0.3rem; }
+.cif-measure-relation .cif-rel-head { color: #f9a8d4; font-weight: 600; margin-top: 0.2rem; }
+.cif-measure-relation .cif-rel-line { color: #cbd5e1; font-size: 0.72rem; word-break: break-word; }
+.cif-rel-show { display: block; margin-top: 0.3rem; color: #cbd5e1; }
+.cif-measure-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.cif-measure-list li { display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; color: #93c5fd; }
+.cif-measure-foot { color: #94a3b8; font-size: 0.72rem; }
+.cif-explorer .viewport-body.cif-viewport-body > .cif-atom-panel { flex: 0 0 300px; width: 300px; max-width: 300px; }
+@media (max-width: 1100px) {
+  .cif-explorer .viewport-body.cif-viewport-body > .cif-atom-panel { flex: 0 0 auto; width: auto; max-width: none; max-height: 45vh; border-left: 0; border-top: 1px solid #1e293b; }
+}
