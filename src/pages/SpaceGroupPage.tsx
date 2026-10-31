@@ -13,6 +13,12 @@ import { operatorClass } from '../data/math'
 import type { PlacementMode } from '../data/nearestImages'
 import type { SpaceGroupDemo } from '../data/types'
 import { describeSpaceGroupCanvas } from '../data/a11y/structureSummary'
+import {
+  DEFAULT_MULTIPLES,
+  parseCellMultiples,
+  supercellEnabled,
+  type CellMultiples,
+} from '../data/supercell'
 import VisitCounter from '../components/VisitCounter'
 
 interface Props {
@@ -25,6 +31,24 @@ export default function SpaceGroupPage({ demo }: Props) {
   const [resetToken, setResetToken] = useState(0)
   const [placementMode, setPlacementMode] = useState<PlacementMode>('nearest')
   // Dense packs (Z>48) default to BASE+IMAGE so the cell stays readable (S5).
+  const [multText, setMultText] = useState('1x1x1')
+  const [multState, setMultState] = useState<{
+    sg: number
+    value: CellMultiples
+  }>({ sg: demo.meta.number, value: DEFAULT_MULTIPLES })
+  const canSupercell = supercellEnabled(demo.meta.number)
+  const multiples: CellMultiples =
+    canSupercell && multState.sg === demo.meta.number
+      ? multState.value
+      : DEFAULT_MULTIPLES
+  const multParse = parseCellMultiples(multText)
+  const applyMultiples = () => {
+    const r = parseCellMultiples(multText)
+    if (r.ok) {
+      setMultState({ sg: demo.meta.number, value: r.value })
+      setMultText(r.value.join('x'))
+    }
+  }
   const [showAllSites, setShowAllSites] = useState(
     () => demo.meta.multiplicity <= 48,
   )
@@ -224,6 +248,37 @@ export default function SpaceGroupPage({ demo }: Props) {
             </button>
           </div>
         </div>
+        {canSupercell && (
+          <form
+            className="supercell-control"
+            onSubmit={(e) => {
+              e.preventDefault()
+              applyMultiples()
+            }}
+          >
+            <label htmlFor="cell-multiples">Cell multiples (a×b×c)</label>
+            <input
+              id="cell-multiples"
+              type="text"
+              inputMode="text"
+              value={multText}
+              onChange={(e) => setMultText(e.target.value)}
+              onBlur={applyMultiples}
+              placeholder="1x1x3"
+              aria-invalid={!multParse.ok}
+              aria-describedby="cell-multiples-help"
+              size={8}
+            />
+            <button type="submit" className="btn">Show</button>
+            <span id="cell-multiples-help" className="supercell-help" role="status">
+              {!multParse.ok
+                ? multParse.error
+                : multParse.clamped
+                  ? 'Each value is limited to 1–5.'
+                  : `e.g. 1x1x3 or 1,1,3 · showing ${multiples.join('×')}`}
+            </span>
+          </form>
+        )}
         {demo.geometryLimited && demo.geometryNote && (
           <p className="geometry-note" role="note">
             {demo.geometryNote}
@@ -299,6 +354,7 @@ export default function SpaceGroupPage({ demo }: Props) {
               animateToken={animateToken}
               placementMode={placementMode}
               showAllSites={showAllSites}
+              multiples={multiples}
               onSelectPoint={handleSelect}
               resetToken={resetToken}
             />
