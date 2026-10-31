@@ -17,6 +17,8 @@ const FAINT_PLANE = 0.14
 interface Props {
   demo: SpaceGroupDemo
   selectedIndex: number
+  /** Draw only the emphasized (selected-op) element instance. */
+  onlySelected?: boolean
   /**
    * Soften overlays when drawn over dense molecular content (CIF explorer).
    * Scales faint/emphasized opacities ~0.72× so atoms stay readable.
@@ -521,6 +523,7 @@ export default function SymmetryElements({
   demo,
   selectedIndex,
   soft = false,
+  onlySelected = false,
 }: Props) {
   const selected = demo.operators.find((o) => o.index === selectedIndex)
   const classId = selected?.classId ?? 'identity'
@@ -528,31 +531,36 @@ export default function SymmetryElements({
 
   return (
     <group>
-      {demo.inversionCenters.map((c) => (
-        <InversionCenterVisual
-          key={c.locus}
-          demo={demo}
-          position={c.position}
-          opacityScale={opacityScale}
-          emphasized={
-            classId === 'inversion' &&
-            (selectedIndex === demo.primaryInversionOp
-              ? c.primary
-              : Math.abs(c.position[0] - (selected?.t[0] ?? 0) / 2) < 0.01 &&
-                Math.abs(c.position[1] - (selected?.t[1] ?? 0) / 2) < 0.01 &&
-                Math.abs(c.position[2] - (selected?.t[2] ?? 0) / 2) < 0.01)
-          }
-        />
-      ))}
+      {demo.inversionCenters.map((c) => {
+        const emphasized =
+          classId === 'inversion' &&
+          (selectedIndex === demo.primaryInversionOp
+            ? c.primary
+            : Math.abs(c.position[0] - (selected?.t[0] ?? 0) / 2) < 0.01 &&
+              Math.abs(c.position[1] - (selected?.t[1] ?? 0) / 2) < 0.01 &&
+              Math.abs(c.position[2] - (selected?.t[2] ?? 0) / 2) < 0.01)
+        if (onlySelected && !emphasized) return null
+        return (
+          <InversionCenterVisual
+            key={c.locus}
+            demo={demo}
+            position={c.position}
+            opacityScale={opacityScale}
+            emphasized={emphasized}
+          />
+        )
+      })}
 
       {demo.screwAxes.map((axis) => {
         const emphasized =
           (classId === 'screw' ||
             classId === 'twofold' ||
             classId === 'threefold' ||
-            classId === 'fourfold') &&
+            classId === 'fourfold' ||
+            classId === 'sixfold') &&
           axis.opIndex === selectedIndex &&
           axis.primary
+        if (onlySelected && !emphasized) return null
         return (
           <ScrewAxisVisual
             key={`${axis.opIndex}-${axis.locus}`}
@@ -567,6 +575,7 @@ export default function SymmetryElements({
       {demo.glidePlanes.map((plane) => {
         const emphasized =
           plane.opIndex === selectedIndex && plane.primary
+        if (onlySelected && !emphasized) return null
         return (
           <GlidePlaneVisual
             key={`${plane.opIndex}-${plane.locus}`}

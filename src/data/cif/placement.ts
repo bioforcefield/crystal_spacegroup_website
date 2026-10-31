@@ -72,6 +72,21 @@ export interface CifPlacementResult {
  * - nearest: keep intact-molecule relative geometry; translate each molecule
  *   by a lattice vector so its centroid sits near the selected element.
  */
+/** True when R·R = I (2-fold, mirror, inversion — pair midpoint is on the element). */
+export function isOrderTwo(R: number[][] | number[]): boolean {
+  const M = (Array.isArray(R[0]) ? R : [R.slice(0, 3), R.slice(3, 6), R.slice(6, 9)]) as number[][]
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++) {
+      let v = 0
+      for (let k = 0; k < 3; k++) v += M[i]![k]! * M[k]![j]!
+      if (Math.abs(v - (i === j ? 1 : 0)) > 1e-6) return false
+    }
+  return true
+}
+
+/** Midpoint-on-drawn-element dominates the SG pairScore tie-breakers. */
+const PAIR_MIDPOINT_WEIGHT = 1000
+
 export function placeCifStructure(
   structure: ExpandedStructure,
   mode: CifPlacementMode,
@@ -124,6 +139,7 @@ export function placeCifStructure(
       if (a.opIndex === 1 && !auMolOf.has(a.auIndex)) auMolOf.set(a.auIndex, a.moleculeId)
     }
     const pairedAu = new Set<number>()
+    const order2 = isOrderTwo(op.R)
     for (const [mid, indices] of byMol) {
       const first = structure.atoms[indices[0]!]!
       if (first.opIndex !== selectedOp) continue
@@ -137,7 +153,24 @@ export function placeCifStructure(
       for (const nA of LATTICE_NEIGHBORS) {
         const base = addFrac(cA, nA)
         for (const nM of LATTICE_NEIGHBORS) {
-          const sc = pairScore(demo, base, addFrac(cM, nM), op)
+          const image = addFrac(cM, nM)
+          const mid: Vec3 = [
+            (base[0] + image[0]) / 2,
+            (base[1] + image[1]) / 2,
+            (base[2] + image[2]) / 2,
+          ]
+          // Hard rule: the pair midpoint must lie on the *drawn* element
+          // instance (distToElement is not lattice-periodic), so other
+          // equivalent instances (e.g. 2₁ at x=½ when x=0 is drawn) lose.
+          // Order-2 ops (2, 2₁, m, glides, 1̄): midpoint on the element.
+          // Higher order (3/4/6, screws, rotoinversions): the midpoint is not
+          // on the axis, so require equal distance to the drawn instance.
+          const miss = order2
+            ? distToElement(demo, mid, op)
+            : Math.abs(distToElement(demo, base, op) - distToElement(demo, image, op))
+          const sc =
+            PAIR_MIDPOINT_WEIGHT * miss +
+            pairScore(demo, base, image, op)
           if (sc < best - 1e-9) {
             best = sc
             sA = nA

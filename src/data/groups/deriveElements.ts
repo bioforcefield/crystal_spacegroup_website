@@ -234,8 +234,10 @@ export function deriveFourfoldC(ops: Operator[]): ScrewAxisSpec[] {
     const tx = op.t[0]
     const ty = op.t[1]
     const tz = wrap01(op.t[2])
-    const x0 = wrap01((tx - ty) / 2)
-    const y0 = wrap01((tx + ty) / 2)
+    // forward (−y+tx, x+ty): x0=(tx−ty)/2, y0=(tx+ty)/2
+    // inverse ( y+tx, −x+ty): x0=(tx+ty)/2, y0=(ty−tx)/2
+    const x0 = wrap01(forward ? (tx - ty) / 2 : (tx + ty) / 2)
+    const y0 = wrap01(forward ? (tx + ty) / 2 : (ty - tx) / 2)
     let kind: ScrewAxisSpec['kind'] = '4'
     if (nearHalf(tz)) kind = '42'
     else if (Math.abs(tz - 0.25) < 0.08) kind = '41'
@@ -775,16 +777,24 @@ export function deriveDiagonalGlides(ops: Operator[]): GlidePlaneSpec[] {
       continue
     }
 
-    const n = axisEigenvectorMinus1(op.R)
+    // The fixed plane is {x : m·x = d} with m the *left* (−1) eigenvector
+    // (m·R = −m). The right eigenvector is only the Cartesian normal for
+    // orthogonal fractional bases — in hexagonal cells (e.g. y−x,y,z) it
+    // would draw x = 0 instead of the true plane y = 2x.
+    const Rt: Mat3 = [
+      [op.R[0][0], op.R[1][0], op.R[2][0]],
+      [op.R[0][1], op.R[1][1], op.R[2][1]],
+      [op.R[0][2], op.R[1][2], op.R[2][2]],
+    ]
+    const n = axisEigenvectorMinus1(Rt)
     if (!n) continue
 
-    // Plane offset: for mirror/glide, fixed set satisfies n·x = n·(t/2) for pure m;
-    // more generally d = n · (t/2) when R is reflection-like.
+    // m·g = 0 for the glide part, so d = m·(t/2).
     const d = dot3(n, scale3(op.t, 0.5))
-    const glide = op.t.map((c, i) => {
-      // In-plane part of t
-      return c - n[i]! * dot3(op.t, n)
-    }) as Vec3
+    // Intrinsic (in-plane) glide g = (t + R t) / 2.
+    const glide = [0, 1, 2].map(
+      (i) => (op.t[i]! + dot3(op.R[i]! as Vec3, op.t)) / 2,
+    ) as Vec3
     // wrap glide components lightly for classification
     const gWrap: Vec3 = [
       wrap01(glide[0]),

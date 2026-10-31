@@ -748,6 +748,7 @@ function SceneBody({
             demo={elementDemo}
             selectedIndex={selectedOp}
             soft
+            onlySelected={visibility === 'selected' && selectedOp !== 1}
           />
         )}
 
