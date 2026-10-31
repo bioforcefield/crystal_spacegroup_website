@@ -378,6 +378,7 @@ export default function SpaceGroupPage({ demo }: Props) {
             onSelect={handleSelect}
             showAllSites={showAllSites}
             placementMode={placementMode}
+            multiples={canSupercell ? multiples : undefined}
           />
         </div>
         <div className="sr-only" aria-live="polite" aria-atomic="true">

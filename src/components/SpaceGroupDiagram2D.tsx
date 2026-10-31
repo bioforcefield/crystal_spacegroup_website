@@ -23,6 +23,8 @@ interface Props {
   onSelect: (index: number) => void
   showAllSites?: boolean
   placementMode?: PlacementMode
+  /** Supercell na×nb×nc; in-plane multiples tile, out-of-plane is noted. Default 1×1×1. */
+  multiples?: [number, number, number]
 }
 
 const PAD = { left: 40, right: 32, top: 18, bottom: 34 }
@@ -457,6 +459,7 @@ export default function SpaceGroupDiagram2D({
   onSelect,
   showAllSites = true,
   placementMode = 'nearest',
+  multiples,
 }: Props) {
   const plotRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 440, h: 300 })
@@ -499,6 +502,17 @@ export default function SpaceGroupDiagram2D({
     [demo.glidePlanes, proj],
   )
 
+  const mU = multiples ? multiples[proj.uIndex] : 1
+  const mV = multiples ? multiples[proj.vIndex] : 1
+  const mW = multiples ? multiples[proj.wIndex] : 1
+  const tiled = mU > 1 || mV > 1
+  const hv = ({ a: 'x', b: 'y', c: 'z' } as Record<string, string>)[proj.axisW] ?? 'w'
+  const tiles = useMemo(() => {
+    const t: [number, number][] = []
+    for (let i = 0; i < mU; i++) for (let j = 0; j < mV; j++) t.push([i, j])
+    return t
+  }, [mU, mV])
+
   const viewW = size.w
   const viewH = size.h
   const plotW = Math.max(40, viewW - PAD.left - PAD.right)
@@ -509,7 +523,7 @@ export default function SpaceGroupDiagram2D({
     const samples: { x: number; y: number }[] = []
     for (const uu of [0, 1]) {
       for (const vv of [0, 1]) {
-        samples.push(planeEmbed(uu, vv, proj, demo.cell))
+        samples.push(planeEmbed(uu * mU, vv * mV, proj, demo.cell))
       }
     }
     for (const pt of points) {
@@ -522,6 +536,7 @@ export default function SpaceGroupDiagram2D({
       }
       const { u, v } = projectFrac(pt.fractional, proj)
       samples.push(planeEmbed(u, v, proj, demo.cell))
+      if (tiled) samples.push(planeEmbed(u + mU - 1, v + mV - 1, proj, demo.cell))
     }
     const pad = placementMode === 'nearest' ? 0.08 : 0.02
     // pad in fractional → approx via cell sizes
@@ -532,7 +547,7 @@ export default function SpaceGroupDiagram2D({
     let y0 = Math.min(...samples.map((s) => s.y)) - padY
     let y1 = Math.max(...samples.map((s) => s.y)) + padY
     return { x0, x1, y0, y1 }
-  }, [points, proj, demo.cell, placementMode, showAllSites, selectedIndex])
+  }, [points, proj, demo.cell, placementMode, showAllSites, selectedIndex, mU, mV, tiled])
 
   const worldW = Math.max(1e-6, extent.x1 - extent.x0)
   const worldH = Math.max(1e-6, extent.y1 - extent.y0)
@@ -555,6 +570,10 @@ export default function SpaceGroupDiagram2D({
   const cornerA = toSvg(1, 0)
   const cornerB = toSvg(0, 1)
   const cornerAB = toSvg(1, 1)
+  const shift = (i: number, j: number) => {
+    const p = toSvg(i, j)
+    return `translate(${p.x - origin.x} ${p.y - origin.y})`
+  }
 
   return (
     <section
@@ -589,6 +608,15 @@ export default function SpaceGroupDiagram2D({
           ))}
         </div>
       </header>
+            {(tiled || mW > 1) && (
+              <p className="diagram2d-supercell-note" role="note">
+                {mU}×{mV} cells in {proj.axisU}
+                {proj.axisV}
+                {mW > 1
+                  ? ` · ×${mW} along ${proj.axisW} (stacked; heights ${hv}, 1+${hv}…${mW - 1}+${hv})`
+                  : ''}
+              </p>
+            )}
 
       <div className="diagram2d-plot" ref={plotRef}>
       <svg
@@ -638,6 +666,66 @@ export default function SpaceGroupDiagram2D({
             strokeWidth={1}
           />
         </g>
+
+        {tiled && (
+          <g className="d2-supercell" pointerEvents="none">
+            {tiles
+              .filter(([i, j]) => i || j)
+              .map(([i, j]) => (
+                <g key={`c${i},${j}`} transform={shift(i, j)} opacity={0.75}>
+                  <polygon
+                    points={`${origin.x},${origin.y} ${cornerA.x},${cornerA.y} ${cornerAB.x},${cornerAB.y} ${cornerB.x},${cornerB.y}`}
+                    fill="rgba(15, 23, 42, 0.35)"
+                    stroke="#475569"
+                    strokeWidth={1}
+                  />
+                </g>
+              ))}
+            <polygon
+              points={[toSvg(0, 0), toSvg(mU, 0), toSvg(mU, mV), toSvg(0, mV)]
+                .map((p) => `${p.x},${p.y}`)
+                .join(' ')}
+              fill="none"
+              stroke="#fbbf24"
+              strokeWidth={1.6}
+              opacity={0.85}
+            />
+          </g>
+        )}
+        {tiled &&
+          tiles
+            .filter(([i, j]) => i || j)
+            .map(([i, j]) => (
+              <g
+                key={`s${i},${j}`}
+                transform={shift(i, j)}
+                opacity={0.45}
+                pointerEvents="none"
+                aria-hidden="true"
+              >
+                <GlidesLayer demo={demo} glides={glides} selectedIndex={selectedIndex} toSvg={toSvg} labelScale={labelScale} />
+                <ScrewsLayer demo={demo} screws={screws} selectedIndex={selectedIndex} toSvg={toSvg} labelScale={labelScale} />
+                <InversionsLayer demo={demo} selectedIndex={selectedIndex} toSvg={toSvg} proj={proj} />
+                {points
+                  .filter((pt) => showAllSites || pt.index === 1 || pt.index === selectedIndex)
+                  .map((pt) => {
+                    const { u, v, w } = projectFrac(pt.fractional, proj)
+                    const { x, y } = toSvg(u, v)
+                    const r = 7 * Math.min(1.12, labelScale)
+                    return (
+                      <g key={pt.index} className="d2-site replica">
+                        <circle cx={x} cy={y} r={r} fill="rgba(7, 11, 20, 0.9)" stroke={pt.classColor} strokeWidth={1.3} />
+                        {pt.improper && (
+                          <text x={x} y={y + 3.5 * labelScale} textAnchor="middle" fill={pt.classColor} fontSize={15 * labelScale} fontWeight={700}>,</text>
+                        )}
+                        <text x={x + r + 3} y={y + 6 * labelScale} fill="#64748b" fontSize={10.5 * labelScale} fontFamily="ui-monospace, Menlo, monospace">
+                          {formatHeightLabel(w)}
+                        </text>
+                      </g>
+                    )
+                  })}
+              </g>
+            ))}
 
         <GlidesLayer
           demo={demo}
