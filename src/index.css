@@ -5172,3 +5172,63 @@ button.linkish {
   font-size: 0.72em;
   opacity: 0.75;
 }
+
+/* —— CIF atom inspection —— */
+.cif-viewport-body.has-atom-panel { grid-template-columns: minmax(0, 1fr) 270px !important; }
+.cif-atom-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  max-height: 100%;
+  overflow: auto;
+  padding: 0.6rem 0.7rem;
+  border-left: 1px solid #1e293b;
+  background: #0b1220;
+  font-size: 0.8rem;
+}
+.cif-atom-panel-head { display: flex; justify-content: space-between; align-items: center; }
+.cif-atom-info { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.5rem; margin: 0; }
+.cif-atom-info-title { grid-column: 1 / -1; color: #fde68a; margin-bottom: 0.15rem; }
+.cif-atom-info dt { color: #64748b; }
+.cif-atom-info dd { margin: 0; overflow-wrap: anywhere; }
+.cif-atom-info .mono, .cif-atom-list .mono { font-family: ui-monospace, Menlo, monospace; font-size: 0.75rem; }
+.cif-atom-filter select { font: inherit; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 0.1rem 0.3rem; }
+.cif-atom-list ul { list-style: none; margin: 0.3rem 0 0; padding: 0; max-height: 40vh; overflow: auto; }
+.cif-atom-list li button {
+  display: flex; flex-wrap: wrap; gap: 0.35rem; width: 100%; text-align: left;
+  background: transparent; border: 0; color: inherit; padding: 0.2rem 0.3rem; border-radius: 4px; cursor: pointer; font: inherit;
+}
+.cif-atom-list li button:hover, .cif-atom-list li button.active { background: rgba(250, 204, 21, 0.12); }
+.cif-atom-list .muted { color: #64748b; }
+.cif-atom-list-head { color: #94a3b8; }
+.cif-atom-tooltip {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  max-width: 300px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: rgba(2, 6, 23, 0.94);
+  font-size: 0.75rem;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+@media (max-width: 860px) {
+  .cif-viewport-body.has-atom-panel { grid-template-columns: 1fr !important; }
+  .cif-atom-panel { border-left: 0; border-top: 1px solid #1e293b; max-height: 45vh; }
+  .cif-atom-tooltip { display: none; }
+}
+.cif-download-wrap { position: relative; display: inline-block; }
+.cif-download-menu {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 40;
+  display: flex; flex-direction: column; min-width: 240px;
+  background: #0b1220; border: 1px solid #334155; border-radius: 8px; padding: 0.25rem;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.cif-download-menu button {
+  text-align: left; background: transparent; border: 0; color: #e2e8f0; font: inherit; font-size: 0.82rem;
+  padding: 0.4rem 0.55rem; border-radius: 6px; cursor: pointer;
+}
+.cif-download-menu button:hover:not(:disabled) { background: rgba(125, 211, 252, 0.12); }
+.cif-download-menu button:disabled { opacity: 0.4; cursor: not-allowed; }

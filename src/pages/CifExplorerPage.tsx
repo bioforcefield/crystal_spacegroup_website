@@ -42,6 +42,7 @@ const SAMPLE_URL = `${import.meta.env.BASE_URL}samples/acetic_p21c.cif`
 export default function CifExplorerPage() {
   const [structure, setStructure] = useState<ExpandedStructure | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
+  const [sourceText, setSourceText] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [selectedOp, setSelectedOp] = useState(1)
   const [visibility, setVisibility] = useState<CifVisibility>('molecules')
@@ -73,6 +74,7 @@ export default function CifExplorerPage() {
       const expanded = expandStructure(parsed)
       setStructure(expanded)
       setFileName(name)
+      setSourceText(text)
       setSelectedOp(1)
       setVisibility('molecules')
       setResetToken((t) => t + 1)
@@ -333,6 +335,8 @@ export default function CifExplorerPage() {
 
       <CifViewport
         structure={structure}
+        sourceText={sourceText}
+        sourceName={fileName}
         selectedOp={selectedOp}
         onSelectOp={setSelectedOp}
         visibility={visibility}

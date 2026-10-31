@@ -21,6 +21,17 @@ import type { SpaceGroupDemo } from '../../data/types'
 import VisitCounter from '../VisitCounter'
 import SupercellPicker from '../SupercellPicker'
 import {
+  baseFileName,
+  downloadText,
+  moleculeRecords,
+  p1SupercellCif,
+  sdf,
+} from '../../data/cif/exportFormats'
+import { supercellTranslations } from '../../data/supercell'
+import { atomInfo, samePick, type AtomPick, type AtomInfo } from '../../data/cif/atomInfo'
+import { fracToCart } from '../../data/math'
+import { placeCifStructure } from '../../data/cif/placement'
+import {
   elementsPresent,
   equivalenceClasses,
   equivalenceColor,
@@ -37,6 +48,9 @@ const CifStructureScene = lazy(() => import('../CifStructureScene'))
 
 export interface CifViewportProps {
   structure: ExpandedStructure | null
+  /** Original CIF text + file name (for Download). */
+  sourceText?: string | null
+  sourceName?: string | null
   selectedOp: number
   onSelectOp: (index: number) => void
   visibility: CifVisibility
@@ -80,6 +94,8 @@ function displaySummary(
 
 export default function CifViewport({
   structure,
+  sourceText = null,
+  sourceName = null,
   selectedOp,
   onSelectOp,
   visibility,
@@ -108,6 +124,126 @@ export default function CifViewport({
   const multiples: CellMultiples =
     structure && mult.s === structure ? mult.v : DEFAULT_MULTIPLES
   const perCell = structure?.atoms.length ?? 0
+
+  // —— Atom inspection ——
+  const [hover, setHover] = useState<{ pick: AtomPick; x: number; y: number } | null>(null)
+  const [pin, setPin] = useState<{ s: ExpandedStructure; pick: AtomPick } | null>(null)
+  const [hl, setHl] = useState<{ s: ExpandedStructure; el: string } | null>(null)
+  const pinned = structure && pin?.s === structure ? pin.pick : null
+  const highlightElement = structure && hl?.s === structure ? hl.el : null
+  const placedPositions = useMemo(
+    () =>
+      structure
+        ? placeCifStructure(structure, placementMode, selectedOp, elementDemo ?? null).positions
+        : [],
+    [structure, placementMode, selectedOp, elementDemo],
+  )
+  const infoFor = (p: AtomPick): AtomInfo | null => {
+    if (!structure) return null
+    const a = structure.atoms[p.ai]
+    const pos = placedPositions[p.ai]
+    if (!a || !pos) return null
+    return atomInfo(
+      a,
+      pos as [number, number, number],
+      p.t,
+      structure.cell,
+      structure.operators.find((o) => o.index === a.opIndex),
+      (f) => fracToCart(f, structure.cell),
+    )
+  }
+  const hoverInfo = hover && structure ? infoFor(hover.pick) : null
+  const pinnedInfo = pinned ? infoFor(pinned) : null
+  const hlList = useMemo(() => {
+    if (!structure || !highlightElement) return []
+    return structure.atoms
+      .map((a, ai) => ({ a, ai }))
+      .filter(({ a }) => a.element === highlightElement)
+  }, [structure, highlightElement])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPin(null)
+        setHl(null)
+        setHover(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  const toggleHighlight = (el: string) =>
+    structure && setHl(highlightElement === el ? null : { s: structure, el })
+  const showPanel = !!structure && (!!pinnedInfo || !!highlightElement)
+
+  // —— Download ——
+  const [dlOpen, setDlOpen] = useState(false)
+  const doDownload = (kind: 'cif' | 'sdf-au' | 'sdf-cell' | 'sdf-view' | 'p1') => {
+    setDlOpen(false)
+    if (!structure) return
+    const base = baseFileName(undefined, sourceName ? sourceName.replace(/\s*\(.*?\)/g, '') : undefined)
+    const disp = structure.atoms.map((a) => a.displayCartesian as [number, number, number])
+    const inView = (ai: number) => {
+      const a = structure.atoms[ai]!
+      if (visibility === 'asymmetric') return a.opIndex === 1
+      if (visibility === 'selected') return a.opIndex === 1 || a.opIndex === selectedOp
+      return true
+    }
+    const ts = supercellTranslations(multiples)
+    const mtag = multiples.join('x')
+    if (kind === 'cif') {
+      if (sourceText) downloadText(sourceText, `${base}.cif`, 'chemical/x-cif')
+      return
+    }
+    if (kind === 'p1') {
+      downloadText(
+        p1SupercellCif(structure, placedPositions as [number, number, number][], inView, multiples, ts, base),
+        `${base}_P1_${mtag}.cif`,
+        'chemical/x-cif',
+      )
+      return
+    }
+    const recs =
+      kind === 'sdf-au'
+        ? moleculeRecords(structure, disp, (ai) => structure.atoms[ai]!.opIndex === 1, undefined, base)
+        : kind === 'sdf-cell'
+          ? moleculeRecords(structure, disp, () => true, undefined, base)
+          : moleculeRecords(structure, placedPositions as [number, number, number][], inView, ts, base)
+    const suffix = kind === 'sdf-au' ? 'asu' : kind === 'sdf-cell' ? 'cell' : `view_${mtag}`
+    downloadText(sdf(recs), `${base}_${suffix}.sdf`, 'chemical/x-mdl-sdfile')
+  }
+  const downloadMenu = (
+    <div className="cif-download-wrap">
+      <button
+        type="button"
+        className={`btn${dlOpen ? ' btn-primary' : ''}`}
+        onClick={() => setDlOpen((o) => !o)}
+        disabled={!structure}
+        aria-expanded={dlOpen}
+        aria-haspopup="menu"
+      >
+        Download ▾
+      </button>
+      {dlOpen && structure && (
+        <div className="cif-download-menu" role="menu">
+          <button type="button" role="menuitem" onClick={() => doDownload('cif')} disabled={!sourceText}>
+            CIF — original file
+          </button>
+          <button type="button" role="menuitem" onClick={() => doDownload('sdf-au')}>
+            SDF — asymmetric unit
+          </button>
+          <button type="button" role="menuitem" onClick={() => doDownload('sdf-cell')}>
+            SDF — unit cell (whole molecules)
+          </button>
+          <button type="button" role="menuitem" onClick={() => doDownload('sdf-view')}>
+            SDF — current view ({multiples.join('×')})
+          </button>
+          <button type="button" role="menuitem" onClick={() => doDownload('p1')}>
+            CIF — P1 supercell ({multiples.join('×')})
+          </button>
+        </div>
+      )}
+    </div>
+  )
   const eqInfo = useMemo(() => {
     if (!structure) return { count: 0, labels: [] as string[] }
     const { classOf, count } = equivalenceClasses(structure.atoms)
@@ -415,10 +551,17 @@ export default function CifViewport({
           <div className="legend class-legend">
             {structure && colorMode === 'element' ? (
               elementsPresent(structure.atoms).map((el) => (
-                <span key={el} className="legend-item">
+                <button
+                  key={el}
+                  type="button"
+                  className={`legend-item cif-legend-op${highlightElement === el ? ' active' : ''}`}
+                  onClick={() => toggleHighlight(el)}
+                  aria-pressed={highlightElement === el}
+                  title={`Highlight all ${el} atoms and list them`}
+                >
                   <span className="swatch" style={{ background: jmolColor(el) }} />
                   {el}
-                </span>
+                </button>
               ))
             ) : structure && colorMode === 'equivalence' ? (
               Array.from({ length: eqInfo.count }, (_, k) => (
@@ -619,6 +762,7 @@ export default function CifViewport({
             >
               Reset view
             </button>
+            {downloadMenu}
           </div>
         </div>
 
@@ -658,6 +802,7 @@ export default function CifViewport({
               >
                 Reset view
               </button>
+              {downloadMenu}
             </div>
             <div className="cif-display-section-label">Display</div>
             {thermalControls}
@@ -709,7 +854,7 @@ export default function CifViewport({
         />
       )}
 
-      <div className="viewport-body cif-viewport-body">
+      <div className={`viewport-body cif-viewport-body${showPanel ? ' has-atom-panel' : ''}`}>
         <div
           id="demo-main"
           className="canvas-wrap"
@@ -739,6 +884,13 @@ export default function CifViewport({
                 thermalMode={thermalMode}
                 hbondMode={hbondMode}
                 multiples={multiples}
+                onAtomHover={(pick, x, y) => setHover(pick ? { pick, x, y } : null)}
+                onAtomPick={(pick) => {
+                  setPin(samePick(pick, pinned) ? null : { s: structure, pick })
+                  setHover(null)
+                }}
+                pinnedAtom={pinned}
+                highlightElement={highlightElement}
               />
             </Suspense>
           ) : (
@@ -751,6 +903,66 @@ export default function CifViewport({
             </div>
           )}
         </div>
+        {showPanel && (
+          <aside className="cif-atom-panel" aria-label="Atom details">
+            <div className="cif-atom-panel-head">
+              <span className="cif-chrome-label">Atom details</span>
+              <button
+                type="button"
+                className="btn btn-small"
+                onClick={() => {
+                  setPin(null)
+                  setHl(null)
+                }}
+                aria-label="Close atom details (Esc)"
+                title="Close (Esc)"
+              >
+                ×
+              </button>
+            </div>
+            {pinnedInfo && <AtomInfoBlock info={pinnedInfo} />}
+            <label className="cif-atom-filter">
+              Highlight element{' '}
+              <select
+                value={highlightElement ?? ''}
+                onChange={(e) =>
+                  structure && setHl(e.target.value ? { s: structure, el: e.target.value } : null)
+                }
+              >
+                <option value="">none</option>
+                {structure && elementsPresent(structure.atoms).map((el) => (
+                  <option key={el} value={el}>
+                    {el}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {highlightElement && (
+              <div className="cif-atom-list">
+                <div className="cif-atom-list-head">
+                  {hlList.length} {highlightElement} atoms in the unit cell
+                </div>
+                <ul>
+                  {hlList.map(({ a, ai }) => {
+                    const inf = infoFor({ ai, t: [0, 0, 0] })
+                    return (
+                      <li key={ai}>
+                        <button
+                          type="button"
+                          className={samePick(pinned, { ai, t: [0, 0, 0] }) ? 'active' : ''}
+                          onClick={() => structure && setPin({ s: structure, pick: { ai, t: [0, 0, 0] } })}
+                        >
+                          <b>{a.label}</b> <span className="muted">op {a.opIndex}</span>
+                          <span className="mono">{inf?.frac}</span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
+          </aside>
+        )}
       </div>
 
       <footer className="viewport-footer">
@@ -775,6 +987,44 @@ export default function CifViewport({
           {')'}
         </span>
       </footer>
+      {hoverInfo && hover && (
+        <div
+          className="cif-atom-tooltip"
+          role="tooltip"
+          style={{ left: hover.x + 14, top: hover.y + 14 }}
+        >
+          <AtomInfoBlock info={hoverInfo} compact />
+        </div>
+      )}
     </main>
+  )
+}
+
+function AtomInfoBlock({ info, compact = false }: { info: AtomInfo; compact?: boolean }) {
+  return (
+    <dl className={`cif-atom-info${compact ? ' compact' : ''}`}>
+      <div className="cif-atom-info-title">
+        <b>{info.label}</b> · {info.title}
+        {info.atomicNumber != null ? ` · Z = ${info.atomicNumber}` : ''}
+      </div>
+      <dt>frac</dt>
+      <dd className="mono">{info.frac}</dd>
+      <dt>cart</dt>
+      <dd className="mono">{info.cart}</dd>
+      <dt>sym</dt>
+      <dd className="mono">{info.op}</dd>
+      {info.occupancy != null && (
+        <>
+          <dt>occ</dt>
+          <dd className="mono">{info.occupancy}</dd>
+        </>
+      )}
+      {info.uIso != null && (
+        <>
+          <dt>Uiso</dt>
+          <dd className="mono">{info.uIso}</dd>
+        </>
+      )}
+    </dl>
   )
 }

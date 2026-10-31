@@ -1,9 +1,12 @@
+import type { AtomPick } from '../data/cif/atomInfo'
+import type { ThreeEvent } from '@react-three/fiber'
 import { equivalenceClasses, equivalenceColor, jmolColor } from '../data/cif/colorSchemes'
 import SupercellWire from './SupercellWire'
 import {
   DEFAULT_MULTIPLES,
   isDefaultMultiples,
   replicaOffsets,
+  supercellTranslations,
   type CellMultiples,
 } from '../data/supercell'
 import { useMemo, useRef, useEffect, type RefObject } from 'react'
@@ -75,6 +78,11 @@ interface Props {
   hbondMode?: CifHBondMode
   /** Supercell na×nb×nc; default 1×1×1 = single cell (unchanged). */
   multiples?: CellMultiples
+  /** Atom inspection: hover (null = left) with client coords; click to pin. */
+  onAtomHover?: (pick: AtomPick | null, clientX: number, clientY: number) => void
+  onAtomPick?: (pick: AtomPick) => void
+  pinnedAtom?: AtomPick | null
+  highlightElement?: string | null
 }
 
 /** Instanced, dimmed lattice-translated copies of the visible atoms + bonds. */
@@ -84,6 +92,9 @@ function CifReplicas({
   visibleIndices,
   bonds,
   offsets,
+  translations,
+  onHover,
+  onPick,
   colorOf,
   tintOf,
   bondColorOf,
@@ -95,12 +106,18 @@ function CifReplicas({
   visibleIndices: number[]
   bonds: { a: number; b: number; opIndex: number }[]
   offsets: Vec3[]
+  translations: Vec3[]
+  onHover?: (pick: AtomPick | null, x: number, y: number) => void
+  onPick?: (pick: AtomPick) => void
   colorOf: (atomIndex: number) => string
   tintOf: ((atomIndex: number) => string) | null
   bondColorOf: (atomIndex: number, opIndex: number) => string
 }) {
   const groups = useMemo(() => {
-    const byKey = new Map<string, { el: string; color: string; tint: string | null; pts: Vec3[] }>()
+    const byKey = new Map<
+      string,
+      { el: string; color: string; tint: string | null; pts: Vec3[]; meta: AtomPick[] }
+    >()
     for (const ai of visibleIndices) {
       const el = structure.atoms[ai]!.element
       const color = colorOf(ai)
@@ -108,8 +125,11 @@ function CifReplicas({
       const key = `${el}|${color}|${tint ?? ''}`
       const p = positions[ai]!
       let g = byKey.get(key)
-      if (!g) byKey.set(key, (g = { el, color, tint, pts: [] }))
-      for (const d of offsets) g.pts.push([p[0] + d[0], p[1] + d[1], p[2] + d[2]])
+      if (!g) byKey.set(key, (g = { el, color, tint, pts: [], meta: [] }))
+      offsets.forEach((d, k) => {
+        g!.pts.push([p[0] + d[0], p[1] + d[1], p[2] + d[2]])
+        g!.meta.push({ ai, t: translations[k]! })
+      })
     }
     return [...byKey.entries()]
     // colorOf/tintOf are recreated each render; schemeKey captures the color mode.
@@ -147,7 +167,16 @@ function CifReplicas({
   return (
     <group>
       {groups.map(([key, g]) => (
-        <InstancedAtoms key={key} element={g.el} color={g.color} tint={g.tint} points={g.pts} />
+        <InstancedAtoms
+          key={key}
+          element={g.el}
+          color={g.color}
+          tint={g.tint}
+          points={g.pts}
+          meta={g.meta}
+          onHover={onHover}
+          onPick={onPick}
+        />
       ))}
       <lineSegments geometry={bondGeom}>
         <lineBasicMaterial vertexColors transparent opacity={0.55} />
@@ -161,11 +190,17 @@ function InstancedAtoms({
   color,
   tint,
   points,
+  meta,
+  onHover,
+  onPick,
 }: {
   element: string
   color: string
   tint: string | null
   points: Vec3[]
+  meta: AtomPick[]
+  onHover?: (pick: AtomPick | null, x: number, y: number) => void
+  onPick?: (pick: AtomPick) => void
 }) {
   const ref = useRef<THREE.InstancedMesh>(null)
   useEffect(() => {
@@ -181,7 +216,22 @@ function InstancedAtoms({
   }, [points])
   const r = elementRadius(element) * 0.82
   return (
-    <instancedMesh ref={ref} args={[undefined, undefined, points.length]} frustumCulled={false}>
+    <instancedMesh
+      ref={ref}
+      args={[undefined, undefined, points.length]}
+      frustumCulled={false}
+      onPointerMove={(e) => {
+        if (e.instanceId == null || !onHover) return
+        e.stopPropagation()
+        onHover(meta[e.instanceId]!, e.nativeEvent.clientX, e.nativeEvent.clientY)
+      }}
+      onPointerOut={() => onHover?.(null, 0, 0)}
+      onClick={(e) => {
+        if (e.instanceId == null || !onPick || e.delta > 4) return
+        e.stopPropagation()
+        onPick(meta[e.instanceId]!)
+      }}
+    >
       <sphereGeometry args={[r, 10, 10]} />
       <meshStandardMaterial
         color={color}
@@ -192,6 +242,87 @@ function InstancedAtoms({
         opacity={0.7}
       />
     </instancedMesh>
+  )
+}
+
+/** Halo on the pinned atom + soft halos on every drawn atom of the highlighted element. */
+function AtomHalos({
+  structure,
+  positions,
+  visibleIndices,
+  translations,
+  cell,
+  pinned,
+  element,
+}: {
+  structure: ExpandedStructure
+  positions: Vec3[]
+  visibleIndices: number[]
+  translations: Vec3[]
+  cell: CellParams
+  pinned: AtomPick | null
+  element: string | null
+}) {
+  const pts = useMemo(() => {
+    if (!element) return [] as Vec3[]
+    const out: Vec3[] = []
+    const ds = translations.map((t) => fracToCart(t, cell))
+    for (const ai of visibleIndices) {
+      if (structure.atoms[ai]!.element !== element) continue
+      const p = positions[ai]!
+      for (const d of ds) out.push([p[0] + d[0], p[1] + d[1], p[2] + d[2]])
+    }
+    return out
+  }, [element, translations, cell, visibleIndices, structure.atoms, positions])
+  const ref = useRef<THREE.InstancedMesh>(null)
+  useEffect(() => {
+    const m = ref.current
+    if (!m) return
+    const mat = new THREE.Matrix4()
+    pts.forEach((p, i) => {
+      mat.makeTranslation(p[0], p[1], p[2])
+      m.setMatrixAt(i, mat)
+    })
+    m.instanceMatrix.needsUpdate = true
+  }, [pts])
+  const pin = useMemo(() => {
+    if (!pinned) return null
+    const p = positions[pinned.ai]
+    if (!p) return null
+    const d = fracToCart(pinned.t, cell)
+    return {
+      pos: [p[0] + d[0], p[1] + d[1], p[2] + d[2]] as Vec3,
+      r: elementRadius(structure.atoms[pinned.ai]!.element) * 1.9,
+    }
+  }, [pinned, positions, cell, structure.atoms])
+  const hr = element ? elementRadius(element) * 1.7 : 0.5
+  return (
+    <group>
+      {pts.length > 0 && (
+        <instancedMesh
+          key={`${element}-${pts.length}`}
+          ref={ref}
+          args={[undefined, undefined, pts.length]}
+          frustumCulled={false}
+          raycast={() => null}
+        >
+          <sphereGeometry args={[hr, 14, 14]} />
+          <meshBasicMaterial color="#fde047" transparent opacity={0.28} depthWrite={false} />
+        </instancedMesh>
+      )}
+      {pin && (
+        <group position={pin.pos}>
+          <mesh raycast={() => null}>
+            <sphereGeometry args={[pin.r, 20, 20]} />
+            <meshBasicMaterial color="#fef08a" transparent opacity={0.3} depthWrite={false} />
+          </mesh>
+          <mesh raycast={() => null}>
+            <sphereGeometry args={[pin.r * 1.05, 16, 12]} />
+            <meshBasicMaterial color="#facc15" wireframe transparent opacity={0.8} />
+          </mesh>
+        </group>
+      )}
+    </group>
   )
 }
 
@@ -422,6 +553,10 @@ function SceneBody({
   thermalMode = 'off',
   hbondMode = 'off',
   multiples = DEFAULT_MULTIPLES,
+  onAtomHover,
+  onAtomPick,
+  pinnedAtom = null,
+  highlightElement = null,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const supercell = !isDefaultMultiples(multiples)
   const center = useMemo(
@@ -430,6 +565,10 @@ function SceneBody({
         ? fracToCart([multiples[0] / 2, multiples[1] / 2, multiples[2] / 2], structure.cell)
         : cellCenterCart(structure.cell),
     [supercell, multiples, structure.cell],
+  )
+  const translations = useMemo(
+    () => (supercell ? supercellTranslations(multiples).filter((t) => t[0] || t[1] || t[2]) : []),
+    [supercell, multiples],
   )
   const offsets = useMemo(
     () => (supercell ? replicaOffsets(multiples, (f) => fracToCart(f, structure.cell)) : []),
@@ -545,6 +684,9 @@ function SceneBody({
               visibleIndices={visibleIndices}
               bonds={visibleBonds}
               offsets={offsets}
+              translations={translations}
+              onHover={onAtomHover}
+              onPick={onAtomPick}
               schemeKey={colorMode}
               colorOf={(ai) =>
                 colorMode === 'element'
@@ -707,6 +849,17 @@ function SceneBody({
                 key={`atom-${a.opIndex}-${a.auIndex}-${a.moleculeId}-${ai}`}
                 matrix={m}
                 matrixAutoUpdate={false}
+                onPointerMove={(e: ThreeEvent<PointerEvent>) => {
+                  if (!onAtomHover) return
+                  e.stopPropagation()
+                  onAtomHover({ ai, t: [0, 0, 0] }, e.nativeEvent.clientX, e.nativeEvent.clientY)
+                }}
+                onPointerOut={() => onAtomHover?.(null, 0, 0)}
+                onClick={(e: ThreeEvent<MouseEvent>) => {
+                  if (!onAtomPick || e.delta > 4) return
+                  e.stopPropagation()
+                  onAtomPick({ ai, t: [0, 0, 0] })
+                }}
               >
                 <sphereGeometry args={[1, 16, 16]} />
                 <meshStandardMaterial
@@ -726,6 +879,17 @@ function SceneBody({
             <mesh
               key={`atom-${a.opIndex}-${a.auIndex}-${a.moleculeId}-${ai}`}
               position={placement.positions[ai]! as Vec3}
+              onPointerMove={(e: ThreeEvent<PointerEvent>) => {
+                if (!onAtomHover) return
+                e.stopPropagation()
+                onAtomHover({ ai, t: [0, 0, 0] }, e.nativeEvent.clientX, e.nativeEvent.clientY)
+              }}
+              onPointerOut={() => onAtomHover?.(null, 0, 0)}
+              onClick={(e: ThreeEvent<MouseEvent>) => {
+                if (!onAtomPick || e.delta > 4) return
+                e.stopPropagation()
+                onAtomPick({ ai, t: [0, 0, 0] })
+              }}
             >
               <sphereGeometry args={[r, 18, 18]} />
               <meshStandardMaterial
@@ -748,6 +912,15 @@ function SceneBody({
             </mesh>
           )
         })}
+        <AtomHalos
+          structure={structure}
+          positions={placement.positions as Vec3[]}
+          visibleIndices={visibleIndices}
+          translations={[[0, 0, 0], ...translations]}
+          cell={structure.cell}
+          pinned={pinnedAtom}
+          element={highlightElement}
+        />
       </group>
 
       <OrbitControls
