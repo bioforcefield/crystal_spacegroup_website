@@ -10,10 +10,11 @@
 
 import { addFrac, fracToCart } from '../math'
 import {
+  LATTICE_NEIGHBORS,
   bestNeighborShift,
   outsideCellPenalty,
 } from '../latticeNeighbors'
-import { distToElement } from '../nearestImages'
+import { distToElement, pairScore } from '../nearestImages'
 import type { PlacementMode } from '../nearestImages'
 import type { SpaceGroupDemo, Vec3 } from '../types'
 import type { ExpandedStructure, SymmetryCopyAtom } from './types'
@@ -109,6 +110,44 @@ export function placeCifStructure(
       shifts.set(mid, bestLatticeShift(centroid, demo, selectedOp))
     } else {
       shifts.set(mid, [0, 0, 0])
+    }
+  }
+
+  // Pair each selected-op molecule with its AU source (shared auIndex) and
+  // shift both jointly with the SG-page pairScore so the selected symmetry
+  // element sits *between* BASE and IMAGE (independent per-molecule nearest
+  // shifts could park both on the same side of the axis/centre).
+  const op = demo?.operators.find((o) => o.index === selectedOp)
+  if (demo && op && op.classId !== 'identity' && selectedOp !== 1) {
+    const auMolOf = new Map<number, number>()
+    for (const a of structure.atoms) {
+      if (a.opIndex === 1 && !auMolOf.has(a.auIndex)) auMolOf.set(a.auIndex, a.moleculeId)
+    }
+    const pairedAu = new Set<number>()
+    for (const [mid, indices] of byMol) {
+      const first = structure.atoms[indices[0]!]!
+      if (first.opIndex !== selectedOp) continue
+      const auMid = auMolOf.get(first.auIndex)
+      if (auMid == null || pairedAu.has(auMid)) continue
+      const cA = moleculeCentroidFrac(structure.atoms, byMol.get(auMid)!, true)
+      const cM = moleculeCentroidFrac(structure.atoms, indices, true)
+      let best = Infinity
+      let sA: Vec3 = [0, 0, 0]
+      let sM: Vec3 = [0, 0, 0]
+      for (const nA of LATTICE_NEIGHBORS) {
+        const base = addFrac(cA, nA)
+        for (const nM of LATTICE_NEIGHBORS) {
+          const sc = pairScore(demo, base, addFrac(cM, nM), op)
+          if (sc < best - 1e-9) {
+            best = sc
+            sA = nA
+            sM = nM
+          }
+        }
+      }
+      shifts.set(auMid, sA)
+      shifts.set(mid, sM)
+      pairedAu.add(auMid)
     }
   }
 

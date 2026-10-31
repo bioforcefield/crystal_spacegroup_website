@@ -313,7 +313,8 @@ const SCREW_LARGE_DC_HOP_PENALTY = 0.08
 const PAIR_BASE_IMAGE_DIST_WEIGHT = 0.25
 const PAIR_OUTSIDE_CELL_WEIGHT = 0.2
 
-function pairScore(
+/** Exported for the CIF map's Near pairing (same scoring as SG pages). */
+export function pairScore(
   demo: SpaceGroupDemo,
   base: Vec3,
   image: Vec3,
