@@ -1,3 +1,4 @@
+import { equivalenceClasses, equivalenceColor, jmolColor } from '../data/cif/colorSchemes'
 import SupercellWire from './SupercellWire'
 import {
   DEFAULT_MULTIPLES,
@@ -83,52 +84,89 @@ function CifReplicas({
   visibleIndices,
   bonds,
   offsets,
+  colorOf,
+  tintOf,
+  bondColorOf,
+  schemeKey,
 }: {
+  schemeKey: string
   structure: ExpandedStructure
   positions: Vec3[]
   visibleIndices: number[]
-  bonds: { a: number; b: number }[]
+  bonds: { a: number; b: number; opIndex: number }[]
   offsets: Vec3[]
+  colorOf: (atomIndex: number) => string
+  tintOf: ((atomIndex: number) => string) | null
+  bondColorOf: (atomIndex: number, opIndex: number) => string
 }) {
   const groups = useMemo(() => {
-    const byEl = new Map<string, Vec3[]>()
+    const byKey = new Map<string, { el: string; color: string; tint: string | null; pts: Vec3[] }>()
     for (const ai of visibleIndices) {
       const el = structure.atoms[ai]!.element
+      const color = colorOf(ai)
+      const tint = tintOf ? tintOf(ai) : null
+      const key = `${el}|${color}|${tint ?? ''}`
       const p = positions[ai]!
-      let arr = byEl.get(el)
-      if (!arr) byEl.set(el, (arr = []))
-      for (const d of offsets) arr.push([p[0] + d[0], p[1] + d[1], p[2] + d[2]])
+      let g = byKey.get(key)
+      if (!g) byKey.set(key, (g = { el, color, tint, pts: [] }))
+      for (const d of offsets) g.pts.push([p[0] + d[0], p[1] + d[1], p[2] + d[2]])
     }
-    return [...byEl.entries()]
-  }, [structure.atoms, positions, visibleIndices, offsets])
+    return [...byKey.entries()]
+    // colorOf/tintOf are recreated each render; schemeKey captures the color mode.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [structure.atoms, positions, visibleIndices, offsets, schemeKey])
   const bondGeom = useMemo(() => {
-    const arr = new Float32Array(bonds.length * offsets.length * 6)
+    const arr = new Float32Array(bonds.length * offsets.length * 12)
+    const col = new Float32Array(bonds.length * offsets.length * 12)
+    const c = new THREE.Color()
     let k = 0
+    let j = 0
+    const pushC = (hex: string) => {
+      c.set(hex.startsWith('hsla') ? hex.replace('hsla', 'hsl').replace(/,\s*[\d.]+\)$/, ')') : hex)
+      col[j++] = c.r; col[j++] = c.g; col[j++] = c.b
+    }
     for (const d of offsets) {
       for (const b of bonds) {
         const p = positions[b.a]!, q = positions[b.b]!
-        arr[k++] = p[0] + d[0]; arr[k++] = p[1] + d[1]; arr[k++] = p[2] + d[2]
-        arr[k++] = q[0] + d[0]; arr[k++] = q[1] + d[1]; arr[k++] = q[2] + d[2]
+        const m: Vec3 = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2]
+        const ca = bondColorOf(b.a, b.opIndex)
+        const cb = bondColorOf(b.b, b.opIndex)
+        for (const [v, hex] of [[p, ca], [m, ca], [m, cb], [q, cb]] as [Vec3, string][]) {
+          arr[k++] = v[0] + d[0]; arr[k++] = v[1] + d[1]; arr[k++] = v[2] + d[2]
+          pushC(hex)
+        }
       }
     }
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(arr, 3))
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3))
     return g
-  }, [bonds, positions, offsets])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bonds, positions, offsets, schemeKey])
   useEffect(() => () => bondGeom.dispose(), [bondGeom])
   return (
     <group>
-      {groups.map(([el, pts]) => (
-        <InstancedAtoms key={el} element={el} points={pts} />
+      {groups.map(([key, g]) => (
+        <InstancedAtoms key={key} element={g.el} color={g.color} tint={g.tint} points={g.pts} />
       ))}
       <lineSegments geometry={bondGeom}>
-        <lineBasicMaterial color="#94a3b8" transparent opacity={0.45} />
+        <lineBasicMaterial vertexColors transparent opacity={0.55} />
       </lineSegments>
     </group>
   )
 }
 
-function InstancedAtoms({ element, points }: { element: string; points: Vec3[] }) {
+function InstancedAtoms({
+  element,
+  color,
+  tint,
+  points,
+}: {
+  element: string
+  color: string
+  tint: string | null
+  points: Vec3[]
+}) {
   const ref = useRef<THREE.InstancedMesh>(null)
   useEffect(() => {
     const m = ref.current
@@ -145,7 +183,14 @@ function InstancedAtoms({ element, points }: { element: string; points: Vec3[] }
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, points.length]} frustumCulled={false}>
       <sphereGeometry args={[r, 10, 10]} />
-      <meshStandardMaterial color={elementColor(element)} roughness={0.5} transparent opacity={0.7} />
+      <meshStandardMaterial
+        color={color}
+        emissive={tint ? tint.replace('hsla', 'hsl').replace(/,\s*[\d.]+\)$/, ')') : '#000000'}
+        emissiveIntensity={tint ? 0.25 : 0}
+        roughness={0.5}
+        transparent
+        opacity={0.7}
+      />
     </instancedMesh>
   )
 }
@@ -417,6 +462,8 @@ function SceneBody({
     return idxs
   }, [structure.atoms, visibility, selectedOp])
 
+  const eq = useMemo(() => equivalenceClasses(structure.atoms), [structure.atoms])
+
   const visibleIndexSet = useMemo(() => new Set(visibleIndices), [visibleIndices])
 
   const visibleBonds = useMemo(() => {
@@ -498,6 +545,26 @@ function SceneBody({
               visibleIndices={visibleIndices}
               bonds={visibleBonds}
               offsets={offsets}
+              schemeKey={colorMode}
+              colorOf={(ai) =>
+                colorMode === 'element'
+                  ? jmolColor(structure.atoms[ai]!.element)
+                  : colorMode === 'equivalence'
+                    ? equivalenceColor(eq.classOf[ai] ?? 0)
+                    : colorMode === 'residue'
+                      ? residueColor(structure.atoms[ai]!.residue ?? structure.atoms[ai]!.label.split(/[0-9]/)[0], 1)
+                      : elementColor(structure.atoms[ai]!.element)
+              }
+              tintOf={colorMode === 'operator' ? (ai) => operatorColor(structure.atoms[ai]!.opIndex) : null}
+              bondColorOf={(ai, opIndex) =>
+                colorMode === 'operator'
+                  ? operatorColor(opIndex)
+                  : colorMode === 'element'
+                    ? jmolColor(structure.atoms[ai]!.element)
+                    : colorMode === 'equivalence'
+                      ? equivalenceColor(eq.classOf[ai] ?? 0)
+                      : '#94a3b8'
+              }
             />
           </>
         )}
@@ -522,6 +589,27 @@ function SceneBody({
             b.opIndex,
             emphasized && !dim ? 0.95 : visibility === 'all' ? 0.55 : 0.3,
           )
+          const pa = placement.positions[b.a]!
+          const pb = placement.positions[b.b]!
+          if (colorMode === 'element' || colorMode === 'equivalence') {
+            const ca =
+              colorMode === 'element'
+                ? jmolColor(structure.atoms[b.a]!.element)
+                : equivalenceColor(eq.classOf[b.a] ?? 0)
+            const cb =
+              colorMode === 'element'
+                ? jmolColor(structure.atoms[b.b]!.element)
+                : equivalenceColor(eq.classOf[b.b] ?? 0)
+            const mid: Vec3 = [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, (pa[2] + pb[2]) / 2]
+            const lw = emphasized && !dim ? 2.4 : 1.15
+            const op = emphasized && !dim ? 0.98 : 0.5
+            return (
+              <group key={`bond-${i}`}>
+                <Line points={[pa, mid]} color={ca} lineWidth={lw} transparent opacity={op} />
+                <Line points={[mid, pb]} color={cb} lineWidth={lw} transparent opacity={op} />
+              </group>
+            )
+          }
           return (
             <Line
               key={`bond-${i}`}
@@ -586,7 +674,12 @@ function SceneBody({
           const el =
             colorMode === 'residue'
               ? residueColor(a.residue ?? a.label.split(/[0-9]/)[0], 1)
-              : elementColor(a.element)
+              : colorMode === 'element'
+                ? jmolColor(a.element)
+                : colorMode === 'equivalence'
+                  ? equivalenceColor(eq.classOf[ai] ?? 0)
+                  : elementColor(a.element)
+          const plain = colorMode !== 'operator'
           const baseR =
             elementRadius(a.element) *
             (strong ? 1.12 : emphasized ? 1.0 : 0.82)
@@ -618,8 +711,8 @@ function SceneBody({
                 <sphereGeometry args={[1, 16, 16]} />
                 <meshStandardMaterial
                   color={el}
-                  emissive={opTint}
-                  emissiveIntensity={strong ? 0.45 : emphasized ? 0.3 : 0.08}
+                  emissive={plain ? '#000000' : opTint}
+                  emissiveIntensity={plain ? 0 : strong ? 0.45 : emphasized ? 0.3 : 0.08}
                   metalness={0.1}
                   roughness={0.55}
                   transparent
@@ -637,9 +730,9 @@ function SceneBody({
               <sphereGeometry args={[r, 18, 18]} />
               <meshStandardMaterial
                 color={el}
-                emissive={colorMode === 'residue' ? '#000000' : opTint}
+                emissive={plain ? '#000000' : opTint}
                 emissiveIntensity={
-                  colorMode === 'residue'
+                  plain
                     ? 0
                     : strong
                       ? 0.55

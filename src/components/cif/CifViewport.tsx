@@ -3,6 +3,7 @@ import {
   lazy,
   useEffect,
   useRef,
+  useMemo,
   useState,
 } from 'react'
 import CellParamsBadge from './CellParamsBadge'
@@ -19,6 +20,12 @@ import { describeCifStructure } from '../../data/a11y/structureSummary'
 import type { SpaceGroupDemo } from '../../data/types'
 import VisitCounter from '../VisitCounter'
 import SupercellPicker from '../SupercellPicker'
+import {
+  elementsPresent,
+  equivalenceClasses,
+  equivalenceColor,
+  jmolColor,
+} from '../../data/cif/colorSchemes'
 import {
   CIF_ATOM_CAP,
   DEFAULT_MULTIPLES,
@@ -101,6 +108,16 @@ export default function CifViewport({
   const multiples: CellMultiples =
     structure && mult.s === structure ? mult.v : DEFAULT_MULTIPLES
   const perCell = structure?.atoms.length ?? 0
+  const eqInfo = useMemo(() => {
+    if (!structure) return { count: 0, labels: [] as string[] }
+    const { classOf, count } = equivalenceClasses(structure.atoms)
+    const labels: string[] = []
+    structure.atoms.forEach((a, i) => {
+      const k = classOf[i]!
+      if (a.opIndex === 1 && labels[k] == null) labels[k] = a.residue ?? ""
+    })
+    return { count, labels }
+  }, [structure])
   const [displayOpen, setDisplayOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
   const viewToggleRef = useRef<HTMLButtonElement>(null)
@@ -338,26 +355,27 @@ export default function CifViewport({
     </div>
   )
 
+  const colorOptions: { mode: CifColorMode; label: string; title: string }[] = [
+    { mode: 'operator', label: 'Symmetry op', title: 'Color by symmetry operation that generated each copy (default)' },
+    { mode: 'element', label: 'Element', title: 'CPK / Jmol element colors; bonds half-colored' },
+    { mode: 'equivalence', label: 'Equivalence', title: 'Each independent molecule in the asymmetric unit gets a color; its symmetry copies share it' },
+    { mode: 'residue', label: 'Residue', title: 'Color by residue / component id when present' },
+  ]
   const colorControls = (
-    <div className="segmented" role="group" aria-label="Atom coloring">
-      <button
-        type="button"
-        className={colorMode === 'operator' ? 'seg active' : 'seg'}
-        onClick={() => onColorModeChange('operator')}
-        aria-pressed={colorMode === 'operator'}
-        title="Tint by symmetry operator (By op)"
-      >
-        By operator
-      </button>
-      <button
-        type="button"
-        className={colorMode === 'residue' ? 'seg active' : 'seg'}
-        onClick={() => onColorModeChange('residue')}
-        aria-pressed={colorMode === 'residue'}
-        title="Color by residue / component id when present"
-      >
-        Residue
-      </button>
+    <div className="segmented cif-color-by" role="group" aria-label="Color by">
+      <span className="cif-color-by-label" aria-hidden="true">Color by</span>
+      {colorOptions.map((o) => (
+        <button
+          key={o.mode}
+          type="button"
+          className={colorMode === o.mode ? 'seg active' : 'seg'}
+          onClick={() => onColorModeChange(o.mode)}
+          aria-pressed={colorMode === o.mode}
+          title={o.title}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   )
 
@@ -395,7 +413,24 @@ export default function CifViewport({
         <div className="legend-stack" aria-label="Legend">
           <div className="cif-chrome-label">Legend</div>
           <div className="legend class-legend">
-            {structure ? (
+            {structure && colorMode === 'element' ? (
+              elementsPresent(structure.atoms).map((el) => (
+                <span key={el} className="legend-item">
+                  <span className="swatch" style={{ background: jmolColor(el) }} />
+                  {el}
+                </span>
+              ))
+            ) : structure && colorMode === 'equivalence' ? (
+              Array.from({ length: eqInfo.count }, (_, k) => (
+                <span key={k} className="legend-item">
+                  <span className="swatch" style={{ background: equivalenceColor(k) }} />
+                  Mol {k + 1}
+                  {eqInfo.labels[k] ? ` · ${eqInfo.labels[k]}` : ''}
+                </span>
+              ))
+            ) : structure && colorMode === 'residue' ? (
+              <span className="legend-item muted">Residue / component colors</span>
+            ) : structure ? (
               structure.operators.slice(0, 12).map((op) => (
                 <button
                   key={op.index}
@@ -412,6 +447,7 @@ export default function CifViewport({
                   />
                   op {op.index}
                   {op.index === 1 ? ' (AU)' : ''}
+                  <span className="cif-legend-triplet">{op.triplet}</span>
                 </button>
               ))
             ) : (
@@ -419,7 +455,7 @@ export default function CifViewport({
                 Upload a CIF to map intact molecules by symmetry operator
               </span>
             )}
-            {structure && structure.operators.length > 12 && (
+            {structure && colorMode === 'operator' && structure.operators.length > 12 && (
               <span className="legend-item muted">
                 +{structure.operators.length - 12} more
               </span>
