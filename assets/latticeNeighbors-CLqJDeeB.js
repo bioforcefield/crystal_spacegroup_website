@@ -1,0 +1,1 @@
+import{t as e}from"./math-CR-Aeu-u.js";var t=(()=>{let e=[];for(let t=-1;t<=1;t++)for(let n=-1;n<=1;n++)for(let r=-1;r<=1;r++)e.push([t,n,r]);return e})();function n(e){let t=0;for(let n=0;n<3;n++)e[n]<0?t+=-e[n]:e[n]>1&&(t+=e[n]-1);return t}function r(n,r,i=t){let a=[0,0,0],o=1/0;for(let t of i){let i=r(e(n,t));i<o-1e-9&&(o=i,a=t)}return a}export{r as n,n as r,t};

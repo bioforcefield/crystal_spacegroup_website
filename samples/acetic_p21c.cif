@@ -1,0 +1,33 @@
+# Teaching sample — acetic acid–like fragment in P21/c (ITA 14).
+# Synthetic coordinates for the Crystal Space Groups CIF explorer (not a real CSD entry).
+data_TEACH_P21c
+_chemical_name_common                 'Teaching acetic-like'
+_space_group_name_H-M_alt             'P 21/c'
+_symmetry_Int_Tables_number           14
+_cell_length_a                        5.5000
+_cell_length_b                        8.2000
+_cell_length_c                        7.1000
+_cell_angle_alpha                     90.000
+_cell_angle_beta                      110.000
+_cell_angle_gamma                     90.000
+_cell_formula_units_Z                 4
+loop_
+_symmetry_equiv_pos_as_xyz
+  x,y,z
+  -x,y+1/2,-z+1/2
+  -x,-y,-z
+  x,-y+1/2,z+1/2
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+  C1  C  0.2200  0.3100  0.1800
+  C2  C  0.3500  0.4200  0.3200
+  O1  O  0.4800  0.3600  0.4500
+  O2  O  0.3100  0.5600  0.2800
+  H1  H  0.1200  0.3600  0.0800
+  H2  H  0.1800  0.2000  0.2200
+  H3  H  0.0800  0.2800  0.2600
+  H4  H  0.3900  0.6500  0.3800
