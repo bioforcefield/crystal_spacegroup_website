@@ -11,6 +11,11 @@ export function supercellEnabled(sgNumber: number): boolean {
   return SUPERCELL_ALLOWLIST.has(sgNumber)
 }
 
+export function clampMultiple(n: number): number {
+  if (!Number.isFinite(n)) return 1
+  return Math.min(SUPERCELL_MAX, Math.max(1, Math.round(n)))
+}
+
 export type ParseResult =
   | { ok: true; value: CellMultiples; clamped: boolean }
   | { ok: false; error: string }

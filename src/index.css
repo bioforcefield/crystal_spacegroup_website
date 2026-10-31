@@ -5128,17 +5128,28 @@ button.linkish {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem 0.6rem;
   margin: 0.4rem 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.6);
   font-size: 0.85rem;
 }
-.supercell-control input {
+.supercell-title { font-weight: 600; color: #fbbf24; }
+.supercell-axis { display: inline-flex; align-items: center; gap: 0.25rem; }
+.supercell-axis-name { font-style: italic; opacity: 0.85; }
+.supercell-times { opacity: 0.5; margin-left: 0.2rem; }
+.supercell-control select {
   font: inherit;
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
+  min-height: 32px;
+  min-width: 3rem;
+  padding: 0.15rem 0.3rem;
+  border-radius: 6px;
   border: 1px solid #334155;
   background: #0f172a;
   color: #e2e8f0;
 }
-.supercell-control input[aria-invalid='true'] { border-color: #f87171; }
+.supercell-control select:focus-visible { outline: 2px solid #7dd3fc; outline-offset: 1px; }
+.supercell-control .btn-small { padding: 0.15rem 0.5rem; min-height: 32px; }
 .supercell-help { opacity: 0.75; }

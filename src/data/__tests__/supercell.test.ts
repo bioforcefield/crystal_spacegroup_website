@@ -43,3 +43,10 @@ describe('supercell replication', () => {
     expect(r.point.fractional[2]).toBeCloseTo(points[0].fractional[2] + 1)
   })
 })
+
+import { clampMultiple } from '../supercell'
+describe('clampMultiple', () => {
+  it('clamps to 1..5 integers', () => {
+    expect([0, 1, 3, 5, 9, 2.6, NaN].map(clampMultiple)).toEqual([1, 1, 3, 5, 5, 3, 1])
+  })
+})
