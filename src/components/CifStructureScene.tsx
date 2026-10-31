@@ -2,6 +2,7 @@ import type { AtomPick } from '../data/cif/atomInfo'
 import type { ThreeEvent } from '@react-three/fiber'
 import { equivalenceClasses, equivalenceColor, jmolColor } from '../data/cif/colorSchemes'
 import SupercellWire from './SupercellWire'
+import { isDenseSupercell } from '../data/cif/viewportUi'
 import MeasureOverlay, { type SceneAnnotations } from './cif/MeasureOverlay'
 import {
   DEFAULT_MULTIPLES,
@@ -86,6 +87,8 @@ interface Props {
   highlightElement?: string | null
   /** Measure / relate overlay. */
   annotations?: SceneAnnotations | null
+  /** Hovered atom (soft ring highlight). */
+  hoverAtom?: AtomPick | null
 }
 
 /** Instanced, dimmed lattice-translated copies of the visible atoms + bonds. */
@@ -102,7 +105,9 @@ function CifReplicas({
   tintOf,
   bondColorOf,
   schemeKey,
+  atomScale = 1,
 }: {
+  atomScale?: number
   schemeKey: string
   structure: ExpandedStructure
   positions: Vec3[]
@@ -177,6 +182,7 @@ function CifReplicas({
           tint={g.tint}
           points={g.pts}
           meta={g.meta}
+          scale={atomScale}
           onHover={onHover}
           onPick={onPick}
         />
@@ -196,7 +202,9 @@ function InstancedAtoms({
   meta,
   onHover,
   onPick,
+  scale = 1,
 }: {
+  scale?: number
   element: string
   color: string
   tint: string | null
@@ -217,7 +225,7 @@ function InstancedAtoms({
     m.instanceMatrix.needsUpdate = true
     m.computeBoundingSphere()
   }, [points])
-  const r = elementRadius(element) * 0.82
+  const r = elementRadius(element) * 0.82 * scale
   return (
     <instancedMesh
       ref={ref}
@@ -257,7 +265,9 @@ function AtomHalos({
   cell,
   pinned,
   element,
+  hover = null,
 }: {
+  hover?: AtomPick | null
   structure: ExpandedStructure
   positions: Vec3[]
   visibleIndices: number[]
@@ -298,6 +308,16 @@ function AtomHalos({
       r: elementRadius(structure.atoms[pinned.ai]!.element) * 1.9,
     }
   }, [pinned, positions, cell, structure.atoms])
+  const hov = useMemo(() => {
+    if (!hover || (pinned && hover.ai === pinned.ai && hover.t.join() === pinned.t.join())) return null
+    const p = positions[hover.ai]
+    if (!p) return null
+    const d = fracToCart(hover.t, cell)
+    return {
+      pos: [p[0] + d[0], p[1] + d[1], p[2] + d[2]] as Vec3,
+      r: elementRadius(structure.atoms[hover.ai]!.element) * 1.6,
+    }
+  }, [hover, pinned, positions, cell, structure.atoms])
   const hr = element ? elementRadius(element) * 1.7 : 0.5
   return (
     <group>
@@ -312,6 +332,12 @@ function AtomHalos({
           <sphereGeometry args={[hr, 14, 14]} />
           <meshBasicMaterial color="#fde047" transparent opacity={0.28} depthWrite={false} />
         </instancedMesh>
+      )}
+      {hov && (
+        <mesh position={hov.pos} raycast={() => null}>
+          <sphereGeometry args={[hov.r, 16, 12]} />
+          <meshBasicMaterial color="#e0f2fe" wireframe transparent opacity={0.55} depthWrite={false} />
+        </mesh>
       )}
       {pin && (
         <group position={pin.pos}>
@@ -561,6 +587,7 @@ function SceneBody({
   pinnedAtom = null,
   highlightElement = null,
   annotations = null,
+  hoverAtom = null,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const supercell = !isDefaultMultiples(multiples)
   const center = useMemo(
@@ -681,7 +708,7 @@ function SceneBody({
         <CellWire cell={structure.cell} />
         {supercell && (
           <>
-            <SupercellWire cell={structure.cell} multiples={multiples} />
+            <SupercellWire cell={structure.cell} multiples={multiples} fadeInterior={isDenseSupercell(multiples)} />
             <CifReplicas
               structure={structure}
               positions={placement.positions as Vec3[]}
@@ -692,6 +719,7 @@ function SceneBody({
               onHover={onAtomHover}
               onPick={onAtomPick}
               schemeKey={colorMode}
+              atomScale={isDenseSupercell(multiples) ? 0.6 : 1}
               colorOf={(ai) =>
                 colorMode === 'element'
                   ? jmolColor(structure.atoms[ai]!.element)
@@ -880,7 +908,7 @@ function SceneBody({
           }
 
           return (
-            <mesh
+            <group
               key={`atom-${a.opIndex}-${a.auIndex}-${a.moleculeId}-${ai}`}
               position={placement.positions[ai]! as Vec3}
               onPointerMove={(e: ThreeEvent<PointerEvent>) => {
@@ -895,6 +923,12 @@ function SceneBody({
                 onAtomPick({ ai, t: [0, 0, 0] })
               }}
             >
+              {/* Enlarged invisible hit target (≥ 0.55 Å) so small atoms are easy to click. */}
+              <mesh>
+                <sphereGeometry args={[atomHitRadius(r), 10, 8]} />
+                <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+              </mesh>
+              <mesh raycast={() => null}>
               <sphereGeometry args={[r, 18, 18]} />
               <meshStandardMaterial
                 color={el}
@@ -913,7 +947,8 @@ function SceneBody({
                 transparent={!strong && visibility === 'all'}
                 opacity={strong ? 1 : emphasized ? 0.95 : 0.5}
               />
-            </mesh>
+              </mesh>
+            </group>
           )
         })}
         <AtomHalos
@@ -924,6 +959,7 @@ function SceneBody({
           cell={structure.cell}
           pinned={pinnedAtom}
           element={highlightElement}
+          hover={hoverAtom}
         />
         {annotations && <MeasureOverlay ann={annotations} />}
       </group>
@@ -938,6 +974,11 @@ function SceneBody({
       />
     </>
   )
+}
+
+/** Click/hover target radius for an atom ball (bigger than the drawn ball). */
+export function atomHitRadius(r: number): number {
+  return Math.max(r * 1.5, 0.55)
 }
 
 export default function CifStructureScene(props: Props) {

@@ -6,6 +6,7 @@ import {
   useState,
   type ChangeEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import CifLoadPanel from '../components/cif/CifLoadPanel'
@@ -59,6 +60,7 @@ export default function CifExplorerPage() {
   const [pasteText, setPasteText] = useState('')
   const [remoteHint, setRemoteHint] = useState<string | null>(null)
   const [remoteLink, setRemoteLink] = useState<string | null>(null)
+  const phone = usePhone()
 
   const loadText = useCallback((
     text: string,
@@ -259,7 +261,7 @@ export default function CifExplorerPage() {
   )
 
   return (
-    <div className="app layout-demo cif-explorer">
+    <div className={`app layout-demo cif-explorer${structure ? ' has-structure' : ''}`}>
       <aside className="panel" id="demo-sidebar">
         <header className="panel-header">
           <div className="panel-nav-row">
@@ -293,6 +295,7 @@ export default function CifExplorerPage() {
         </header>
 
         {structure && (
+          <PhoneSection phone={phone} title="Structure, operators & PXRD">
           <CifStructurePanel
             structure={structure}
             selectedOp={selectedOp}
@@ -307,8 +310,10 @@ export default function CifExplorerPage() {
               void loadByCode(id)
             }}
           />
+          </PhoneSection>
         )}
 
+        <PhoneSection phone={phone && structure != null} title="Load another CIF (COD / CSD / upload)">
         <CifLoadPanel
           busy={busy}
           codeInput={codeInput}
@@ -331,6 +336,7 @@ export default function CifExplorerPage() {
           error={error}
           structureLoaded={structure != null}
         />
+        </PhoneSection>
       </aside>
 
       <CifViewport
@@ -356,7 +362,33 @@ export default function CifExplorerPage() {
         onThermalModeChange={setThermalMode}
         hbondMode={hbondMode}
         onHBondModeChange={setHBondMode}
+        busy={busy}
       />
     </div>
+  )
+}
+
+/** ≤ 640 px: phone layout (viewer first, side content collapsed into accordions). */
+function usePhone(): boolean {
+  const q = '(max-width: 640px)'
+  const [m, setM] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(q).matches)
+  useEffect(() => {
+    const mq = window.matchMedia?.(q)
+    if (!mq) return
+    const on = () => setM(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return m
+}
+
+/** On phones wrap a sidebar section in a collapsed accordion; elsewhere render as-is. */
+function PhoneSection({ phone, title, children }: { phone: boolean; title: string; children: ReactNode }) {
+  if (!phone) return <>{children}</>
+  return (
+    <details className="cif-phone-acc">
+      <summary>{title}</summary>
+      {children}
+    </details>
   )
 }

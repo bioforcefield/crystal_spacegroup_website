@@ -12,9 +12,12 @@ const CELL_EDGES: [number, number][] = [
 export default function SupercellWire({
   cell,
   multiples,
+  fadeInterior = false,
 }: {
   cell: CellParams
   multiples: CellMultiples
+  /** Dense supercells (> 2×2×2): fade interior cell edges, keep the outer box. */
+  fadeInterior?: boolean
 }) {
   const { inner, outer } = useMemo(() => {
     const corners = cellCornersCart(cell)
@@ -42,7 +45,7 @@ export default function SupercellWire({
   return (
     <group>
       {inner.length > 0 && (
-        <Line points={inner} segments color="#7dd3fc" lineWidth={1} transparent opacity={0.3} />
+        <Line points={inner} segments color="#7dd3fc" lineWidth={1} transparent opacity={fadeInterior ? 0.07 : 0.3} />
       )}
       <Line points={outer} segments color="#fbbf24" lineWidth={1.8} transparent opacity={0.8} />
     </group>

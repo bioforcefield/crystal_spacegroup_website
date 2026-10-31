@@ -388,6 +388,8 @@ export default function CifLoadPanel({
         </>
       )}
 
+      <details className="cif-about-sources">
+        <summary>About sources ⓘ</summary>
       <p className="hint">
         <strong>COD</strong>: chips load from this site&apos;s same-origin cache
         ({extras.length || '…'} curated CIFs — works on GitHub Pages). Status after
@@ -415,6 +417,7 @@ export default function CifLoadPanel({
         </a>
         , then upload/paste. We do not scrape CSD.
       </p>
+      </details>
 
       <h2>Upload · .cif</h2>
       <label className="cif-file-label btn btn-primary">

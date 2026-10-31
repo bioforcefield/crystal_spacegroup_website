@@ -42,9 +42,10 @@ describe('Visit counter footer contracts', () => {
     expect(sg).toMatch(/visit-counter--footer/)
     expect(cif).toMatch(/VisitCounter/)
     expect(cif).toMatch(/visit-counter--footer/)
-    for (const src of [sg, cif]) {
-      expect(src).toMatch(/\{' \('\}\s*<VisitCounter className="visit-counter--footer" \/>\s*\{'\)'\}\s*<\/span>/)
-    }
+    expect(sg).toMatch(/\{' \('\}\s*<VisitCounter className="visit-counter--footer" \/>\s*\{'\)'\}\s*<\/span>/)
+    // CIF caption: no "(—)" placeholder — counter renders itself only once a count is known.
+    expect(cif).toMatch(/<VisitCounter className="visit-counter--footer" parens \/>/)
+    expect(cif).not.toMatch(/\{' \('\}\s*<VisitCounter/)
   })
 
   it('worker exposes /visits with Durable Object binding', () => {

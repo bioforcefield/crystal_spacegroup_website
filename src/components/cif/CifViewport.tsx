@@ -46,6 +46,7 @@ import {
   equivalenceColor,
   jmolColor,
 } from '../../data/cif/colorSchemes'
+import { cifDownloadName, escTarget, isDenseSupercell, nonBondedSteps, pairPickLabels } from '../../data/cif/viewportUi'
 import {
   CIF_ATOM_CAP,
   DEFAULT_MULTIPLES,
@@ -79,6 +80,8 @@ export interface CifViewportProps {
   onThermalModeChange: (m: CifThermalMode) => void
   hbondMode: CifHBondMode
   onHBondModeChange: (m: CifHBondMode) => void
+  /** A load is in flight (spinner over the viewer). */
+  busy?: boolean
 }
 
 function displaySummary(
@@ -124,8 +127,8 @@ export default function CifViewport({
   onThermalModeChange,
   hbondMode,
   onHBondModeChange,
+  busy = false,
 }: CifViewportProps) {
-  const [viewOpen, setViewOpen] = useState(false)
   const [mult, setMult] = useState<{ s: ExpandedStructure | null; v: CellMultiples }>({
     s: null,
     v: DEFAULT_MULTIPLES,
@@ -169,26 +172,69 @@ export default function CifViewport({
       .map((a, ai) => ({ a, ai }))
       .filter(({ a }) => a.element === highlightElement)
   }, [structure, highlightElement])
+  // Toolbar dropdowns (only one open at a time).
+  const [openMenu, setOpenMenu] = useState<null | 'show' | 'color' | 'display' | 'download'>(null)
+  const openMenuRef = useRef(openMenu)
+  openMenuRef.current = openMenu
+  const panelOpenRef = useRef(false)
+  // Esc: close the innermost thing (menu → Measure → atom panel). Backspace: undo last Measure pick.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName
-      if (measureOnRef.current && (e.key === 'Escape' || e.key === 'Backspace')) {
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+      if (e.key === 'Backspace' && measureOnRef.current && !typing) {
         e.preventDefault()
         undoRef.current()
         return
       }
-      if (e.key === 'Escape') {
+      if (e.key !== 'Escape') return
+      const t = escTarget({
+        menuOpen: openMenuRef.current != null,
+        measureOn: measureOnRef.current,
+        hasPicks: false,
+        panelOpen: panelOpenRef.current,
+      })
+      if (t === 'menu') setOpenMenu(null)
+      else if (t === 'measure') setMeasureOn(false)
+      if (t === 'panel' || t === 'measure') {
         setPin(null)
         setHl(null)
-        setHover(null)
       }
+      setHover(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
+  // Close menus on outside click.
+  useEffect(() => {
+    if (!openMenu) return
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null
+      if (t?.closest('.cif-menu-wrap')) return
+      setOpenMenu(null)
+    }
+    window.addEventListener('mousedown', onDown)
+    return () => window.removeEventListener('mousedown', onDown)
+  }, [openMenu])
+  // Hover with a short leave delay so the tooltip does not flicker between neighbouring atoms.
+  const hoverTimer = useRef<number | undefined>(undefined)
+  const onAtomHover = (pick: AtomPick | null, x: number, y: number) => {
+    window.clearTimeout(hoverTimer.current)
+    if (pick) {
+      setHover((h) =>
+        h && samePick(h.pick, pick) && Math.abs(h.x - x) < 6 && Math.abs(h.y - y) < 6 ? h : { pick, x, y },
+      )
+    } else hoverTimer.current = window.setTimeout(() => setHover(null), 140)
+  }
   // —— Measure mode ——
   const [measureOn, setMeasureOn] = useState(false)
+  // New CIF → leave Measure mode (picks + supercell are keyed by structure, so they reset too).
+  const [measureFor, setMeasureFor] = useState<ExpandedStructure | null>(structure)
+  if (measureFor !== structure) {
+    setMeasureFor(structure)
+    if (measureOn) setMeasureOn(false)
+    if (openMenu) setOpenMenu(null)
+  }
   const [mp, setMp] = useState<{ s: ExpandedStructure | null; picks: AtomPick[]; saved: AtomPick[][] }>({
     s: null,
     picks: [],
@@ -306,9 +352,12 @@ export default function CifViewport({
   const toggleHighlight = (el: string) =>
     structure && setHl(highlightElement === el ? null : { s: structure, el })
   const showPanel = !!structure && (!!pinnedInfo || !!highlightElement || measureOn)
+  panelOpenRef.current = showPanel
 
   // —— Download ——
-  const [dlOpen, setDlOpen] = useState(false)
+  const dlOpen = openMenu === 'download'
+  const setDlOpen = (o: boolean | ((x: boolean) => boolean)) =>
+    setOpenMenu((m) => ((typeof o === 'function' ? o(m === 'download') : o) ? 'download' : null))
   const doDownload = (kind: 'cif' | 'sdf-au' | 'sdf-cell' | 'sdf-view' | 'p1') => {
     setDlOpen(false)
     if (!structure) return
@@ -320,16 +369,17 @@ export default function CifViewport({
       if (visibility === 'selected') return a.opIndex === 1 || a.opIndex === selectedOp
       return true
     }
+    const sg = structure.spaceGroupNumber ?? null
     const ts = supercellTranslations(multiples)
     const mtag = multiples.join('x')
     if (kind === 'cif') {
-      if (sourceText) downloadText(sourceText, `${base}.cif`, 'chemical/x-cif')
+      if (sourceText) downloadText(sourceText, cifDownloadName(base, sg, '', 'cif'), 'chemical/x-cif')
       return
     }
     if (kind === 'p1') {
       downloadText(
         p1SupercellCif(structure, placedPositions as [number, number, number][], inView, multiples, ts, base),
-        `${base}_P1_${mtag}.cif`,
+        cifDownloadName(base, sg, `P1_${mtag}`, 'cif'),
         'chemical/x-cif',
       )
       return
@@ -341,10 +391,10 @@ export default function CifViewport({
           ? moleculeRecords(structure, disp, () => true, undefined, base)
           : moleculeRecords(structure, placedPositions as [number, number, number][], inView, ts, base)
     const suffix = kind === 'sdf-au' ? 'asu' : kind === 'sdf-cell' ? 'cell' : `view_${mtag}`
-    downloadText(sdf(recs), `${base}_${suffix}.sdf`, 'chemical/x-mdl-sdfile')
+    downloadText(sdf(recs), cifDownloadName(base, sg, suffix, 'sdf'), 'chemical/x-mdl-sdfile')
   }
   const downloadMenu = (
-    <div className="cif-download-wrap">
+    <div className="cif-download-wrap cif-menu-wrap">
       <button
         type="button"
         className={`btn${dlOpen ? ' btn-primary' : ''}`}
@@ -357,21 +407,26 @@ export default function CifViewport({
       </button>
       {dlOpen && structure && (
         <div className="cif-download-menu" role="menu">
+          <div className="cif-menu-head" role="presentation">CIF</div>
           <button type="button" role="menuitem" onClick={() => doDownload('cif')} disabled={!sourceText}>
-            CIF — original file
-          </button>
-          <button type="button" role="menuitem" onClick={() => doDownload('sdf-au')}>
-            SDF — asymmetric unit
-          </button>
-          <button type="button" role="menuitem" onClick={() => doDownload('sdf-cell')}>
-            SDF — unit cell (whole molecules)
-          </button>
-          <button type="button" role="menuitem" onClick={() => doDownload('sdf-view')}>
-            SDF — current view ({multiples.join('×')})
+            Original file
           </button>
           <button type="button" role="menuitem" onClick={() => doDownload('p1')}>
-            CIF — P1 supercell ({multiples.join('×')})
+            P1 supercell ({multiples.join('×')})
           </button>
+          <div className="cif-menu-head" role="presentation">SDF (molecules)</div>
+          <button type="button" role="menuitem" onClick={() => doDownload('sdf-au')}>
+            Asymmetric unit
+          </button>
+          <button type="button" role="menuitem" onClick={() => doDownload('sdf-cell')}>
+            Unit cell (whole molecules)
+          </button>
+          <button type="button" role="menuitem" onClick={() => doDownload('sdf-view')}>
+            Current view ({multiples.join('×')})
+          </button>
+          <div className="cif-menu-hint" role="presentation">
+            “Current view” = exactly what is drawn (Show filter + supercell).
+          </div>
         </div>
       )}
     </div>
@@ -386,107 +441,6 @@ export default function CifViewport({
     })
     return { count, labels }
   }, [structure])
-  const [displayOpen, setDisplayOpen] = useState(false)
-  const [helpOpen, setHelpOpen] = useState(false)
-  const viewToggleRef = useRef<HTMLButtonElement>(null)
-  const viewSheetRef = useRef<HTMLDivElement>(null)
-  const displayToggleRef = useRef<HTMLButtonElement>(null)
-  const displaySheetRef = useRef<HTMLDivElement>(null)
-  const prevOpenRef = useRef(false)
-  const prevDisplayRef = useRef(false)
-
-  useEffect(() => {
-    if (!viewOpen) {
-      if (prevOpenRef.current) {
-        viewToggleRef.current?.focus()
-      }
-      prevOpenRef.current = false
-      return
-    }
-    prevOpenRef.current = true
-    const sheet = viewSheetRef.current
-    const focusables = () =>
-      sheet
-        ? Array.from(
-            sheet.querySelectorAll<HTMLElement>(
-              'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-            ),
-          ).filter((el) => !el.hasAttribute('disabled'))
-        : []
-    const id = window.setTimeout(() => {
-      const list = focusables()
-      ;(list[0] ?? sheet)?.focus()
-    }, 0)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        setViewOpen(false)
-        return
-      }
-      if (e.key !== 'Tab' || !sheet) return
-      const list = focusables()
-      if (list.length === 0) return
-      const first = list[0]!
-      const last = list[list.length - 1]!
-      const active = document.activeElement as HTMLElement | null
-      if (e.shiftKey) {
-        if (active === first || !sheet.contains(active)) {
-          e.preventDefault()
-          last.focus()
-        }
-      } else if (active === last) {
-        e.preventDefault()
-        first.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.clearTimeout(id)
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [viewOpen])
-
-  useEffect(() => {
-    if (!displayOpen) {
-      if (prevDisplayRef.current) {
-        displayToggleRef.current?.focus()
-      }
-      prevDisplayRef.current = false
-      return
-    }
-    prevDisplayRef.current = true
-    const sheet = displaySheetRef.current
-    const id = window.setTimeout(() => {
-      const first = sheet?.querySelector<HTMLElement>(
-        'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
-      )
-      ;(first ?? sheet)?.focus()
-    }, 0)
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        setDisplayOpen(false)
-      }
-    }
-    const onPointer = (e: MouseEvent) => {
-      const t = e.target as Node
-      if (
-        displaySheetRef.current?.contains(t) ||
-        displayToggleRef.current?.contains(t)
-      ) {
-        return
-      }
-      setDisplayOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    window.addEventListener('mousedown', onPointer)
-    return () => {
-      window.clearTimeout(id)
-      window.removeEventListener('keydown', onKey)
-      window.removeEventListener('mousedown', onPointer)
-    }
-  }, [displayOpen])
-
   const applyTeachingView = () => {
     onPlacementModeChange('nearest')
     onVisibilityChange('molecules')
@@ -496,7 +450,7 @@ export default function CifViewport({
     if (canShowElements && !showSymmetryElements) {
       onToggleSymmetryElements()
     }
-    setDisplayOpen(false)
+    setOpenMenu(null)
   }
 
   const hbondLive =
@@ -510,135 +464,23 @@ export default function CifViewport({
     ? describeCifStructure(structure)
     : 'Crystal structure 3D view. Upload a CIF to begin.'
 
-  const displayLabel = displaySummary(
-    thermalMode,
-    hbondMode,
-    structure?.hbonds?.length,
-  )
+  const displayLabel = displaySummary(thermalMode, hbondMode, structure?.hbonds?.length)
 
-  const thermalControls = (
-    <div className="segmented" role="group" aria-label="Thermal displacement">
-      <button
-        type="button"
-        className={thermalMode === 'off' ? 'seg active' : 'seg'}
-        onClick={() => onThermalModeChange('off')}
-        aria-pressed={thermalMode === 'off'}
-        title="Hide thermal displacement parameters (No U)"
-      >
-        No thermal
-      </button>
-      <button
-        type="button"
-        className={thermalMode === 'uiso' ? 'seg active' : 'seg'}
-        onClick={() => onThermalModeChange('uiso')}
-        aria-pressed={thermalMode === 'uiso'}
-        title="Scale ball radius by Uiso when present"
-      >
-        Uiso
-      </button>
-      <button
-        type="button"
-        className={thermalMode === 'ellipsoid' ? 'seg active' : 'seg'}
-        onClick={() => onThermalModeChange('ellipsoid')}
-        aria-pressed={thermalMode === 'ellipsoid'}
-        title="Draw anisotropic ellipsoids when Uij present; else Uiso balls"
-      >
-        Ellipsoid
-      </button>
-    </div>
-  )
-
-  const hbondControls = (
-    <div className="segmented" role="group" aria-label="H-bond contacts">
-      <button
-        type="button"
-        className={hbondMode === 'off' ? 'seg active' : 'seg'}
-        onClick={() => onHBondModeChange('off')}
-        aria-pressed={hbondMode === 'off'}
-        title="Hide H-bond contacts"
-      >
-        No H-bonds
-      </button>
-      <button
-        type="button"
-        className={hbondMode === 'links' ? 'seg active' : 'seg'}
-        onClick={() => onHBondModeChange('links')}
-        aria-pressed={hbondMode === 'links'}
-        disabled={!structure?.hbonds?.length}
-        title="Dashed H···A contacts (pink = cross-operator)"
-      >
-        H-bonds{structure?.hbonds?.length ? ` · ${structure.hbonds.length}` : ''}
-      </button>
-      <button
-        type="button"
-        className={hbondMode === 'partners' ? 'seg active' : 'seg'}
-        onClick={() => onHBondModeChange('partners')}
-        aria-pressed={hbondMode === 'partners'}
-        disabled={!structure?.hbonds?.length}
-        title="Show H-bonds and dim molecules not partnered with the asymmetric unit"
-      >
-        Partners
-      </button>
-    </div>
-  )
-
-  const visibilityControls = (compact: boolean) => (
-    <div className="segmented" role="group" aria-label="Copy visibility">
-      <button
-        type="button"
-        className={visibility === 'molecules' ? 'seg active' : 'seg'}
-        onClick={() => onVisibilityChange('molecules')}
-        aria-pressed={visibility === 'molecules'}
-        title="Show intact molecules (one copy per operator)"
-      >
-        Molecules
-      </button>
-      <button
-        type="button"
-        className={visibility === 'all' ? 'seg active' : 'seg'}
-        onClick={() => onVisibilityChange('all')}
-        aria-pressed={visibility === 'all'}
-        title="Show all symmetry copies"
-      >
-        {compact ? 'All' : 'All copies'}
-      </button>
-      <button
-        type="button"
-        className={visibility === 'selected' ? 'seg active' : 'seg'}
-        onClick={() => onVisibilityChange('selected')}
-        aria-pressed={visibility === 'selected'}
-        title="BASE + IMAGE — asymmetric unit and the selected operator copy"
-      >
-        Selected pair
-      </button>
-      <button
-        type="button"
-        className={visibility === 'asymmetric' ? 'seg active' : 'seg'}
-        onClick={() => onVisibilityChange('asymmetric')}
-        aria-pressed={visibility === 'asymmetric'}
-        title="Asymmetric unit only (AU)"
-      >
-        {compact ? 'Asym. unit' : 'Asym. unit'}
-      </button>
-    </div>
-  )
-
-  const colorOptions: { mode: CifColorMode; label: string; title: string }[] = [
-    { mode: 'operator', label: 'Symmetry op', title: 'Color by symmetry operation that generated each copy (default)' },
-    { mode: 'element', label: 'Element', title: 'CPK / Jmol element colors; bonds half-colored' },
-    { mode: 'equivalence', label: 'Equivalence', title: 'Each independent molecule in the asymmetric unit gets a color; its symmetry copies share it' },
-    { mode: 'residue', label: 'Residue', title: 'Color by residue / component id when present' },
-  ]
-  const colorControls = (
-    <div className="segmented cif-color-by" role="group" aria-label="Color by">
-      <span className="cif-color-by-label" aria-hidden="true">Color by</span>
-      {colorOptions.map((o) => (
+  const seg = <T extends string>(
+    label: string,
+    cur: T,
+    set: (v: T) => void,
+    opts: { v: T; label: string; title: string; disabled?: boolean }[],
+  ) => (
+    <div className="segmented" role="group" aria-label={label}>
+      {opts.map((o) => (
         <button
-          key={o.mode}
+          key={o.v}
           type="button"
-          className={colorMode === o.mode ? 'seg active' : 'seg'}
-          onClick={() => onColorModeChange(o.mode)}
-          aria-pressed={colorMode === o.mode}
+          className={cur === o.v ? 'seg active' : 'seg'}
+          onClick={() => set(o.v)}
+          aria-pressed={cur === o.v}
+          disabled={o.disabled}
           title={o.title}
         >
           {o.label}
@@ -647,13 +489,88 @@ export default function CifViewport({
     </div>
   )
 
-  const symmetryButton = (
+  const nH = structure?.hbonds?.length ?? 0
+  const thermalControls = seg('Thermal displacement', thermalMode, onThermalModeChange, [
+    { v: 'off', label: 'No thermal', title: 'Hide thermal displacement parameters (No U)' },
+    { v: 'uiso', label: 'Uiso', title: 'Scale ball radius by Uiso when present' },
+    { v: 'ellipsoid', label: 'Ellipsoid', title: 'Draw anisotropic ellipsoids when Uij present; else Uiso balls' },
+  ])
+  const hbondControls = seg('H-bond contacts', hbondMode, onHBondModeChange, [
+    { v: 'off', label: 'No H-bonds', title: 'Hide H-bond contacts' },
+    { v: 'links', label: `H-bonds${nH ? ` · ${nH}` : ''}`, title: 'Dashed H···A contacts (pink = cross-operator)', disabled: !nH },
+    { v: 'partners', label: 'Partners', title: 'Show H-bonds and dim molecules not partnered with the asymmetric unit', disabled: !nH },
+  ])
+
+  const showOptions: { v: CifVisibility; label: string; title: string }[] = [
+    { v: 'molecules', label: 'Molecules', title: 'Show intact molecules (one copy per operator)' },
+    { v: 'all', label: 'All copies', title: 'Show all symmetry copies' },
+    { v: 'selected', label: 'Selected pair', title: 'BASE + IMAGE — asymmetric unit and the selected operator copy' },
+    { v: 'asymmetric', label: 'Asym. unit', title: 'Asymmetric unit only (AU)' },
+  ]
+  const colorOptions: { v: CifColorMode; label: string; title: string }[] = [
+    { v: 'operator', label: 'Symmetry op', title: 'Color by symmetry operation that generated each copy (default)' },
+    { v: 'element', label: 'Element', title: 'CPK / Jmol element colors; bonds half-colored' },
+    { v: 'equivalence', label: 'Equivalence', title: 'Each independent molecule in the asymmetric unit gets a color; its symmetry copies share it' },
+    { v: 'residue', label: 'Residue', title: 'Color by residue / component id when present' },
+  ]
+
+  /** Compact dropdown (radio menu) used for Show ▾ and Color ▾. */
+  const radioMenu = <T extends string>(
+    key: 'show' | 'color',
+    label: string,
+    cur: T,
+    set: (v: T) => void,
+    opts: { v: T; label: string; title: string }[],
+    extraClass = '',
+  ) => {
+    const curLabel = opts.find((o) => o.v === cur)?.label ?? ''
+    const open = openMenu === key
+    return (
+      <div className={`cif-menu-wrap ${extraClass}`}>
+        <button
+          type="button"
+          className={`btn cif-tb-btn${open ? ' btn-primary' : ''}`}
+          onClick={() => setOpenMenu(open ? null : key)}
+          disabled={!structure}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          title={`${label}: ${curLabel}`}
+        >
+          <span className="cif-tb-key">{label}</span> {curLabel} ▾
+        </button>
+        {open && (
+          <div className="cif-download-menu cif-radio-menu" role="menu" aria-label={label}>
+            {opts.map((o) => (
+              <button
+                key={o.v}
+                type="button"
+                role="menuitemradio"
+                aria-checked={cur === o.v}
+                className={cur === o.v ? 'active' : ''}
+                onClick={() => {
+                  set(o.v)
+                  setOpenMenu(null)
+                }}
+                title={o.title}
+              >
+                <span className="cif-menu-check" aria-hidden="true">{cur === o.v ? '●' : '○'}</span> {o.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const symOn = showSymmetryElements && canShowElements
+  const symmetrySwitch = (
     <button
       type="button"
-      className={`btn${showSymmetryElements && canShowElements ? ' btn-primary' : ''}`}
+      role="switch"
+      className={`cif-switch${symOn ? ' on' : ''}`}
       onClick={onToggleSymmetryElements}
       disabled={!structure || !canShowElements}
-      aria-pressed={showSymmetryElements && canShowElements}
+      aria-checked={symOn}
       title={
         !structure
           ? 'Load a CIF first'
@@ -666,102 +583,180 @@ export default function CifViewport({
                 : 'Show screw / glide / inversion overlays'
       }
     >
-      Symmetry elements
-      {canShowElements
-        ? showSymmetryElements
-          ? ' · on'
-          : ' · off'
-        : ''}
+      <span className="cif-switch-track" aria-hidden="true">
+        <span className="cif-switch-thumb" />
+      </span>
+      <span className="cif-switch-label">Symmetry<span className="cif-sw-long"> elements</span></span>
     </button>
   )
 
+  const displayOpen = openMenu === 'display'
+  const displayMenu = (
+    <div className="cif-display-wrap cif-menu-wrap">
+      <button
+        type="button"
+        className={`btn cif-display-toggle cif-tb-btn${displayOpen ? ' btn-primary' : ''}`}
+        onClick={() => setOpenMenu(displayOpen ? null : 'display')}
+        aria-expanded={displayOpen}
+        aria-controls="cif-display-sheet"
+        disabled={!structure}
+        title={`Display options (${displayLabel})`}
+      >
+        Display ▾
+      </button>
+      {displayOpen && (
+        <div id="cif-display-sheet" className="cif-display-sheet" role="dialog" aria-label="Display options">
+          <div className="cif-display-section-label">Thermal</div>
+          {thermalControls}
+          <div className="cif-display-section-label">H-bonds</div>
+          {hbondControls}
+          <div className="cif-display-section-label">Preset</div>
+          <button
+            type="button"
+            className="btn btn-small"
+            onClick={applyTeachingView}
+            disabled={!structure}
+            title="Molecules + Nearest + Symmetry on + By operator; thermal and H-bonds off"
+          >
+            Teaching view
+          </button>
+        </div>
+      )}
+    </div>
+  )
+
+  const selectedOpObj = structure?.operators.find((o) => o.index === selectedOp) ?? null
+  const dense = isDenseSupercell(multiples)
+  const nonBonded = useMemo(
+    () => (structure && measureModel ? nonBondedSteps(structure, measureModel.curAtoms) : []),
+    [structure, measureModel],
+  )
+  const pairLabels = useMemo(
+    () =>
+      structure && measureModel?.relation
+        ? pairPickLabels(measureModel.curAtoms, (i) => structure.atoms[measureModel.curAtoms[i]!.pick.ai]!.opIndex)
+        : null,
+    [structure, measureModel],
+  )
+  const kbdAtoms = useMemo(
+    () => (structure ? structure.atoms.map((a, ai) => ({ a, ai })).filter(({ a }) => a.opIndex === 1).slice(0, 400) : []),
+    [structure],
+  )
+  const pickAtom = (pick: AtomPick) => {
+    if (!structure) return
+    if (measureOn) {
+      const last = mPicks[mPicks.length - 1]
+      if (samePick(last ?? null, pick)) return
+      setPicks(mPicks.length >= 4 ? [pick] : [...mPicks, pick])
+      setHover(null)
+      return
+    }
+    setPin(samePick(pick, pinned) ? null : { s: structure, pick })
+    setHover(null)
+  }
+
   return (
-    <main className="viewport">
-      <div className="viewport-toolbar">
-        <div className="legend-stack" aria-label="Legend">
-          <div className="cif-chrome-label">Legend</div>
-          <div className="legend class-legend">
-            {structure && colorMode === 'element' ? (
-              elementsPresent(structure.atoms).map((el) => (
-                <button
-                  key={el}
-                  type="button"
-                  className={`legend-item cif-legend-op${highlightElement === el ? ' active' : ''}`}
-                  onClick={() => toggleHighlight(el)}
-                  aria-pressed={highlightElement === el}
-                  title={`Highlight all ${el} atoms and list them`}
-                >
-                  <span className="swatch" style={{ background: jmolColor(el) }} />
-                  {el}
-                </button>
-              ))
-            ) : structure && colorMode === 'equivalence' ? (
-              Array.from({ length: eqInfo.count }, (_, k) => (
-                <span key={k} className="legend-item">
-                  <span className="swatch" style={{ background: equivalenceColor(k) }} />
-                  Mol {k + 1}
-                  {eqInfo.labels[k] ? ` · ${eqInfo.labels[k]}` : ''}
-                </span>
-              ))
-            ) : structure && colorMode === 'residue' ? (
-              <span className="legend-item muted">Residue / component colors</span>
-            ) : structure ? (
-              structure.operators.slice(0, 12).map((op) => (
+    <main className="viewport cif-vp">
+      <div className="viewport-toolbar cif-toolbar-row" role="toolbar" aria-label="Viewer controls">
+        <div className="segmented cif-tb-view" role="group" aria-label="Motif placement">
+          <span className="cif-tb-key" aria-hidden="true">View</span>
+          <button
+            type="button"
+            className={placementMode === 'nearest' ? 'seg active' : 'seg'}
+            onClick={() => onPlacementModeChange('nearest')}
+            aria-pressed={placementMode === 'nearest'}
+            title="Place molecules near the selected element (may leave the cell)"
+          >
+            <span className="label-full">Nearest</span>
+            <span className="label-short">Near</span>
+          </button>
+          <button
+            type="button"
+            className={placementMode === 'wrapped' ? 'seg active' : 'seg'}
+            onClick={() => onPlacementModeChange('wrapped')}
+            aria-pressed={placementMode === 'wrapped'}
+            title="Wrap every atom into the unit cell [0,1)³"
+          >
+            <span className="label-full">In cell</span>
+            <span className="label-short">Wrap</span>
+          </button>
+        </div>
+        {radioMenu('show', 'Show', visibility, onVisibilityChange, showOptions, 'cif-tb-show')}
+        {radioMenu('color', 'Color', colorMode, onColorModeChange, colorOptions, 'cif-tb-color cif-tb-mini')}
+        <div className="cif-tb-sym">{symmetrySwitch}</div>
+        <div className="cif-tb-display">{displayMenu}</div>
+        <div className="cif-tb-measure cif-tb-mini">{measureBtn}</div>
+        <div className="cif-tb-download cif-tb-mini">{downloadMenu}</div>
+        <button
+          type="button"
+          className="btn cif-tb-reset"
+          onClick={onResetView}
+          disabled={!structure}
+          title="Reset the camera"
+        >
+          Reset
+        </button>
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {structure ? hbondLive : ''}
+        </p>
+      </div>
+
+      <div className="legend-stack cif-legend-row" aria-label="Legend">
+        <span className="cif-chrome-label">Legend</span>
+        <div className="legend class-legend cif-legend-line">
+          {structure && colorMode === 'element' ? (
+            elementsPresent(structure.atoms).map((el) => (
+              <button
+                key={el}
+                type="button"
+                className={`legend-item cif-legend-op${highlightElement === el ? ' active' : ''}`}
+                onClick={() => toggleHighlight(el)}
+                aria-pressed={highlightElement === el}
+                title={`Highlight all ${el} atoms and list them`}
+              >
+                <span className="swatch" style={{ background: jmolColor(el) }} />
+                {el}
+              </button>
+            ))
+          ) : structure && colorMode === 'equivalence' ? (
+            Array.from({ length: eqInfo.count }, (_, k) => (
+              <span key={k} className="legend-item">
+                <span className="swatch" style={{ background: equivalenceColor(k) }} />
+                Mol {k + 1}
+                {eqInfo.labels[k] ? ` · ${eqInfo.labels[k]}` : ''}
+              </span>
+            ))
+          ) : structure && colorMode === 'residue' ? (
+            <span className="legend-item muted">Residue / component colors</span>
+          ) : structure ? (
+            <>
+              {structure.operators.map((op) => (
                 <button
                   key={op.index}
                   type="button"
-                  className={`legend-item cif-legend-op${op.index === selectedOp ? ' active' : ''}`}
+                  className={`legend-item cif-legend-op cif-op-chip-compact${op.index === selectedOp ? ' active' : ''}`}
                   onClick={() => onSelectOp(op.index)}
                   title={op.triplet}
                   aria-pressed={op.index === selectedOp}
                   aria-label={`Operator ${op.index}${op.index === 1 ? ' asymmetric unit' : ''}: ${op.triplet}`}
                 >
-                  <span
-                    className="swatch"
-                    style={{ background: operatorColor(op.index) }}
-                  />
-                  op {op.index}
-                  {op.index === 1 ? ' (AU)' : ''}
-                  <span className="cif-legend-triplet">{op.triplet}</span>
+                  <span className="swatch" style={{ background: operatorColor(op.index) }} />
+                  {op.index}
+                  {op.index === 1 ? ' AU' : ''}
                 </button>
-              ))
-            ) : (
-              <span className="legend-item muted">
-                Upload a CIF to map intact molecules by symmetry operator
-              </span>
-            )}
-            {structure && colorMode === 'operator' && structure.operators.length > 12 && (
-              <span className="legend-item muted">
-                +{structure.operators.length - 12} more
-              </span>
-            )}
-          </div>
-          {structure && (
-            <div className="cif-legend-help">
-              <button
-                type="button"
-                className="cif-help-toggle"
-                aria-expanded={helpOpen}
-                onClick={() => setHelpOpen((o) => !o)}
-              >
-                {helpOpen ? 'Hide tip' : 'How to read'}
-              </button>
-              {helpOpen && (
-                <p className="legend chirality cif-help-tip">
-                  Ball ≈ element · tint ≈ operator · bonds keep each molecule
-                  intact (min-image unwrap)
-                  {canShowElements && showSymmetryElements
-                    ? ' · overlays: screws / glides / inversions / mirrors'
-                    : ''}
-                </p>
+              ))}
+              {selectedOpObj && (
+                <span className="cif-selected-op-card" aria-live="polite">
+                  op {selectedOpObj.index}: <span className="mono">{selectedOpObj.triplet}</span>
+                </span>
               )}
-            </div>
+            </>
+          ) : (
+            <span className="legend-item muted">Load a CIF to map intact molecules by symmetry operator</span>
           )}
-          {elementDemo && showSymmetryElements && canShowElements && (
-            <div
-              className="legend elements-legend"
-              aria-label="Symmetry element classes"
-            >
+          {elementDemo && symOn && (
+            <span className="cif-elements-inline" aria-label="Symmetry element classes">
+              <span className="cif-legend-sep" aria-hidden="true">|</span>
               {elementDemo.classLegendOrder
                 .filter((id) => id !== 'identity')
                 .map((id) => {
@@ -769,226 +764,49 @@ export default function CifViewport({
                   if (!cls) return null
                   return (
                     <span key={id} className="legend-item">
-                      <span
-                        className="swatch"
-                        style={{ background: cls.color }}
-                      />
+                      <span className="swatch" style={{ background: cls.color }} />
                       {cls.label}
                     </span>
                   )
                 })}
               {elementDemo.geometryLimited && (
-                <span
-                  className="legend-item muted"
-                  title={elementDemo.geometryNote}
-                >
+                <span className="legend-item muted" title={elementDemo.geometryNote}>
                   limited geometry
                 </span>
               )}
-            </div>
+            </span>
           )}
         </div>
-
-        <div className="toolbar-actions cif-toolbar-actions" aria-label="Actions">
-          <div className="cif-chrome-label cif-chrome-label-actions">Actions</div>
-          {/* Always one-tap: Near/Cell + Molecules (phone) */}
-          <div className="cif-toolbar-primary">
-            <div className="segmented" role="group" aria-label="Motif placement">
-              <button
-                type="button"
-                className={placementMode === 'nearest' ? 'seg active' : 'seg'}
-                onClick={() => onPlacementModeChange('nearest')}
-                aria-pressed={placementMode === 'nearest'}
-                title="Place molecules near the selected element (may leave the cell)"
-              >
-                <span className="label-full">Nearest images</span>
-                <span className="label-short">Near</span>
-              </button>
-              <button
-                type="button"
-                className={placementMode === 'wrapped' ? 'seg active' : 'seg'}
-                onClick={() => onPlacementModeChange('wrapped')}
-                aria-pressed={placementMode === 'wrapped'}
-                title="Wrap every atom into the unit cell [0,1)³"
-              >
-                <span className="label-full">In cell</span>
-                <span className="label-short">Wrap</span>
-              </button>
-            </div>
-            <div
-              className="segmented cif-vis-primary"
-              role="group"
-              aria-label="Molecule visibility"
-            >
-              <button
-                type="button"
-                className={visibility === 'molecules' ? 'seg active' : 'seg'}
-                onClick={() => onVisibilityChange('molecules')}
-                aria-pressed={visibility === 'molecules'}
-              >
-                Molecules
-              </button>
-            </div>
-            <button
-              type="button"
-              ref={viewToggleRef}
-              className={`btn cif-view-toggle${viewOpen ? ' btn-primary' : ''}`}
-              onClick={() => {
-                setViewOpen((o) => !o)
-                setDisplayOpen(false)
-              }}
-              aria-expanded={viewOpen}
-              aria-controls="cif-view-sheet"
-            >
-              View{viewOpen ? ' · close' : ''}
-            </button>
-          </div>
-
-          {/* Desktop: visibility, symmetry, color, Display, Teaching, Reset */}
-          <div className="cif-toolbar-secondary cif-toolbar-desktop-only">
-            {visibilityControls(false)}
-            {symmetryButton}
-            {colorControls}
-            <div className="cif-display-wrap">
-              <button
-                type="button"
-                ref={displayToggleRef}
-                className={`btn cif-display-toggle${displayOpen ? ' btn-primary' : ''}`}
-                onClick={() => setDisplayOpen((o) => !o)}
-                aria-expanded={displayOpen}
-                aria-controls="cif-display-sheet"
-                title={`Display options (${displayLabel})`}
-              >
-                Display{displayOpen ? ' · close' : ''}
-              </button>
-              {displayOpen && (
-                <div
-                  id="cif-display-sheet"
-                  className="cif-display-sheet"
-                  role="dialog"
-                  aria-label="Display options"
-                  tabIndex={-1}
-                  ref={displaySheetRef}
-                >
-                  <div className="cif-display-section-label">Thermal</div>
-                  {thermalControls}
-                  <div className="cif-display-section-label">H-bonds</div>
-                  {hbondControls}
-                </div>
-              )}
-            </div>
-            <button
-              type="button"
-              className="btn"
-              onClick={applyTeachingView}
-              disabled={!structure}
-              title="Molecules + Nearest + Symmetry on + By operator; thermal and H-bonds off"
-            >
-              Teaching view
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={onResetView}
-              disabled={!structure}
-            >
-              Reset view
-            </button>
-            {measureBtn}
-            {downloadMenu}
-          </div>
-        </div>
-
-        <p className="sr-only" aria-live="polite" aria-atomic="true">
-          {structure ? hbondLive : ''}
-        </p>
-
-        {/* Phone View sheet */}
-        {viewOpen && (
-          <div
-            id="cif-view-sheet"
-            className="cif-view-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="View options"
-            tabIndex={-1}
-            ref={viewSheetRef}
-          >
-            {visibilityControls(true)}
-            {colorControls}
-            <div className="cif-view-sheet-actions">
-              {symmetryButton}
-              <button
-                type="button"
-                className="btn"
-                onClick={applyTeachingView}
-                disabled={!structure}
-                title="Molecules + Nearest + Symmetry on + By operator; advanced off"
-              >
-                Teaching view
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={onResetView}
-                disabled={!structure}
-              >
-                Reset view
-              </button>
-              {measureBtn}
-            {downloadMenu}
-            </div>
-            <div className="cif-display-section-label">Display</div>
-            {thermalControls}
-            {hbondControls}
-          </div>
-        )}
       </div>
 
       {structure && (
-        <div className="cif-op-chips" role="toolbar" aria-label="Operators (touch)">
-          {structure.operators.map((op) => (
-            <button
-              key={op.index}
-              type="button"
-              className={`op-chip${op.index === selectedOp ? ' active' : ''}${op.index === 1 ? ' is-base' : ''}`}
-              style={{ ['--op-color' as string]: operatorColor(op.index) }}
-              onClick={() => onSelectOp(op.index)}
-              title={op.triplet}
-              aria-pressed={op.index === selectedOp}
-              aria-label={`Operator ${op.index}: ${op.triplet}`}
-            >
-              <span className="op-chip-swatch" />
-              <span className="op-chip-label">
-                {op.index}. {op.triplet}
-              </span>
-            </button>
-          ))}
+        <div className="cif-lattice-row">
+          <CellParamsBadge cell={structure.cell} variant="strip" />
+          <SupercellPicker
+            id="cif-supercell"
+            multiples={multiples}
+            onAxis={(axis, n) =>
+              setMult({ s: structure, v: setAxisCapped(multiples, axis, n, perCell, CIF_ATOM_CAP) })
+            }
+            onReset={() => {
+              setMult({ s: structure, v: DEFAULT_MULTIPLES })
+              onResetView()
+            }}
+            perCell={perCell}
+            cap={CIF_ATOM_CAP}
+            unit="atoms"
+            strictCap
+            compact
+          />
+          {dense && (
+            <span className="cif-dense-note" role="note">
+              Dense supercell: interior cell edges faded, copies drawn smaller
+            </span>
+          )}
         </div>
       )}
 
-      {structure && (
-        <CellParamsBadge cell={structure.cell} variant="strip" />
-      )}
-
-      {structure && (
-        <SupercellPicker
-          id="cif-supercell"
-          multiples={multiples}
-          onAxis={(axis, n) =>
-            setMult({ s: structure, v: setAxisCapped(multiples, axis, n, perCell, CIF_ATOM_CAP) })
-          }
-          onReset={() => {
-            setMult({ s: structure, v: DEFAULT_MULTIPLES })
-            onResetView()
-          }}
-          perCell={perCell}
-          cap={CIF_ATOM_CAP}
-          unit="atoms"
-        />
-      )}
-
-      <div className={`viewport-body cif-viewport-body${showPanel ? ' has-atom-panel' : ''}`}>
+      <div className={`viewport-body cif-viewport-body cif-overlay-body${showPanel ? ' has-atom-overlay' : ''}`}>
         <div
           id="demo-main"
           className="canvas-wrap"
@@ -999,7 +817,8 @@ export default function CifViewport({
           {structure ? (
             <Suspense
               fallback={
-                <div className="cif-empty">
+                <div className="cif-empty cif-loading" role="status">
+                  <span className="cif-spinner" aria-hidden="true" />
                   <p>Loading 3D view…</p>
                 </div>
               }
@@ -1011,44 +830,45 @@ export default function CifViewport({
                 placementMode={placementMode}
                 resetToken={resetToken}
                 elementDemo={elementDemo}
-                showSymmetryElements={
-                  showSymmetryElements && canShowElements
-                }
+                showSymmetryElements={symOn}
                 colorMode={colorMode}
                 thermalMode={thermalMode}
                 hbondMode={hbondMode}
                 multiples={multiples}
-                onAtomHover={(pick, x, y) => setHover(pick ? { pick, x, y } : null)}
+                onAtomHover={onAtomHover}
                 annotations={annotations}
-                onAtomPick={(pick) => {
-                  if (measureOn) {
-                    const last = mPicks[mPicks.length - 1]
-                    if (samePick(last ?? null, pick)) return
-                    setPicks(mPicks.length >= 4 ? [pick] : [...mPicks, pick])
-                    setHover(null)
-                    return
-                  }
-                  setPin(samePick(pick, pinned) ? null : { s: structure, pick })
-                  setHover(null)
-                }}
+                onAtomPick={pickAtom}
                 pinnedAtom={pinned}
                 highlightElement={highlightElement}
+                hoverAtom={hover?.pick ?? null}
               />
             </Suspense>
           ) : (
             <div className="cif-empty">
-              <p>
-                Drop in a <code>.cif</code> from CSD or COD, or load the
-                teaching sample, to see intact molecules colored by symmetry
-                operator.
-              </p>
+              {busy ? (
+                <div className="cif-loading" role="status">
+                  <span className="cif-spinner" aria-hidden="true" />
+                  <p>Loading structure…</p>
+                </div>
+              ) : (
+                <p>
+                  Drop in a <code>.cif</code> from CSD or COD, or load the teaching sample, to see intact molecules
+                  colored by symmetry operator.
+                </p>
+              )}
+            </div>
+          )}
+          {structure && busy && (
+            <div className="cif-busy-veil" role="status">
+              <span className="cif-spinner" aria-hidden="true" />
+              <span>Loading structure…</span>
             </div>
           )}
         </div>
         {showPanel && (
-          <aside className="cif-atom-panel" aria-label="Atom details">
+          <aside className="cif-atom-panel cif-atom-overlay" aria-label="Atom details">
             <div className="cif-atom-panel-head">
-              <span className="cif-chrome-label">Atom details</span>
+              <span className="cif-chrome-label">{measureOn ? 'Measure' : 'Atom details'}</span>
               <button
                 type="button"
                 className="btn btn-small"
@@ -1057,7 +877,7 @@ export default function CifViewport({
                   setHl(null)
                   setMeasureOn(false)
                 }}
-                aria-label="Close atom details (Esc)"
+                aria-label="Close panel (Esc)"
                 title="Close (Esc)"
               >
                 ×
@@ -1066,17 +886,30 @@ export default function CifViewport({
             {measureOn && measureModel && (
               <div className="cif-measure">
                 <div className="cif-measure-hint">
-                  Click 2 atoms → distance, 3 → angle, 4 → torsion. Atoms on two molecules → their
-                  symmetry element. Esc / ⌫ undoes the last pick.
+                  Click 2 atoms → distance, 3 → angle, 4 → torsion. Atoms on two molecules → their symmetry
+                  element. ⌫ undoes the last pick · Esc exits Measure.
                 </div>
                 {measureModel.curAtoms.length > 0 && (
                   <div className="cif-measure-current">
                     <div className="cif-measure-names">
-                      {measureModel.curAtoms.map((a) => measureModel.codes.name(a)).join(' – ')}
+                      {measureModel.curAtoms.map((a, i) => (
+                        <span key={i}>
+                          {i > 0 && (
+                            <span className={nonBonded[i - 1] ? 'cif-nb' : ''}>
+                              {nonBonded[i - 1] ? ' ⋯ ' : ' – '}
+                            </span>
+                          )}
+                          {measureModel.codes.name(a)}
+                        </span>
+                      ))}
                     </div>
+                    {nonBonded.some(Boolean) && (
+                      <div className="cif-nb-note">(non-bonded) — ⋯ marks picks that are not covalently bonded</div>
+                    )}
                     {measureModel.current && (
                       <div className="cif-measure-value">
-                        {measureModel.current.kind}:{' '}
+                        {measureModel.current.kind}
+                        {nonBonded.some(Boolean) ? ' (non-bonded)' : ''}:{' '}
                         <b>{measureModel.current.text.slice(measureModel.current.text.lastIndexOf('  ') + 2)}</b>
                       </div>
                     )}
@@ -1101,6 +934,12 @@ export default function CifViewport({
                 {measureModel.relation && (
                   <div className="cif-measure-relation">
                     <div className="cif-chrome-label">Molecule A → B</div>
+                    {pairLabels && (
+                      <div className="cif-pair-labels">
+                        <div>{pairLabels.a}</div>
+                        <div>{pairLabels.b}</div>
+                      </div>
+                    )}
                     <div className="mono">{measureModel.relation.triplet}</div>
                     {measureModel.relation.note && <div className="muted">{measureModel.relation.note}</div>}
                     {measureModel.relation.element.lines.map((l, i) => (
@@ -1146,11 +985,12 @@ export default function CifViewport({
                     onClick={() => {
                       void navigator.clipboard?.writeText(measureText()).then(() => {
                         setCopied(true)
-                        setTimeout(() => setCopied(false), 1200)
+                        setTimeout(() => setCopied(false), 1500)
                       })
                     }}
+                    aria-live="polite"
                   >
-                    {copied ? 'Copied' : 'Copy as text'}
+                    {copied ? 'Copied ✓' : 'Copy as text'}
                   </button>
                   <button
                     type="button"
@@ -1208,34 +1048,41 @@ export default function CifViewport({
         )}
       </div>
 
+      {structure && (
+        <details className="cif-kbd-atoms">
+          <summary>Atom list (keyboard: pin / Measure pick)</summary>
+          <ul aria-label="Asymmetric-unit atoms">
+            {kbdAtoms.map(({ a, ai }) => (
+              <li key={ai}>
+                <button
+                  type="button"
+                  className={samePick(pinned, { ai, t: [0, 0, 0] }) || mPicks.some((p) => samePick(p, { ai, t: [0, 0, 0] })) ? 'active' : ''}
+                  onClick={() => pickAtom({ ai, t: [0, 0, 0] })}
+                  onFocus={() => setHover(null)}
+                >
+                  {a.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       <footer className="viewport-footer">
         <span className="viewport-footer-text">
-          CIF explorer · intact molecules (covalent + min-image unwrap) ·
           {structure?.operatorSource === 'cif'
-            ? 'operators from the CIF symmetry loop'
+            ? 'Ops from CIF'
             : structure?.operatorSource === 'demo'
-              ? 'operators from ITA (CIF had no symmetry loop)'
-              : 'operators'}
-          {structure?.spaceGroupNumber != null
-            ? ` · teaching demo: /sg/${structure.spaceGroupNumber}`
-            : ''}
-          {placementMode === 'nearest'
-            ? ' · Nearest images may sit just outside the cell'
-            : ' · In cell wraps atoms into [0, 1)³'}
-          {canShowElements && showSymmetryElements
-            ? ` · ${elementCount} symmetry loci on CIF cell`
-            : ''}
-          {' ('}
-          <VisitCounter className="visit-counter--footer" />
-          {')'}
+              ? 'Ops from ITA (no CIF symmetry loop)'
+              : 'CIF explorer'}
+          {structure?.spaceGroupNumber != null ? ` · demo /sg/${structure.spaceGroupNumber}` : ''}
+          {structure ? (placementMode === 'nearest' ? ' · Nearest images' : ' · In cell [0,1)³') : ''}
+          {symOn ? ` · ${elementCount} symmetry loci` : ''}
+          <VisitCounter className="visit-counter--footer" parens />
         </span>
       </footer>
       {hoverInfo && hover && (
-        <div
-          className="cif-atom-tooltip"
-          role="tooltip"
-          style={{ left: hover.x + 14, top: hover.y + 14 }}
-        >
+        <div className="cif-atom-tooltip" role="tooltip" style={{ left: hover.x + 14, top: hover.y + 14 }}>
           <AtomInfoBlock info={hoverInfo} compact />
         </div>
       )}

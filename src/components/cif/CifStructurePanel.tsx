@@ -1,6 +1,7 @@
 import type { KeyboardEvent } from 'react'
 import AsuDiagram from './AsuDiagram'
 import CifXrayPanel from './CifXrayPanel'
+import { asuFragmentCount, molPerOpLabel, zPrimeLabel } from '../../data/cif/viewportUi'
 import { Link } from 'react-router-dom'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
@@ -34,6 +35,7 @@ export default function CifStructurePanel({
 }: CifStructurePanelProps) {
   const summary = describeCifStructure(structure)
 
+  const fragments = asuFragmentCount(structure)
   return (
     <>
       <section className="seed-box" aria-labelledby="cif-structure-heading">
@@ -96,7 +98,9 @@ export default function CifStructurePanel({
               </dt>
               <dd>
                 <span title={structure.metadata.zPrimeNote}>
-                  {structure.metadata.zPrime}
+                  {fragments > 1
+                    ? zPrimeLabel(structure.metadata.zPrime, fragments).replace(/^Z′ = /, '')
+                    : structure.metadata.zPrime}
                   {structure.metadata.z != null
                     ? ` (Z = ${structure.metadata.z})`
                     : ''}
@@ -227,7 +231,7 @@ export default function CifStructurePanel({
                       {' · '}
                       {isImproper(op.R) ? 'opposite hand' : 'same hand'}
                       {' · '}
-                      {mols} mol · {sites} atoms
+                      {molPerOpLabel(mols, fragments)} · {sites} atoms
                     </span>
                   </span>
                 </button>

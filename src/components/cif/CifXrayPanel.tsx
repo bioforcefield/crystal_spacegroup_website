@@ -23,6 +23,7 @@ import {
   envelopePolyline,
   lorentzEnvelope,
 } from '../../data/cif/xray/envelope'
+import { rovingNext } from '../../data/cif/viewportUi'
 import { peakShiftTable, topPeaksByIntensity } from '../../data/cif/xray/peakCompare'
 import {
   POLYMORPH_PAIRS,
@@ -601,6 +602,19 @@ export default function CifXrayPanel({
 
       <div className="cif-xray-chart-wrap">
         <svg
+          onKeyDown={(e) => {
+            const dots = Array.from(
+              e.currentTarget.querySelectorAll<SVGCircleElement>('circle[data-peak]'),
+            )
+            const i = dots.indexOf(e.target as SVGCircleElement)
+            if (i < 0) return
+            const n = rovingNext(i, e.key, dots.length)
+            if (n == null) return
+            e.preventDefault()
+            dots[i]!.setAttribute('tabindex', '-1')
+            dots[n]!.setAttribute('tabindex', '0')
+            dots[n]!.focus()
+          }}
           className="teach-svg cif-xray-svg"
           viewBox={`0 0 ${VB_W} ${VB_H}`}
           role="img"
@@ -693,7 +707,8 @@ export default function CifXrayPanel({
                         ? 'teach-curve-dot cif-xray-dot-b active'
                         : 'teach-curve-dot cif-xray-dot-b'
                     }
-                    tabIndex={0}
+                    tabIndex={-1}
+                    data-peak="b"
                     role="button"
                     aria-label={`Form B peak ${p.hkl}, d ${p.d.toFixed(3)} Å, 2θ ${p.twoTheta.toFixed(2)}°, I ${p.intensity.toFixed(1)}`}
                     onMouseEnter={() => setHover({ peak: p, form: 'B' })}
@@ -705,7 +720,7 @@ export default function CifXrayPanel({
               )
             })}
           {showSticks &&
-            patternA.peaks.map((p) => {
+            patternA.peaks.map((p, pi) => {
               const px = BOX.x0 + ((p.twoTheta - lo) / dx) * (BOX.x1 - BOX.x0)
               const py = BOX.y1 - (p.intensity / 105) * (BOX.y1 - BOX.y0)
               const active =
@@ -728,9 +743,10 @@ export default function CifXrayPanel({
                     className={
                       active ? 'teach-curve-dot active' : 'teach-curve-dot'
                     }
-                    tabIndex={0}
+                    tabIndex={pi === 0 ? 0 : -1}
+                    data-peak="a"
                     role="button"
-                    aria-label={`Form A peak ${p.hkl}, d ${p.d.toFixed(3)} Å, 2θ ${p.twoTheta.toFixed(2)}°, I ${p.intensity.toFixed(1)}`}
+                    aria-label={`Form A peak ${pi + 1} of ${patternA.peaks.length} (arrow keys move between peaks): ${p.hkl}, d ${p.d.toFixed(3)} Å, 2θ ${p.twoTheta.toFixed(2)}°, I ${p.intensity.toFixed(1)}`}
                     onMouseEnter={() => setHover({ peak: p, form: 'A' })}
                     onFocus={() => setHover({ peak: p, form: 'A' })}
                     onMouseLeave={() => setHover(null)}
