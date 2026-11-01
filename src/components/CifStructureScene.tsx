@@ -754,7 +754,7 @@ function SceneBody({
     if (cr && focusDelta) {
       const c = cr.atoms.reduce<Vec3>((s, a) => [s[0] + a.cart[0], s[1] + a.cart[1], s[2] + a.cart[2]], [0, 0, 0])
       const n = cr.atoms.length || 1
-      return { center: [c[0] / n + focusDelta[0], c[1] / n + focusDelta[1], c[2] / n + focusDelta[2]] as Vec3, radius: 3 }
+      return { center: [c[0] / n + focusDelta[0], c[1] / n + focusDelta[1], c[2] / n + focusDelta[2]] as Vec3, radius: 6 }
     }
     return ligandSite && focusDelta
         ? {
