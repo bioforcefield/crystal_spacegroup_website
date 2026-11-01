@@ -5468,3 +5468,26 @@ button.linkish {
 .cif-seq-strip.collapsed { padding-bottom: 0.3rem; }
 @media (max-width: 640px) { .seq-label-wide { min-width: 11rem; max-width: 11rem; } .cif-seq-strip .seq-add { margin-left: 0; } }
 .seq-scroll { position: relative; }
+.cif-export-row { padding: 0.2rem 0.55rem; font-size: 0.78rem; color: #cbd5e1; }
+.cif-export-row select { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; font-size: 0.78rem; max-width: 190px; }
+.cif-export-fmts { display: flex; flex-wrap: wrap; gap: 0.15rem; padding: 0.1rem 0.4rem; }
+.cif-export-fmts button { flex: 0 0 auto; border: 1px solid #334155 !important; border-radius: 4px; padding: 0.2rem 0.45rem; }
+.cif-menu-link { display: block; padding: 0.3rem 0.55rem; font-size: 0.8rem; color: #7dd3fc; text-decoration: none; border-radius: 4px; }
+.cif-menu-link:hover { background: rgba(125, 211, 252, 0.12); }
+.cif-download-menu { max-height: 75vh; overflow-y: auto; }
+.cif-pdb-opts { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; font-size: 0.8rem; margin: 0.35rem 0; color: #cbd5e1; }
+.cif-pdb-opts select { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; font-size: 0.8rem; }
+.cif-pdb-progress { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; margin: 0.3rem 0; }
+.cif-pdb-progress progress { flex: 1; min-width: 80px; }
+.cif-pdb-replaced { font-size: 0.8rem; margin: 0.3rem 0; }
+.cif-pdb-warn { font-size: 0.78rem; color: #fbbf24; margin: 0.25rem 0; }
+.cif-pdb-search { margin: 0.4rem 0; font-size: 0.82rem; }
+.cif-pdb-search summary { cursor: pointer; color: #7dd3fc; }
+.cif-pdb-search select { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 4px; }
+.cif-pdb-hits { list-style: none; padding: 0; margin: 0.3rem 0; max-height: 320px; overflow-y: auto; }
+.cif-pdb-hits button { display: flex; gap: 0.5rem; width: 100%; text-align: left; background: transparent; border: 1px solid #1e293b; border-radius: 6px; padding: 0.3rem; margin-bottom: 0.25rem; color: #e2e8f0; cursor: pointer; font: inherit; font-size: 0.78rem; }
+.cif-pdb-hits button:hover:not(:disabled) { background: rgba(125, 211, 252, 0.08); }
+.cif-pdb-hits img { width: 56px; height: 56px; object-fit: cover; border-radius: 4px; background: #fff; flex: none; }
+.cif-hit-text { display: flex; flex-direction: column; gap: 0.15rem; overflow: hidden; }
+.cif-hit-text .muted { font-size: 0.72rem; }
+.cif-pdb-recent { margin-top: 0.3rem; align-items: center; }

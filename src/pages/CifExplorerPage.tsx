@@ -61,6 +61,7 @@ import type { Vec3 } from '../data/types'
 import { buildMacroModel, expandMacro, type MacroModel, type PdbRepresentation } from '../data/pdb/macro'
 import { analyzeLigand, INTERACTION_TYPES, type InteractionType } from '../data/pdb/interactions'
 import { fetchPdbCif, rcsbEntryUrl } from '../data/pdb/fetchPdb'
+import { entrySummary, entryWarnings, fmtBytes, loadPdbMmcif, parsePdbInput, pushRecent, readRecent, PdbLoadError, type PdbSource, type Progress } from '../data/pdb/pdbLoad'
 import PdbLigandPanel from '../components/cif/PdbLigandPanel'
 import CifXrayPanel from '../components/cif/CifXrayPanel'
 import type { AnalysisTab } from '../data/cif/cifRoute'
@@ -114,6 +115,15 @@ export default function CifExplorerPage() {
   }, [])
   const [interTypes, setInterTypes] = useState<Set<InteractionType>>(() => new Set(INTERACTION_TYPES.map((t) => t.v)))
   const [pdbInput, setPdbInput] = useState('1crn')
+  // —— PDB loading options / progress ——
+  const [pdbAsm, setPdbAsm] = useState<number | null>(null)
+  const [pdbSrc, setPdbSrc] = useState<PdbSource>('rcsb')
+  const [loadedPdbOpts, setLoadedPdbOpts] = useState<{ asm: number | null; src: PdbSource }>({ asm: null, src: 'rcsb' })
+  const [pdbProgress, setPdbProgress] = useState<(Progress & { id: string }) | null>(null)
+  const [pdbReplacedBy, setPdbReplacedBy] = useState<string[]>([])
+  const [pdbWarnings, setPdbWarnings] = useState<string[]>([])
+  const [recentPdb, setRecentPdb] = useState<string[]>(() => readRecent(typeof window !== 'undefined' ? window.localStorage : undefined))
+  const pdbAbortRef = useRef<AbortController | null>(null)
   // —— comparison set for the sequence strip ——
   const [pinnedRes, setPinnedRes] = useState<string | null>(null)
   const [compareSet, setCompareSet] = useState<StripEntry[]>([])
@@ -379,35 +389,68 @@ export default function CifExplorerPage() {
     }
   }, [codeInput, loadText, tKey, openTarget, location.search])
 
-  const loadByPdb = useCallback(async (id: string, route?: { key: string; view: CifViewQuery }) => {
-    const t: CifTarget = { kind: 'pdb', id: id.trim().toLowerCase() }
+  const loadByPdb = useCallback(async (id: string, route?: { key: string; view: CifViewQuery }, opts?: { asm: number | null; src: PdbSource }) => {
+    setPdbReplacedBy([])
     if (!route) {
-      if (!/^[0-9][a-z0-9]{3}$/i.test(id.trim())) {
-        setError(`“${id}” is not a PDB ID — use 4 characters, e.g. 1CRN.`)
+      const parsed = parsePdbInput(id)
+      if (!parsed.ok) {
+        setError(parsed.error)
         return
       }
+      const o = { asm: parsed.assembly ?? opts?.asm ?? null, src: opts?.src ?? 'rcsb' }
+      if (parsed.assembly) setPdbAsm(parsed.assembly)
+      setPdbInput(parsed.id.toUpperCase())
+      const t: CifTarget = { kind: 'pdb', id: parsed.id }
+      const view = { ...parseViewQuery(carryView()), asm: o.asm, src: o.src === 'redo' ? ('redo' as const) : null }
+      setRouteNote(null)
       if (targetKey(t) !== tKey) {
-        openTarget(t)
+        navigate({ pathname: cifPath(t), search: serializeViewQuery(view) })
         return
       }
-      route = { key: targetKey(t), view: parseViewQuery(location.search) }
+      navigate({ pathname: cifPath(t), search: serializeViewQuery(view) }, { replace: true })
+      route = { key: targetKey(t), view }
+      id = parsed.id
     }
+    const t: CifTarget = { kind: 'pdb', id: id.trim().toLowerCase() }
+    const asm = route.view.asm ?? null
+    const src: PdbSource = route.view.src === 'redo' ? 'redo' : 'rcsb'
+    pdbAbortRef.current?.abort()
+    const ac = new AbortController()
+    pdbAbortRef.current = ac
     setBusy(true)
     setError(null)
+    setPdbWarnings([])
+    setPdbProgress({ id: t.id, loaded: 0, total: null })
+    void entrySummary(t.id).then((h) => { if (!ac.signal.aborted) setPdbWarnings(entryWarnings(h)) })
     try {
-      const text = await fetchPdbCif(t.id)
-      loadText(text, `PDB ${t.id.toUpperCase()} · RCSB`, {
-        hint: `PDB ${t.id.toUpperCase()} mmCIF from RCSB (files.rcsb.org).`,
+      const r = await loadPdbMmcif(t.id, { assembly: asm, source: src, signal: ac.signal, onProgress: (p) => setPdbProgress({ id: t.id, ...p }) })
+      const what = asm ? `biological assembly ${asm}` : src === 'redo' && !r.note?.includes('instead') ? 'PDB-REDO model' : 'mmCIF'
+      loadText(r.text, `PDB ${t.id.toUpperCase()}${asm ? ` · assembly ${asm}` : ''} · ${r.url.includes('pdb-redo') ? 'PDB-REDO' : 'RCSB'}`, {
+        hint: `PDB ${t.id.toUpperCase()} ${what} from ${new URL(r.url).host}.${r.note ? ' ' + r.note : ''}`,
         link: rcsbEntryUrl(t.id),
       }, route)
+      setLoadedPdbOpts({ asm, src })
+      setPdbAsm(asm)
+      setPdbSrc(src)
+      setRecentPdb(pushRecent(window.localStorage, t.id))
     } catch (e) {
-      setStructure(null)
-      setMacroModel(null)
+      if (e instanceof PdbLoadError && e.kind === 'aborted') {
+        setError('Download cancelled.')
+      } else {
+        setStructure(null)
+        setMacroModel(null)
+        setError(e instanceof Error ? e.message : String(e))
+        if (e instanceof PdbLoadError) setPdbReplacedBy(e.replacedBy)
+      }
       setLoadedKey(null)
-      setError(e instanceof Error ? e.message : String(e))
       setBusy(false)
+    } finally {
+      if (pdbAbortRef.current === ac) {
+        pdbAbortRef.current = null
+        setPdbProgress(null)
+      }
     }
-  }, [loadText, tKey, openTarget, location.search])
+  }, [loadText, tKey, navigate, carryView])
 
   // Legacy deep link: /cif?cod=1100303 → /cif/cod/1100303
   useEffect(() => {
@@ -478,11 +521,13 @@ export default function CifExplorerPage() {
       lig: macroModel ? focusLig : null,
       diagram: diagramOpen,
       analysis: macroModel ? analysisTab : null,
+      asm: macroModel && target.kind === 'pdb' ? loadedPdbOpts.asm : null,
+      src: macroModel && target.kind === 'pdb' && loadedPdbOpts.src === 'redo' ? 'redo' : null,
     })
     if (search !== location.search) {
       navigate({ pathname: location.pathname, search }, { replace: true, state: location.state })
     }
-  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, diagramOpen, analysisTab, location.search, location.pathname, location.state, navigate])
+  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, diagramOpen, analysisTab, loadedPdbOpts, location.search, location.pathname, location.state, navigate])
 
   const loadPaste = useCallback(() => {
     if (!pasteText.trim()) {
@@ -693,10 +738,17 @@ export default function CifExplorerPage() {
           }}
           pdbInput={pdbInput}
           onPdbInputChange={setPdbInput}
-          onLoadPdb={(id) => {
-            setPdbInput(id.toUpperCase())
-            void loadByPdb(id)
-          }}
+          onLoadPdb={(id) => void loadByPdb(id, undefined, { asm: pdbAsm, src: pdbSrc })}
+          pdbAsm={pdbAsm}
+          onPdbAsmChange={setPdbAsm}
+          pdbSrc={pdbSrc}
+          onPdbSrcChange={setPdbSrc}
+          recentPdb={recentPdb}
+          pdbReplacedBy={pdbReplacedBy}
+          pdbWarnings={pdbWarnings}
+          pdbProgress={pdbProgress ? `${pdbProgress.id.toUpperCase()}: ${fmtBytes(pdbProgress.loaded)}${pdbProgress.total ? ` of ${fmtBytes(pdbProgress.total)}` : ''}` : null}
+          pdbProgressFrac={pdbProgress?.total ? pdbProgress.loaded / pdbProgress.total : null}
+          onAbortPdb={() => pdbAbortRef.current?.abort()}
           onFile={onFile}
           onLoadSample={loadSample}
           pasteOpen={pasteOpen}

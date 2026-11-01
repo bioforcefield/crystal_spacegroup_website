@@ -74,6 +74,10 @@ export type CifViewQuery = {
   diagram?: boolean
   /** PDB structure-analysis drawer tab (e.g. rama, chi, na, pucker, bp, step). */
   analysis?: AnalysisTab | null
+  /** PDB biological assembly number (absent = asymmetric unit). */
+  asm?: number | null
+  /** PDB coordinate source (absent = RCSB). */
+  src?: 'redo' | null
 }
 export const ANALYSIS_TABS = ['rama', 'chi', 'na', 'pucker', 'bp', 'step'] as const
 export type AnalysisTab = (typeof ANALYSIS_TABS)[number]
@@ -104,6 +108,9 @@ export function parseViewQuery(search: string | URLSearchParams): CifViewQuery {
   if (out.lig && q.get('diagram') === '1') out.diagram = true
   const an = q.get('analysis') as AnalysisTab
   if (an && (ANALYSIS_TABS as readonly string[]).includes(an)) out.analysis = an
+  const asm = Number(q.get('asm'))
+  if (Number.isInteger(asm) && asm >= 1 && asm <= 99) out.asm = asm
+  if (q.get('src') === 'redo') out.src = 'redo'
   return out
 }
 
@@ -117,6 +124,8 @@ export function serializeViewQuery(v: CifViewQuery): string {
   if (v.lig) q.set('lig', v.lig)
   if (v.lig && v.diagram) q.set('diagram', '1')
   if (v.analysis) q.set('analysis', v.analysis)
+  if (v.asm) q.set('asm', String(v.asm))
+  if (v.src === 'redo') q.set('src', 'redo')
   const s = q.toString()
   return s ? `?${s}` : ''
 }

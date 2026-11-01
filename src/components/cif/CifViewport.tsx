@@ -58,6 +58,12 @@ import { PDB_REPS, PDB_SUPERCELL_ATOM_CAP, type PdbRepresentation } from '../../
 import { INTERACTION_TYPES, type InteractionType, type LigandSite } from '../../data/pdb/interactions'
 import { chainColor } from '../../data/pdb/chainColors'
 import LigandDiagram2D from './LigandDiagram2D'
+import { expandMacro } from '../../data/pdb/macro'
+import { detectFormat } from '../../data/pdb/formats'
+import {
+  EXPORT_FORMATS, EXPORT_VIEWS, exportFileName, macroAsuSet, pocketSet, rcsbDownloads, smallAsuSet, viewSet, writeExport,
+  type ExportFormat, type ExportView,
+} from '../../data/export/structureExport'
 
 const CifStructureScene = lazy(() => import('../CifStructureScene'))
 
@@ -403,6 +409,40 @@ export default function CifViewport({
   panelOpenRef.current = showPanel
 
   // —— Download ——
+  const [exportViewPick, setExportView] = useState<ExportView | 'pocket' | null>(null)
+  const exportView: ExportView | 'pocket' =
+    exportViewPick === 'pocket' && !ligandSite ? placementMode : exportViewPick ?? placementMode
+  const exportBase = macro?.model.pdbId
+    ? macro.model.pdbId.toLowerCase()
+    : baseFileName(undefined, sourceName ? sourceName.replace(/\s*\(.*?\)/g, '').replace(/\s*·.*$/, '') : undefined)
+  const doExport = (fmt: ExportFormat) => {
+    if (!structure) return
+    setDlOpen(false)
+    try {
+      const title = macro?.model.pdbId?.toUpperCase() ?? exportBase
+      let set
+      if (exportView === 'pocket' && macro && ligandSite) set = pocketSet(macro.model, ligandSite.ligand.atoms, ligandSite.pocket, `${title} ${ligandSite.ligand.label} pocket`)
+      else if (exportView === 'asu' || exportView === 'pocket') set = macro ? macroAsuSet(macro.model) : smallAsuSet(structure, title)
+      else {
+        // PDB entries: export all atoms (Full atoms) when under the cap, otherwise what is drawn.
+        const src = macro && macro.fullAllowed && macro.rep !== 'full' ? expandMacro(macro.model, 'full', macro.showWaters) : structure
+        set = viewSet(src, exportView, {
+          title, multiples,
+          selectedOp,
+          include: src === structure ? (ai) => {
+            const a = structure.atoms[ai]!
+            if (visibility === 'asymmetric') return a.opIndex === 1
+            if (visibility === 'selected') return a.opIndex === 1 || a.opIndex === selectedOp
+            return true
+          } : undefined,
+        })
+      }
+      const fm = EXPORT_FORMATS.find((f) => f.v === fmt)!
+      downloadText(writeExport(set, fmt), exportFileName(exportBase, exportView, fmt, multiples), fm.mime)
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : String(e))
+    }
+  }
   const dlOpen = openMenu === 'download'
   const setDlOpen = (o: boolean | ((x: boolean) => boolean)) =>
     setOpenMenu((m) => ((typeof o === 'function' ? o(m === 'download') : o) ? 'download' : null))
@@ -422,7 +462,11 @@ export default function CifViewport({
     const ts = supercellTranslations(multiples)
     const mtag = multiples.join('x')
     if (kind === 'cif') {
-      if (sourceText) downloadText(sourceText, cifDownloadName(base, sg, '', 'cif'), 'chemical/x-cif')
+      if (sourceText) {
+        const f = detectFormat(sourceText, sourceName ?? '')
+        const ext = f === 'pdb' ? 'pdb' : f === 'mae' ? 'mae' : 'cif'
+        downloadText(sourceText, macro || f !== 'cif' ? `${base}.${ext}` : cifDownloadName(base, sg, '', 'cif'), 'text/plain')
+      }
       return
     }
     if (kind === 'p1') {
@@ -478,11 +522,37 @@ export default function CifViewport({
             “Current view” = exactly what is drawn (Show filter + supercell).
           </div>
           </>)}
-          {macro && (
-            <div className="cif-menu-hint" role="presentation">
-              PDB entries: original mmCIF only (SDF/P1 exports are for small molecules).
-            </div>
-          )}
+          <div className="cif-menu-head" role="presentation">Coordinates</div>
+          <div className="cif-export-row" role="presentation">
+            <label>
+              Scope{' '}
+              <select data-testid="export-view" value={exportView} onChange={(e) => setExportView(e.target.value as ExportView | 'pocket')}>
+                {EXPORT_VIEWS.map((v) => (
+                  <option key={v.v} value={v.v}>{v.label}{v.v !== 'asu' ? ` (${multiples.join('×')})` : ''}</option>
+                ))}
+                {macro && ligandSite && <option value="pocket">Ligand + pocket ({ligandSite.ligand.label})</option>}
+              </select>
+            </label>
+          </div>
+          <div className="cif-export-fmts" role="presentation">
+            {EXPORT_FORMATS.map((f) => (
+              <button key={f.v} type="button" role="menuitem" data-testid={`export-${f.v}`}
+                disabled={f.v === 'cif' && (exportView === 'pocket' || (!!macro && !macro.model.crystal))}
+                title={`${f.label} · ${exportFileName(exportBase, exportView, f.v, multiples)}`}
+                onClick={() => doExport(f.v)}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div className="cif-menu-hint" role="presentation">
+            ASU keeps the space group + symmetry operators. Views export what that placement draws over the {multiples.join('×')} supercell, written as P 1 with the supercell lattice (CRYST1 / _cell). Bonds are perceived from distances.
+          </div>
+          {macro?.model.pdbId && (<>
+            <div className="cif-menu-head" role="presentation">RCSB originals · {macro.model.pdbId.toUpperCase()}</div>
+            {rcsbDownloads(macro.model.pdbId).map((d) => (
+              <a key={d.url} role="menuitem" className="cif-menu-link" href={d.url} target="_blank" rel="noopener noreferrer" onClick={() => setDlOpen(false)}>{d.label} ↗</a>
+            ))}
+          </>)}
         </div>
       )}
     </div>
