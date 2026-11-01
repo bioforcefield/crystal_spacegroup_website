@@ -5607,3 +5607,8 @@ button.linkish {
 .ana-legend li { display: inline-flex; align-items: center; gap: 0.35rem; }
 .ana-legend i, .ana-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 2px; margin-right: 0.3rem; vertical-align: -1px; }
 .ana-summary-table th[scope='row'] { text-align: left; font-weight: 500; }
+.ana-eq { margin: 0.6rem 0; border: 1px solid rgba(148,163,184,0.35); border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.82rem; }
+.ana-eq > summary { cursor: pointer; font-weight: 600; padding: 0.25rem 0; }
+.ana-eq-math { overflow-x: auto; overflow-y: hidden; padding: 0.15rem 0; }
+.ana-eq-refs { font-size: 0.76rem; padding-left: 1.2rem; }
+.ana-eq code { font-size: 0.75rem; }

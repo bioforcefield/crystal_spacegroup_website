@@ -9,6 +9,7 @@ import {
 } from '../../../data/pdb/analysis'
 import { AngleScatter, Histogram, PuckerWheel, SeriesPlot, downloadCsv, type Pt } from './plots'
 import type { AnalysisFocus } from './types'
+import NaEquations from './NaEquationsLazy'
 
 export interface StructureAnalysisPanelProps {
   model: MacroModel
@@ -235,6 +236,7 @@ function PuckerSection({ rows, pick, sel, csv }: { rows: NucleicRow[]; pick: (k:
         <Histogram title="Phase angle P" name="pucker-P-hist" values={rs.map((r) => r.P!)} range={[0, 360]} bin={18} xl="P (°)" />
         <SeriesPlot title="P along sequence" name="pucker-P-series" labels={rs.map((r) => resLabel(r.res))} ids={rs.map((r) => r.res.key)} values={rs.map((r) => r.P!)} unit="°" onPick={pick} />
       </div>
+      <NaEquations kind="pucker" />
       <Table cols={['Residue', 'P', 'τm', 'Pucker', 'δ']} keys={rs.map((r) => r.res.key)} pick={pick} sel={sel} rows={rs.map((r) => [resLabel(r.res), r.P, r.tm, r.pucker, r.delta])} />
     </>
   )
@@ -254,6 +256,7 @@ function BpSection({ pairs, pick, sel, csv }: { pairs: BasePair[]; pick: (k: str
           <Histogram key={`h${k}`} title={`${n} distribution`} name={`bp-${k}-hist`} values={pairs.map((p) => p[k])} range={u === 'Å' ? [-2, 2] : [-40, 40]} bin={u === 'Å' ? 0.2 : 4} xl={`${n} (${u})`} />
         ))}
       </div>
+      <NaEquations kind="bp" />
       <Table cols={['Pair', 'Shear Å', 'Stretch Å', 'Stagger Å', 'Buckle', 'Propeller', 'Opening']} keys={pairs.map((p) => p.r1.key)} pick={pick} sel={sel}
         rows={pairs.map((p) => [p.label, p.shear, p.stretch, p.stagger, p.buckle, p.propeller, p.opening])} />
       <p className="muted ana-note">{NOTES.bp}</p>
@@ -274,6 +277,7 @@ function StepSection({ steps, form, pick, sel, csv }: { steps: Step[]; form: str
           <SeriesPlot key={k} title={`${n} per step`} name={`step-${k}`} labels={steps.map((s) => s.label)} ids={steps.map((s) => s.bp1.r1.key)} values={steps.map((s) => s[k])} unit={u} onPick={pick} />
         ))}
       </div>
+      <NaEquations kind="step" />
       <Table cols={['Step', 'Shift Å', 'Slide Å', 'Rise Å', 'Tilt', 'Roll', 'Twist']} keys={steps.map((s) => s.bp1.r1.key)} pick={pick} sel={sel}
         rows={steps.map((s) => [s.label, s.shift, s.slide, s.rise, s.tilt, s.roll, s.twist])} />
       <p className="muted ana-note">{NOTES.bp}</p>

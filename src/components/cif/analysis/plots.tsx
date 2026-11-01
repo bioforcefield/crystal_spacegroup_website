@@ -170,7 +170,11 @@ export function Histogram({ title, name, values, range = [-180, 180], bin = 10, 
 }
 
 /** Pseudorotation wheel: P as angle (0° top, clockwise), τm as radius. */
-export function PuckerWheel({ pts, onPick, selected }: { pts: (Pt & { tm: number })[]; onPick: (id: string) => void; selected?: string | null }) {
+export function PuckerWheel({ pts, onPick, selected, colorOf, title = 'Sugar pucker wheel (P, τm)', name = 'pucker-wheel' }: {
+  pts: (Pt & { tm: number; s?: string })[]; onPick: (id: string) => void; selected?: string | null
+  /** Overlay mode: colour by structure (series key → colour) instead of by pucker family. */
+  colorOf?: Record<string, string>; title?: string; name?: string
+}) {
   const [hov, setHov] = useState<Pt | null>(null)
   const w = 320, h = 320, cx = 160, cy = 160, R = 120, tmMax = 60
   const pos = (P: number, tm: number) => {
@@ -179,7 +183,7 @@ export function PuckerWheel({ pts, onPick, selected }: { pts: (Pt & { tm: number
   }
   const names = ["C3'-endo", "C4'-exo", "O4'-endo", "C1'-exo", "C2'-endo", "C3'-exo", "C4'-endo", "O4'-exo", "C1'-endo", "C2'-exo"]
   return (
-    <PlotCard title="Sugar pucker wheel (P, τm)" name="pucker-wheel" width={w} height={h}
+    <PlotCard title={title} name={name} width={w} height={h}
       info="Altona & Sundaralingam (1972) pseudorotation phase P (angle, 0° at top, clockwise) and amplitude τm (radius, 0–60°). North (C3′-endo) ≈ 0–36°, South (C2′-endo) ≈ 144–180°."
       readout={hov ? hov.label : `${pts.length} sugars · click to centre in 3D`}>
       {[20, 40, 60].map((t) => <circle key={t} cx={cx} cy={cy} r={(t / tmMax) * R} fill="none" stroke="#cbd5e1" />)}
@@ -192,7 +196,8 @@ export function PuckerWheel({ pts, onPick, selected }: { pts: (Pt & { tm: number
       {pts.map((p) => {
         const [x, y] = pos(p.x, p.tm)
         return (
-          <circle key={p.id} cx={x} cy={y} r={selected === p.id ? 5 : 3} fill={selected === p.id ? '#111827' : p.x >= 108 && p.x < 216 ? '#2563eb' : p.x < 72 || p.x >= 324 ? '#dc2626' : '#d97706'}
+          <circle key={p.id} cx={x} cy={y} r={selected === p.id ? 5 : 3} fill={selected === p.id ? '#111827' : colorOf && p.s ? colorOf[p.s] ?? '#2563eb' : p.x >= 108 && p.x < 216 ? '#2563eb' : p.x < 72 || p.x >= 324 ? '#dc2626' : '#d97706'}
+            fillOpacity={colorOf ? 0.85 : undefined} stroke={colorOf ? '#0f172a' : undefined} strokeWidth={colorOf ? 0.3 : undefined} data-s={p.s}
             style={{ cursor: 'pointer' }} onMouseEnter={() => setHov(p)} onMouseLeave={() => setHov(null)} onClick={() => onPick(p.id)}>
             <title>{p.label}</title>
           </circle>

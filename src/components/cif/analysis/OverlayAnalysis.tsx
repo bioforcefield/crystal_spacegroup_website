@@ -12,6 +12,7 @@ import { alignChains, superposeRow, type OverlayResult } from '../../../data/pdb
 import { applySuperposition } from '../../../data/pdb/kabsch'
 import { OverlayHistogram, OverlayLegend, OverlayScatter, OverlaySeries, PuckerWheel, downloadCsv, type OvPt, type OvSeries } from './plots'
 import type { AnalysisFocus } from './types'
+import NaEquations from './NaEquationsLazy'
 
 export const REF_COLOR = '#2563eb'
 export interface OverlayEntry { key: string; label: string; model: MacroModel; color: string }
@@ -223,17 +224,17 @@ export default function OverlayBody({ entries, tab, inSel, focus, onFocus, meta,
     )
   } else if (tab === 'pucker') {
     const L = lines((a) => a.nucleic.filter((r) => r.P != null), (r: NucleicRow) => r.res.key, (r) => r.P!, (r) => resLabel(r.res))
-    const ref = structs[0]!
     body = (
       <>
         <div className="ana-row">{normBox}{csv('na', 'Pucker + torsion')}</div>
         <div className="ana-plots">
-          <PuckerWheel pts={ref.a.nucleic.filter((r) => r.P != null).map((r) => ({ x: r.P!, y: 0, tm: r.tm!, id: r.res.key, label: `${resLabel(r.res)} P ${f1(r.P)}° τm ${f1(r.tm)}° ${r.pucker}` }))} onPick={pick} selected={sel} />
+          <PuckerWheel title="Sugar pucker wheel (P, τm) — overlay" name="pucker-wheel-overlay" colorOf={Object.fromEntries(structs.map((x) => [x.key, x.color]))}
+            pts={structs.flatMap((x) => x.a.nucleic.filter((r) => r.P != null).map((r) => ({ x: r.P!, y: 0, tm: r.tm!, s: x.key, id: ovId(x, r.res.key), label: `${x.label.split(' · ')[0]} ${resLabel(r.res)} P ${f1(r.P)}° τm ${f1(r.tm)}° ${r.pucker}` })))} onPick={pick} selected={sel} />
           {hist('pucker-P-hist-overlay', 'Phase angle P (overlay)', (a) => a.nucleic.filter((r) => r.P != null).map((r) => r.P!), 'P (°)', { range: [0, 360], bin: 18 })}
           <OverlaySeries title="P along sequence (overlay)" name="pucker-P-series-overlay" lines={L.ls} xMax={L.xMax} xLabel={L.xLabel} unit="°" onPick={pick} />
         </div>
         {table(['Residue', 'P', 'τm', 'Pucker', 'δ'], rowsOf((a) => a.nucleic.filter((r) => r.P != null), (r: NucleicRow) => r.res.key, (r) => [resLabel(r.res), r.P, r.tm, r.pucker, r.delta]))}
-        <p className="muted ana-note">Pucker wheel shows the reference structure only; histogram and series overlay all structures.</p>
+        <NaEquations kind="pucker" />
       </>
     )
   } else if (tab === 'bp') {
@@ -245,6 +246,7 @@ export default function OverlayBody({ entries, tab, inSel, focus, onFocus, meta,
           {P.map(([k, n, u]) => { const L = lines((a) => a.pairs, (p: BasePair) => p.r1.key, (p) => p[k], (p) => p.label); return <OverlaySeries key={k} title={`${n} per pair (overlay)`} name={`bp-${k}-overlay`} lines={L.ls} xMax={L.xMax} xLabel={L.xLabel} unit={u} onPick={pick} ref0={0} /> })}
           {P.map(([k, n, u]) => hist(`bp-${k}-hist-overlay`, `${n} distribution (overlay)`, (a) => a.pairs.map((p) => p[k]), `${n} (${u})`, { range: u === 'Å' ? [-2, 2] : [-40, 40], bin: u === 'Å' ? 0.2 : 4 }))}
         </div>
+        <NaEquations kind="bp" />
         {table(['Pair', 'Shear Å', 'Stretch Å', 'Stagger Å', 'Buckle', 'Propeller', 'Opening'], rowsOf((a) => a.pairs, (p: BasePair) => p.r1.key, (p) => [p.label, p.shear, p.stretch, p.stagger, p.buckle, p.propeller, p.opening]))}
         <p className="muted ana-note">{NOTES.bp}</p>
       </>
@@ -257,6 +259,7 @@ export default function OverlayBody({ entries, tab, inSel, focus, onFocus, meta,
         <div className="ana-plots">
           {P.map(([k, n, u]) => { const L = lines((a) => a.steps, (s: Step) => s.bp1.r1.key, (s) => s[k], (s) => s.label); return <OverlaySeries key={k} title={`${n} per step (overlay)`} name={`step-${k}-overlay`} lines={L.ls} xMax={L.xMax} xLabel={L.xLabel} unit={u} onPick={pick} /> })}
         </div>
+        <NaEquations kind="step" />
         {table(['Step', 'Shift Å', 'Slide Å', 'Rise Å', 'Tilt', 'Roll', 'Twist'], rowsOf((a) => a.steps, (s: Step) => s.bp1.r1.key, (s) => [s.label, s.shift, s.slide, s.rise, s.tilt, s.roll, s.twist]))}
         <p className="muted ana-note">{NOTES.bp}</p>
       </>
