@@ -467,12 +467,12 @@ export default function CifLoadPanel({
       </p>
       </details>
 
-      <h2>Upload · .cif</h2>
+      <h2>Upload · .cif / .pdb / .mae</h2>
       <label className="cif-file-label btn btn-primary">
-        Choose CIF file
+        Choose file
         <input
           type="file"
-          accept=".cif,.mcif,chemical/x-cif,text/plain"
+          accept=".cif,.mcif,.pdb,.ent,.mae,.maegz,.gz,chemical/x-cif,chemical/x-pdb,text/plain"
           onChange={onFile}
           disabled={busy}
         />
@@ -494,7 +494,7 @@ export default function CifLoadPanel({
             value={pasteText}
             onChange={(e) => onPasteTextChange(e.target.value)}
             rows={8}
-            placeholder="Paste CIF contents here…"
+            placeholder="Paste CIF, mmCIF, PDB or Maestro (.mae) contents here…"
             aria-label="Paste CIF text"
             spellCheck={false}
           />

@@ -99,6 +99,8 @@ interface Props {
   centerRes?: string | null
   analysisFocus?: import('./cif/analysis/types').AnalysisFocus | null
   interactionTypes?: Set<InteractionType>
+  /** Superposed comparison Cα/P traces (ASU site frame of the active structure). */
+  overlayTraces?: { points: Vec3[][]; color: string }[] | null
 }
 
 /** Instanced, dimmed lattice-translated copies of the visible atoms + bonds. */
@@ -609,6 +611,7 @@ function SceneBody({
   centerRes = null,
   analysisFocus = null,
   interactionTypes,
+  overlayTraces = null,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const supercell = !isDefaultMultiples(multiples)
   const center = useMemo(
@@ -743,14 +746,14 @@ function SceneBody({
   }, [macro, visibleBonds, macroAtomIdx])
   /** ASU-frame → drawn op-1 copy translation (Nearest/In-cell placement aware). */
   const focusDelta = useMemo<Vec3 | null>(() => {
-    if (!macro || (!ligandSite && !analysisFocus)) return null
+    if (!macro || (!ligandSite && !analysisFocus && !overlayTraces?.length)) return null
     const ai = structure.atoms.findIndex((a) => a.opIndex === 1)
     if (ai < 0) return null
     const si = macro.siteOf[structure.atoms[ai]!.auIndex]!
     const c = macro.model.cart[si]!
     const p = placement.positions[ai]!
     return [p[0] - c[0], p[1] - c[1], p[2] - c[2]]
-  }, [macro, ligandSite, analysisFocus, structure.atoms, placement.positions])
+  }, [macro, ligandSite, analysisFocus, overlayTraces, structure.atoms, placement.positions])
   const anaCenter = useMemo<Vec3 | null>(() => (analysisFocus && focusDelta ? [analysisFocus.center[0] + focusDelta[0], analysisFocus.center[1] + focusDelta[1], analysisFocus.center[2] + focusDelta[2]] : null), [analysisFocus, focusDelta])
   const focusTarget = useMemo(() => {
     const cr = ligandSite && focusDelta && centerRes ? ligandSite.pocket.find((p) => p.key === centerRes) : null
@@ -828,6 +831,11 @@ function SceneBody({
                 <sphereGeometry args={[2.2, 24, 16]} />
                 <meshBasicMaterial color="#facc15" transparent opacity={0.35} depthWrite={false} />
               </mesh>
+            )}
+            {overlayTraces && focusDelta && overlayTraces.map((o, k) =>
+              o.points.map((seg, j) => (
+                <Line key={`ov${k}-${j}`} points={seg.map((p) => [p[0] + focusDelta[0], p[1] + focusDelta[1], p[2] + focusDelta[2]] as [number, number, number])} color={o.color} lineWidth={3} transparent opacity={0.95} />
+              )),
             )}
             {ligandSite && focusDelta && (
               <LigandFocusOverlay site={ligandSite} delta={focusDelta} types={interactionTypes} highlight={highlightRes} />

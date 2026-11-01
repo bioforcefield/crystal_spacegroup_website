@@ -177,6 +177,29 @@ export interface ParsedMmcif {
   resolutionA?: number
   /** Deposited secondary structure ranges (auth chain + auth seq numbers). */
   ss: SsRange[]
+  /** Deposited polymer sequence per auth chain (SEQRES / _pdbx_poly_seq_scheme); num = auth numbering. */
+  seqres: Map<string, SeqresEntry[]>
+}
+
+export interface SeqresEntry { comp: string; num: string | null }
+
+export function readSeqres(t: MmcifTables): Map<string, SeqresEntry[]> {
+  const out = new Map<string, SeqresEntry[]>()
+  const L = t.loops.get('_pdbx_poly_seq_scheme')
+  if (!L) return out
+  const H = (k: string) => L.headers.indexOf(`_pdbx_poly_seq_scheme.${k}`)
+  const ch = H('pdb_strand_id') >= 0 ? H('pdb_strand_id') : H('asym_id'), mon = H('mon_id')
+  const num = H('pdb_seq_num') >= 0 ? H('pdb_seq_num') : H('auth_seq_num'), ins = H('pdb_ins_code')
+  if (ch < 0 || mon < 0) return out
+  for (const r of L.rows) {
+    const c = r[ch]!
+    let list = out.get(c)
+    if (!list) out.set(c, (list = []))
+    const n = num >= 0 ? r[num]! : '?'
+    const i = ins >= 0 && r[ins] !== '.' && r[ins] !== '?' ? r[ins]! : ''
+    list.push({ comp: r[mon]!, num: n === '?' || n === '.' ? null : n + i })
+  }
+  return out
 }
 
 export interface SsRange { kind: 'helix' | 'strand'; chain: string; from: number; to: number }
@@ -340,5 +363,5 @@ export function parseMmcif(text: string): ParsedMmcif {
     metadata: { name: title ?? undefined, resolutionA, resolutionSource: resolutionA != null ? 'refine' : undefined },
     warnings,
   }
-  return { parsed, extras, method, crystal, nonCrystalReason, pdbId, title, chains, resolutionA, ss: readSs(t) }
+  return { parsed, extras, method, crystal, nonCrystalReason, pdbId, title, chains, resolutionA, ss: readSs(t), seqres: readSeqres(t) }
 }

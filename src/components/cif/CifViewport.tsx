@@ -105,6 +105,11 @@ export interface CifViewportProps {
   centerRes?: string | null
   /** Residue picked in the structure-analysis drawer. */
   analysisFocus?: import('./analysis/types').AnalysisFocus | null
+  overlayTraces?: { points: import('../../data/types').Vec3[][]; color: string }[] | null
+  /** Rendered under the 3D canvas (PDB sequence strip). */
+  sequenceSlot?: import('react').ReactNode
+  /** PDB: residue key (chain|seq|comp) of the pinned atom, for the sequence strip. */
+  onPinnedResidue?: (key: string | null) => void
   onCenterRes?: (key: string | null) => void
 }
 
@@ -165,6 +170,9 @@ export default function CifViewport({
   onHighlightRes,
   centerRes = null,
   analysisFocus = null,
+  overlayTraces = null,
+  sequenceSlot = null,
+  onPinnedResidue,
   onCenterRes,
 }: CifViewportProps) {
   const macro = structure?.macro ?? null
@@ -716,6 +724,9 @@ export default function CifViewport({
     () => (structure ? structure.atoms.map((a, ai) => ({ a, ai })).filter(({ a }) => a.opIndex === 1).slice(0, 400) : []),
     [structure],
   )
+  const pinnedPdb = pinned && structure ? structure.atoms[pinned.ai]?.pdb : undefined
+  const pinnedResKey = pinnedPdb ? `${pinnedPdb.chain}|${pinnedPdb.seq}|${pinnedPdb.comp}` : null
+  useEffect(() => { onPinnedResidue?.(pinnedResKey) }, [pinnedResKey, onPinnedResidue])
   const pickAtom = (pick: AtomPick) => {
     if (!structure) return
     if (measureOn) {
@@ -969,6 +980,7 @@ export default function CifViewport({
                 highlightRes={highlightRes}
                 centerRes={centerRes}
                 analysisFocus={analysisFocus}
+                overlayTraces={overlayTraces}
               />
             </Suspense>
           ) : (
@@ -1175,6 +1187,7 @@ export default function CifViewport({
           </aside>
         )}
       </div>
+      {sequenceSlot}
 
       {structure && (
         <details className="cif-kbd-atoms">

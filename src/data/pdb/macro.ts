@@ -74,6 +74,8 @@ export interface MacroModel {
   metadata: ExpandedStructure['metadata']
   warnings: string[]
   hasWater: boolean
+  /** Deposited sequence per chain (may be empty when the file has none). */
+  seqres?: Map<string, import('./mmcif').SeqresEntry[]>
 }
 
 export interface MacroInfo {
@@ -132,6 +134,7 @@ export function buildMacroModel(pm: ParsedMmcif): MacroModel {
     chains: pm.chains, cell, operators, operatorSource, spaceGroupNumber: parsed.spaceGroupNumber, spaceGroupName: parsed.spaceGroupName,
     sites: parsed.atoms, extras, cart, ss, ligands, centroid, metadata: parsed.metadata, warnings,
     hasWater: extras.some((e) => e.water),
+    seqres: pm.seqres,
   }
 }
 

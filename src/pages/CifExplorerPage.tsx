@@ -55,6 +55,9 @@ import {
 } from '../data/cif/structureCode'
 import type { ExpandedStructure } from '../data/cif/types'
 import { looksLikeMmcif, parseMmcif } from '../data/pdb/mmcif'
+import { pastedName, readStructureFile, toMmcifIfNeeded } from '../data/pdb/formats'
+import SequenceStrip, { type StripEntry } from '../components/cif/SequenceStrip'
+import type { Vec3 } from '../data/types'
 import { buildMacroModel, expandMacro, type MacroModel, type PdbRepresentation } from '../data/pdb/macro'
 import { analyzeLigand, INTERACTION_TYPES, type InteractionType } from '../data/pdb/interactions'
 import { fetchPdbCif, rcsbEntryUrl } from '../data/pdb/fetchPdb'
@@ -111,6 +114,45 @@ export default function CifExplorerPage() {
   }, [])
   const [interTypes, setInterTypes] = useState<Set<InteractionType>>(() => new Set(INTERACTION_TYPES.map((t) => t.v)))
   const [pdbInput, setPdbInput] = useState('1crn')
+  // —— comparison set for the sequence strip ——
+  const [pinnedRes, setPinnedRes] = useState<string | null>(null)
+  const [compareSet, setCompareSet] = useState<StripEntry[]>([])
+  const [compareBusy, setCompareBusy] = useState(false)
+  const [compareError, setCompareError] = useState<string | null>(null)
+  const [overlayTraces, setOverlayTraces] = useState<{ points: Vec3[][]; color: string }[] | null>(null)
+  const addCompareText = useCallback((key: string, label: string, text: string) => {
+    const conv = toMmcifIfNeeded(text, label)
+    if (!looksLikeMmcif(conv.text)) throw new Error(`${label}: not a macromolecule file (mmCIF, PDB or Maestro)`)
+    const model = buildMacroModel(parseMmcif(conv.text))
+    setCompareSet((s) => [...s.filter((e) => e.key !== key), { key, label, model }])
+  }, [])
+  const addComparePdb = useCallback(async (id: string) => {
+    setCompareBusy(true)
+    setCompareError(null)
+    try {
+      const text = await fetchPdbCif(id.trim().toLowerCase())
+      addCompareText(`pdb:${id.toLowerCase()}`, id.toUpperCase(), text)
+    } catch (e) {
+      setCompareError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setCompareBusy(false)
+    }
+  }, [addCompareText])
+  const addCompareFile = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setCompareBusy(true)
+    setCompareError(null)
+    try {
+      const { name, text } = await readStructureFile(file)
+      addCompareText(`file:${name}`, name, text)
+    } catch (err) {
+      setCompareError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setCompareBusy(false)
+    }
+  }, [addCompareText])
   const expandKeyRef = useRef('')
   const phone = usePhone()
   const location = useLocation()
@@ -134,8 +176,10 @@ export default function CifExplorerPage() {
     try {
       const view0 = route?.view ?? VIEW_DEFAULTS
       let expanded: ExpandedStructure
-      if (looksLikeMmcif(text)) {
-        const model = buildMacroModel(parseMmcif(text))
+      const conv = toMmcifIfNeeded(text, name)
+      if (looksLikeMmcif(conv.text)) {
+        const model = buildMacroModel(parseMmcif(conv.text))
+        if (conv.note) model.warnings.push(conv.note)
         const r = view0.rep ?? 'cartoon'
         expanded = expandMacro(model, r, false)
         expandKeyRef.current = `${r}|false`
@@ -231,9 +275,13 @@ export default function CifExplorerPage() {
     async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
-      const text = await file.text()
       e.target.value = ''
-      openFile(file.name, text)
+      try {
+        const { name, text } = await readStructureFile(file)
+        openFile(name, text)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err))
+      }
     },
     [openFile],
   )
@@ -443,7 +491,7 @@ export default function CifExplorerPage() {
     }
     const guess = parseStructureCode(codeInput)
     const name = guess.ok ? `${guess.code.display}-pasted.cif` : 'pasted.cif'
-    openFile(name, pasteText)
+    openFile(pastedName(pasteText, name), pasteText)
   }, [pasteText, codeInput, openFile])
 
   const selected = useMemo(() => {
@@ -703,6 +751,21 @@ export default function CifExplorerPage() {
         centerRes={centerRes}
         onCenterRes={setCenterRes}
         analysisFocus={analysisFocus}
+        overlayTraces={macroModel ? overlayTraces : null}
+        onPinnedResidue={setPinnedRes}
+        sequenceSlot={structure && macroModel ? (
+          <SequenceStrip
+            entries={[{ key: 'active', label: macroModel.pdbId?.toUpperCase() ?? fileName ?? 'structure', model: macroModel }, ...compareSet]}
+            focusKey={analysisFocus?.key ?? pinnedRes}
+            onFocus={setAnalysisFocus}
+            onAddPdb={(id) => void addComparePdb(id)}
+            onAddFile={(e) => void addCompareFile(e)}
+            onRemove={(k) => setCompareSet((s) => s.filter((e) => e.key !== k))}
+            onOverlay={setOverlayTraces}
+            busy={compareBusy}
+            error={compareError}
+          />
+        ) : null}
       />
       {structure && macroModel && analysisTab && (
         <Suspense fallback={<aside className="cif-analysis-drawer" role="status"><p>Loading analysis…</p></aside>}>
