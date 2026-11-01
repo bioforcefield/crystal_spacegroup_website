@@ -40,11 +40,12 @@ describe('SEO discovery contracts', () => {
     expect(xml).toMatch(/https:\/\/crystalspacegroups\.com\/morphology/)
     expect(xml).toMatch(/https:\/\/crystalspacegroups\.com\/kinetics/)
     expect(xml).toMatch(/https:\/\/crystalspacegroups\.com\/process/)
+    expect(xml).toMatch(/https:\/\/crystalspacegroups\.com\/forms/)
     expect(xml).toMatch(/https:\/\/crystalspacegroups\.com\/sg\/1</)
     expect(xml).toMatch(/https:\/\/crystalspacegroups\.com\/sg\/230</)
     expect(xml).not.toMatch(/\/morph</)
     expect(xml).not.toMatch(/\/pbca|\/c2c|\/p21c|\/pbar1|\/p-1/)
     const locs = xml.match(/<loc>/g) ?? []
-    expect(locs.length).toBe(236) // / + 5 tools + 230 sg
+    expect(locs.length).toBe(237) // / + 6 tools + 230 sg
   })
 })

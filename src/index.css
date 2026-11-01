@@ -5593,3 +5593,6 @@ button.linkish {
 .know-sec, .know-fig, .know-refs li, .teach-section, .teach-page h2[id] { scroll-margin-top: 5rem; }
 .proc-page .teach-panel h3 { font-size: 1rem; margin: 0 0 0.4rem; }
 .proc-page .pubs-mode-tabs { margin-bottom: 0.5rem; }
+.forms-verdict { margin: 0.5rem 0; padding: 0.4rem 0.6rem; border-radius: 0.35rem; background: #111827; border-left: 3px solid #38bdf8; }
+.forms-salt { border-left-color: #f472b6; }
+.forms-continuum { border-left-color: #fbbf24; }

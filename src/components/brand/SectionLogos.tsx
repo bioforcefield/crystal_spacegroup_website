@@ -73,3 +73,17 @@ export function ProcessLogo(p: P) {
     </Svg>
   )
 }
+
+/** Solid forms: two packings of the same molecule (polymorph pair) with a guest (hydrate/coformer). */
+export function FormsLogo(p: P) {
+  return (
+    <Svg {...p} testId="forms">
+      <rect x="3" y="5" width="12" height="12" rx="1.5" fill={S} fillOpacity=".1" stroke={S} strokeWidth="1.8" />
+      <path d="M21 4l7 4v8l-7 4-7-4V8z" fill={V} fillOpacity=".12" stroke={V} strokeWidth="1.8" strokeLinejoin="round" />
+      <g fill={S}><circle cx="6.5" cy="8.5" r="1.6" /><circle cx="11.5" cy="8.5" r="1.6" /><circle cx="6.5" cy="13.5" r="1.6" /><circle cx="11.5" cy="13.5" r="1.6" /></g>
+      <g fill={V}><circle cx="21" cy="9" r="1.6" /><circle cx="18" cy="14" r="1.6" /><circle cx="24" cy="14" r="1.6" /></g>
+      <path d="M5 22h22v6H5z" fill={S} fillOpacity=".08" stroke={S} strokeWidth="1.6" strokeLinejoin="round" />
+      <circle cx="10" cy="25" r="1.7" fill={S} /><circle cx="16" cy="25" r="1.4" fill={V} /><circle cx="22" cy="25" r="1.7" fill={S} />
+    </Svg>
+  )
+}

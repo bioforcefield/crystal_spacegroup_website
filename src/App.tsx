@@ -1,6 +1,6 @@
 import { Suspense, lazy, type ReactNode } from 'react'
 import { LatticeLabLogo } from './components/brand/LatticeLabLogo'
-import { KineticsLogo, MorphLogo, ProcessLogo, PubsLogo } from './components/brand/SectionLogos'
+import { KineticsLogo, MorphLogo, ProcessLogo, FormsLogo, PubsLogo } from './components/brand/SectionLogos'
 import {
   BrowserRouter,
   Navigate,
@@ -21,6 +21,7 @@ const PublicationsPage = lazy(() => import('./pages/PublicationsPage'))
 const MorphologyPage = lazy(() => import('./pages/MorphologyPage'))
 const KineticsPage = lazy(() => import('./pages/KineticsPage'))
 const ProcessPage = lazy(() => import('./pages/ProcessPage'))
+const FormsPage = lazy(() => import('./pages/FormsPage'))
 
 const SECTION_NAV = [
   { id: 'explore', label: 'Explore' },
@@ -96,6 +97,10 @@ function SiteChrome({
               <ProcessLogo size={16} className="nav-logo" />
               Process
             </NavLink>
+            <NavLink to="/forms" className="nav-demo nav-lattice-lab">
+              <FormsLogo size={16} className="nav-logo" />
+              Forms
+            </NavLink>
             <NavLink to="/sg/14" className="nav-demo nav-demo-hide-xs">
               P21/c
             </NavLink>
@@ -170,6 +175,10 @@ function SiteChrome({
           <NavLink to="/process" className="nav-demo nav-lattice-lab">
             <ProcessLogo size={16} className="nav-logo" />
             Process
+          </NavLink>
+          <NavLink to="/forms" className="nav-demo nav-lattice-lab">
+            <FormsLogo size={16} className="nav-logo" />
+            Forms
           </NavLink>
         </nav>
       </header>
@@ -253,6 +262,16 @@ function ProcessRoute() {
   )
 }
 
+function FormsRoute() {
+  return (
+    <SiteChrome variant="index">
+      <Suspense fallback={<RouteFallback />}>
+        <FormsPage />
+      </Suspense>
+    </SiteChrome>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter basename={ROUTER_BASENAME || undefined}>
@@ -265,6 +284,8 @@ export default function App() {
         <Route path="/morph" element={<Navigate to="/morphology" replace />} />
         <Route path="/kinetics" element={<KineticsRoute />} />
         <Route path="/process" element={<ProcessRoute />} />
+        <Route path="/forms" element={<FormsRoute />} />
+        <Route path="/solid-forms" element={<Navigate to="/forms" replace />} />
         <Route path="/industrial-crystallization" element={<Navigate to="/process" replace />} />
         <Route path="/pbca" element={<Navigate to="/sg/61" replace />} />
         <Route path="/c2c" element={<Navigate to="/sg/15" replace />} />

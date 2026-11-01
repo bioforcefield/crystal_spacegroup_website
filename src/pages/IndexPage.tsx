@@ -1,6 +1,6 @@
 import { LatticeLabLogo } from '../components/brand/LatticeLabLogo'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { KineticsLogo, MorphLogo, ProcessLogo, PubsLogo } from '../components/brand/SectionLogos'
+import { KineticsLogo, MorphLogo, ProcessLogo, FormsLogo, PubsLogo } from '../components/brand/SectionLogos'
 import { Link } from 'react-router-dom'
 import SymmetryPrimer from '../components/SymmetryPrimer'
 import CsdStatistics from '../components/CsdStatistics'
@@ -271,6 +271,36 @@ export default function IndexPage() {
               </div>
             </div>
           </section>
+          <section className="teach-spotlight" aria-labelledby="forms-spotlight-title">
+            <div className="teach-spotlight-inner home-spotlight-card">
+              <div className="teach-spotlight-copy">
+                <div className="cif-spotlight-badges">
+                  <span className="cif-spotlight-badge">Solid state</span>
+                  <span className="cif-spotlight-badge soft">Interactive</span>
+                  <span className="cif-spotlight-badge soft">Literature</span>
+                </div>
+                <h2 id="forms-spotlight-title" className="lattice-lab-title">
+                  <FormsLogo size={26} className="lattice-lab-logo" />
+                  Solid forms
+                </h2>
+                <p>
+                  Polymorphs, hydrates, salts, cocrystals and amorphous forms: ΔpKa
+                  classifier, pH<sub>max</sub> profile, Burger–Ramberger and hydrate
+                  stability explorers, a cocrystal phase diagram, and a review with
+                  Crossref-checked references and links to Lattice Lab structures.
+                </p>
+                <div className="cif-spotlight-cta">
+                  <Link to="/forms" className="btn btn-primary btn-logo">
+                    <FormsLogo size={16} className="nav-logo" />
+                    Forms
+                  </Link>
+                  <span className="cif-spotlight-hint">
+                    polymorphs · hydrates · salts · cocrystals · ASDs
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
@@ -290,7 +320,8 @@ export default function IndexPage() {
               <Link to="/cif">Lattice Lab</Link>. Growth:{' '}
               <Link to="/morphology">morphology</Link>,{' '}
               <Link to="/kinetics">kinetics</Link>. Process:{' '}
-              <Link to="/process">industrial crystallization</Link>.
+              <Link to="/process">industrial crystallization</Link>,{' '}
+              <Link to="/forms">solid forms</Link>.
             </p>
           </div>
           <p className="explore-hint">Click a system to filter the index below.</p>
@@ -535,6 +566,8 @@ export default function IndexPage() {
             <Link to="/kinetics">Kinetics</Link>
             <span className="sep"> · </span>
             <Link to="/process">Process</Link>
+            <span className="sep"> · </span>
+            <Link to="/forms">Solid forms</Link>
           </div>
         </div>
         <span className="footer-demos">
