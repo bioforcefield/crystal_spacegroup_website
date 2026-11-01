@@ -228,6 +228,15 @@ export default function CifLoadPanel({
         </div>
       )}
 
+      {pdbReplacedBy.length > 0 && (
+        <div className="cif-pdb-replaced" role="group" aria-label="Superseding entries">
+          Superseded by:{' '}
+          {pdbReplacedBy.map((r) => (
+            <button key={r} type="button" className="cif-cod-chip" onClick={() => onLoadPdb?.(r)}>{r.toUpperCase()}</button>
+          ))}
+        </div>
+      )}
+      {pdbWarnings.map((w) => <p key={w} className="cif-pdb-warn" role="note">{w}</p>)}
       {mode === 'pdb' && onLoadPdb && (
         <div className="cif-pdb-load">
           <div className="cif-code-row">
@@ -272,15 +281,6 @@ export default function CifLoadPanel({
               <button type="button" className="btn btn-sm" onClick={onAbortPdb}>Cancel</button>
             </div>
           )}
-          {pdbReplacedBy.length > 0 && (
-            <div className="cif-pdb-replaced" role="group" aria-label="Superseding entries">
-              Superseded by:{' '}
-              {pdbReplacedBy.map((r) => (
-                <button key={r} type="button" className="cif-cod-chip" onClick={() => onLoadPdb(r)}>{r.toUpperCase()}</button>
-              ))}
-            </div>
-          )}
-          {pdbWarnings.map((w) => <p key={w} className="cif-pdb-warn" role="note">{w}</p>)}
           <PdbSearch busy={busy} onLoad={onLoadPdb} />
           {recentPdb.length > 0 && (
             <div className="cif-cod-chips cif-pdb-recent" role="group" aria-label="Recently loaded PDB entries">
