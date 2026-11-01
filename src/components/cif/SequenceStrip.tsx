@@ -5,7 +5,8 @@
  * (progressive) alignment with identity %, conservation and mismatches, and can
  * overlay comparison Cα traces superposed by Kabsch on aligned pairs.
  */
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react'
+import { ALIGN_SCHEME } from '../../data/pdb/align'
 import type { MacroModel } from '../../data/pdb/macro'
 import { chainSequences, type ChainSequence, type SeqResidue } from '../../data/pdb/sequence'
 import { alignChains, superposeRow } from '../../data/pdb/compare'
@@ -37,6 +38,42 @@ export default function SequenceStrip({ entries, focusKey, onFocus, onAddPdb, on
   const [overlay, setOverlay] = useState<Record<string, boolean>>({})
   const [addId, setAddId] = useState('')
   const rootRef = useRef<HTMLElement>(null)
+  // Roving tabindex: exactly one residue is in the tab order; arrows move between residues.
+  const [rovKey, setRovKey] = useState<string | null>(null)
+  useEffect(() => {
+    const els = rootRef.current ? [...rootRef.current.querySelectorAll<HTMLElement>('[data-seqk]')] : []
+    if (els.length && !els.some((e) => e.tabIndex === 0)) els[0]!.tabIndex = 0
+  })
+  const onResKey = (ev: ReactKeyboardEvent<HTMLElement>) => {
+    const root = rootRef.current
+    if (!root) return
+    const cur = ev.currentTarget
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); cur.click(); return }
+    const all = [...root.querySelectorAll<HTMLElement>('[data-seqk]')]
+    const i = all.indexOf(cur)
+    let next: HTMLElement | undefined
+    if (ev.key === 'ArrowRight') next = all[i + 1]
+    else if (ev.key === 'ArrowLeft') next = all[i - 1]
+    else if (ev.key === 'Home') next = all[0]
+    else if (ev.key === 'End') next = all[all.length - 1]
+    else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+      const rows = [...root.querySelectorAll<HTMLElement>('.seq-row')]
+      const row = cur.closest<HTMLElement>('.seq-row')
+      const ri = row ? rows.indexOf(row) : -1
+      const target = rows[ri + (ev.key === 'ArrowDown' ? 1 : -1)]
+      if (target && row) {
+        const pos = [...row.querySelectorAll<HTMLElement>('[data-seqk]')].indexOf(cur)
+        const cand = [...target.querySelectorAll<HTMLElement>('[data-seqk]')]
+        next = cand[Math.min(pos, cand.length - 1)]
+      }
+    } else return
+    ev.preventDefault()
+    if (!next) return
+    for (const e of all) e.tabIndex = -1
+    next.tabIndex = 0
+    next.focus()
+    setRovKey(next.dataset.seqk ?? null)
+  }
   useEffect(() => {
     // selection from 3D / analysis → bring the residue into view in the strip
     const el = rootRef.current?.querySelector<HTMLElement>('.seq-on')
@@ -91,13 +128,20 @@ export default function SequenceStrip({ entries, focusKey, onFocus, onAddPdb, on
     const on = r.key != null && r.key === focusKey
     const cls = `seq-res ss-${r.observed ? r.ss : 'x'}${r.observed ? '' : ' seq-unobs'}${on ? ' seq-on' : ''}${opts.cls ? ' ' + opts.cls : ''}`
     const tip = resLabel(r, chain)
+    const interactive = !!(opts.clickable && r.observed && r.key && r.center)
     const n = r.num != null ? parseInt(r.num, 10) : NaN
     const tick = Number.isFinite(n) && n % 10 === 0 ? String(n) : null
     return (
       <span key={opts.k} className={cls} title={tip} data-tick={tick ?? undefined}
         onMouseEnter={() => setHover(tip)} onMouseLeave={() => setHover(null)}
-        onClick={opts.clickable && r.observed && r.key && r.center ? () => onFocus(on ? null : { key: r.key!, label: `${r.comp} ${r.num} ${chain}`, center: r.center! }) : undefined}
-        role={opts.clickable && r.observed ? 'button' : undefined}
+        onClick={interactive ? () => { setRovKey(r.key!); onFocus(on ? null : { key: r.key!, label: `${r.comp} ${r.num} ${chain}`, center: r.center! }) } : undefined}
+        role={interactive ? 'button' : undefined}
+        aria-label={interactive ? tip : undefined}
+        aria-pressed={interactive ? on : undefined}
+        tabIndex={interactive ? (r.key === (rovKey ?? focusKey) ? 0 : -1) : undefined}
+        data-seqk={interactive ? r.key! : undefined}
+        onKeyDown={interactive ? onResKey : undefined}
+        onFocus={interactive ? () => setHover(tip) : undefined}
       >{r.observed ? r.code : r.code.toLowerCase()}</span>
     )
   }
@@ -114,7 +158,7 @@ export default function SequenceStrip({ entries, focusKey, onFocus, onAddPdb, on
           </select>
         </label>
         <span className="seq-legend muted"><i className="ss-H" />helix <i className="ss-E" />strand <i className="seq-unobs-k">x</i> not modelled</span>
-        <span className="seq-hover mono" aria-live="polite">{hoverText ?? (focusKey ? `Selected: ${focusKey.split('|').reverse().join(' ')}` : 'Click a residue to centre it')}</span>
+        <span className="seq-hover mono" aria-live="polite">{hoverText ?? (focusKey ? `Selected: ${focusKey.split('|').reverse().join(' ')}` : 'Click a residue (or Tab + arrows, Enter) to centre it')}</span>
         <form className="seq-add" onSubmit={(e) => { e.preventDefault(); if (addId.trim()) onAddPdb(addId.trim()); setAddId('') }}>
           <input value={addId} onChange={(e) => setAddId(e.target.value)} placeholder="Compare PDB id" aria-label="Add PDB id to compare" size={10} disabled={busy} />
           <button type="submit" className="btn btn-small" disabled={busy || !addId.trim()}>+ Compare</button>
@@ -136,7 +180,7 @@ export default function SequenceStrip({ entries, focusKey, onFocus, onAddPdb, on
         </div>
       )}
       {open && alignment && (
-        <div className="seq-scroll seq-aln" data-testid="seq-alignment">
+        <div className="seq-scroll seq-aln" data-testid="seq-alignment" title={ALIGN_SCHEME}>
           {entries.map((e, i) => {
             const ch = chosen[i]!
             const row = alignment.rows[i]!

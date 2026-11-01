@@ -37,6 +37,9 @@ export function naScore(a: string, b: string): number {
   return n(a) === n(b) && a !== 'X' ? 5 : -4
 }
 
+/** Human-readable scoring scheme (shown as a tooltip on the alignment). */
+export const ALIGN_SCHEME = 'Global (Gotoh) alignment, free end gaps. Protein: BLOSUM62, gap open 10, extend 1. Nucleic: match +5 / mismatch −4 (EMBOSS-style), gap open 10, extend 0.5. Multiple structures: progressive alignment to the first.'
+
 export interface AlignOpts { kind: 'protein' | 'nucleic'; gapOpen?: number; gapExtend?: number }
 export interface PairAlignment { a: string; b: string; score: number; identity: number; identical: number; aligned: number }
 
