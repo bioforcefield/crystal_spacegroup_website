@@ -35,6 +35,8 @@ export interface CifLoadPanelProps {
   /** When true, collapse teaching chips behind "Try another structure". */
   structureLoaded?: boolean
   /** PDB ID input (RCSB mmCIF). */
+  /** Switch to this load tab when it changes (e.g. after a bad /cif/pdb/<id> link). */
+  modeHint?: 'pdb' | 'id' | null
   pdbInput?: string
   onPdbInputChange?: (v: string) => void
   onLoadPdb?: (id: string) => void
@@ -70,6 +72,7 @@ export default function CifLoadPanel({
   fileName,
   error,
   structureLoaded = false,
+  modeHint = null,
   pdbInput = '',
   onPdbInputChange,
   onLoadPdb,
@@ -86,6 +89,9 @@ export default function CifLoadPanel({
 }: CifLoadPanelProps) {
   const [extras, setExtras] = useState<CodSampleMeta[]>([])
   const [mode, setMode] = useState<LoadMode>('id')
+  useEffect(() => {
+    if (modeHint && (modeHint !== 'pdb' || onLoadPdb)) setMode(modeHint)
+  }, [modeHint, onLoadPdb])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchBusy, setSearchBusy] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)

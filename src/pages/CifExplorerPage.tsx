@@ -14,6 +14,7 @@ import { LatticeLabLogo } from '../components/brand/LatticeLabLogo'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   breadcrumbLabel,
+  invalidTargetInfo,
   cifPath,
   loadStoredFile,
   parseCifPath,
@@ -172,6 +173,7 @@ export default function CifExplorerPage() {
   /** Route key of the structure currently shown (null while nothing / failed). */
   const [loadedKey, setLoadedKey] = useState<string | null>(null)
   const [routeNote, setRouteNote] = useState<string | null>(null)
+  const [loadModeHint, setLoadModeHint] = useState<'pdb' | 'id' | null>(null)
 
   const loadText = useCallback((
     text: string,
@@ -487,7 +489,11 @@ export default function CifExplorerPage() {
     if (target.kind === 'invalid') {
       setStructure(null)
       setLoadedKey(null)
-      setError(`Unrecognised Lattice Lab address “/cif/${target.raw}”.`)
+      const info = invalidTargetInfo(target.raw)
+      setError(info.message)
+      if (info.mode === 'pdb' && info.value) setPdbInput(info.value)
+      if (info.mode === 'id' && info.value) setCodeInput(info.value)
+      if (info.mode) setLoadModeHint(info.mode)
       return
     }
     if (target.kind === 'pdb') {
@@ -632,7 +638,7 @@ export default function CifExplorerPage() {
           )}
           {error && target.kind !== 'none' && !structure && !busy && (
             <p className="cif-route-error" role="alert">
-              Could not open {breadcrumbLabel(target) ?? 'this address'}.{' '}
+              {target.kind === 'invalid' ? error : <>Could not open {breadcrumbLabel(target) ?? 'this address'}: {error}</>}{' '}
               <Link to="/cif">← Back to Lattice Lab start</Link>
             </p>
           )}
@@ -741,6 +747,7 @@ export default function CifExplorerPage() {
             setCodeInput(id)
             openTarget({ kind: 'cod', id })
           }}
+          modeHint={loadModeHint}
           pdbInput={pdbInput}
           onPdbInputChange={setPdbInput}
           onLoadPdb={(id) => void loadByPdb(id, undefined, { asm: pdbAsm, src: pdbSrc })}

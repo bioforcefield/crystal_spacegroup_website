@@ -89,3 +89,34 @@ describe('PDB routes', () => {
     expect(parseViewQuery('?rep=bogus&lig=../x').rep).toBeUndefined()
   })
 })
+
+describe('invalidTargetInfo', () => {
+  it('explains bad PDB ids and keeps the typed id', async () => {
+    const { invalidTargetInfo, parseCifPath } = await import('../cifRoute')
+    const t = parseCifPath('/cif/pdb/zzzz')
+    expect(t.kind).toBe('invalid')
+    const i = invalidTargetInfo((t as { raw: string }).raw)
+    expect(i.message).toMatch(/“zzzz” is not a valid PDB ID — it must start with a digit.*4HHB/)
+    expect(i).toMatchObject({ mode: 'pdb', value: 'ZZZZ' })
+    expect(invalidTargetInfo('pdb/12345').message).toMatch(/has 5 characters/)
+    expect(invalidTargetInfo('cod/12').message).toMatch(/5–10 digits/)
+    expect(invalidTargetInfo('foo/bar').mode).toBeNull()
+  })
+})
+
+describe('upload cache key', () => {
+  it('is namespaced/versioned, reads legacy keys, and survives quota errors', async () => {
+    const { FILE_STORE_PREFIX, storeFile, loadStoredFile } = await import('../cifRoute')
+    expect(FILE_STORE_PREFIX).toMatch(/^latticelab:v\d+:/)
+    const m = new Map<string, string>()
+    const store = { get length() { return m.size }, key: (i: number) => [...m.keys()][i] ?? null, getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k), clear: () => m.clear() } as Storage
+    m.set('cif-file:old.cif', 'OLD')
+    expect(loadStoredFile(store, 'old.cif')).toBe('OLD')
+    expect(storeFile(store, 'new.cif', 'NEW')).toBe(true)
+    expect(m.has('cif-file:old.cif')).toBe(false)
+    expect(loadStoredFile(store, 'new.cif')).toBe('NEW')
+    const full = { ...store, length: 0, key: () => null, setItem: () => { throw new DOMException('quota', 'QuotaExceededError') } } as unknown as Storage
+    expect(storeFile(full, 'x.cif', 'X')).toBe(false)
+  })
+})

@@ -33,6 +33,21 @@ export function parseCifPath(pathname: string): CifTarget {
   return { kind: 'invalid', raw: m[1] }
 }
 
+/** Human explanation for an unparseable /cif/… address, plus the typed id to keep in the input. */
+export function invalidTargetInfo(raw: string): { message: string; mode: 'pdb' | 'id' | null; value: string | null } {
+  const [kind, ...rest] = raw.split('/')
+  let arg = rest.join('/')
+  try { arg = decodeURIComponent(arg) } catch { /* keep raw */ }
+  if (kind === 'pdb') {
+    const why = !arg ? 'is empty' : arg.length !== 4 ? `has ${arg.length} characters` : !/^[0-9]/.test(arg) ? 'must start with a digit' : 'contains characters other than letters and digits'
+    return { message: `“${arg}” is not a valid PDB ID — it ${why}. PDB IDs are 4 characters starting with a digit, e.g. 4HHB.`, mode: 'pdb', value: arg.toUpperCase() || null }
+  }
+  if (kind === 'cod') {
+    return { message: `“${arg}” is not a valid COD id — COD ids are 5–10 digits, e.g. 1100303.`, mode: 'id', value: arg.replace(/\D/g, '') || null }
+  }
+  return { message: `Unrecognised Lattice Lab address “/cif/${raw}”. Use /cif/pdb/<ID>, /cif/cod/<id> or /cif/sample/<name>.`, mode: null, value: null }
+}
+
 export function cifPath(t: CifTarget): string {
   switch (t.kind) {
     case 'cod':
@@ -131,7 +146,9 @@ export function serializeViewQuery(v: CifViewQuery): string {
 }
 
 // ---- uploaded / pasted files kept for refresh ----
-export const FILE_STORE_PREFIX = 'cif-file:'
+/** Namespaced + versioned so a future format change can't read stale uploads. */
+export const FILE_STORE_PREFIX = 'latticelab:v1:file:'
+const LEGACY_FILE_PREFIX = 'cif-file:'
 export const FILE_STORE_MAX = 2 * 1024 * 1024
 
 export function storeFile(store: Storage | undefined, name: string, text: string): boolean {
@@ -140,7 +157,7 @@ export function storeFile(store: Storage | undefined, name: string, text: string
     // keep only the latest upload to stay well within quota
     for (let i = store.length - 1; i >= 0; i--) {
       const k = store.key(i)
-      if (k?.startsWith(FILE_STORE_PREFIX)) store.removeItem(k)
+      if (k?.startsWith(FILE_STORE_PREFIX) || k?.startsWith(LEGACY_FILE_PREFIX)) store.removeItem(k)
     }
     store.setItem(FILE_STORE_PREFIX + name, text)
     return true
@@ -151,7 +168,7 @@ export function storeFile(store: Storage | undefined, name: string, text: string
 
 export function loadStoredFile(store: Storage | undefined, name: string): string | null {
   try {
-    return store?.getItem(FILE_STORE_PREFIX + name) ?? null
+    return store?.getItem(FILE_STORE_PREFIX + name) ?? store?.getItem(LEGACY_FILE_PREFIX + name) ?? null
   } catch {
     return null
   }
