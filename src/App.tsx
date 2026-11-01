@@ -1,5 +1,6 @@
 import { Suspense, lazy, type ReactNode } from 'react'
 import { LatticeLabLogo } from './components/brand/LatticeLabLogo'
+import { KineticsLogo, MorphLogo, PubsLogo } from './components/brand/SectionLogos'
 import {
   BrowserRouter,
   Navigate,
@@ -81,14 +82,14 @@ function SiteChrome({
               <LatticeLabLogo size={16} className="nav-logo" />
               Lattice Lab
             </NavLink>
-            <NavLink to="/pubs" className="nav-demo">
-              Pubs
+            <NavLink to="/pubs" className="nav-demo nav-lattice-lab">
+              <PubsLogo size={16} className="nav-logo" />              Pubs
             </NavLink>
-            <NavLink to="/morphology" className="nav-demo">
-              Morph
+            <NavLink to="/morphology" className="nav-demo nav-lattice-lab">
+              <MorphLogo size={16} className="nav-logo" />              Morph
             </NavLink>
-            <NavLink to="/kinetics" className="nav-demo">
-              Kinetics
+            <NavLink to="/kinetics" className="nav-demo nav-lattice-lab">
+              <KineticsLogo size={16} className="nav-logo" />              Kinetics
             </NavLink>
             <NavLink to="/sg/14" className="nav-demo nav-demo-hide-xs">
               P21/c
@@ -152,14 +153,14 @@ function SiteChrome({
             <LatticeLabLogo size={16} className="nav-logo" />
             Lattice Lab
           </NavLink>
-          <NavLink to="/pubs" className="nav-demo">
-            Pubs
+          <NavLink to="/pubs" className="nav-demo nav-lattice-lab">
+            <PubsLogo size={16} className="nav-logo" />            Pubs
           </NavLink>
-          <NavLink to="/morphology" className="nav-demo">
-            Morph
+          <NavLink to="/morphology" className="nav-demo nav-lattice-lab">
+            <MorphLogo size={16} className="nav-logo" />            Morph
           </NavLink>
-          <NavLink to="/kinetics" className="nav-demo">
-            Kinetics
+          <NavLink to="/kinetics" className="nav-demo nav-lattice-lab">
+            <KineticsLogo size={16} className="nav-logo" />            Kinetics
           </NavLink>
         </nav>
       </header>

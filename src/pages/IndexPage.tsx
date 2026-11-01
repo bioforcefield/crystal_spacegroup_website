@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { KineticsLogo, MorphLogo, PubsLogo } from '../components/brand/SectionLogos'
 import { Link } from 'react-router-dom'
 import SymmetryPrimer from '../components/SymmetryPrimer'
 import CsdStatistics from '../components/CsdStatistics'
@@ -177,7 +178,9 @@ export default function IndexPage() {
                   <span className="cif-spotlight-badge soft">Crossref</span>
                   <span className="cif-spotlight-badge soft">COD</span>
                 </div>
-                <h2 id="pubs-spotlight-title">Publications by year &amp; tags</h2>
+                <h2 id="pubs-spotlight-title" className="lattice-lab-title">
+                  <PubsLogo size={26} className="lattice-lab-logo" />
+                  Publications by year &amp; tags</h2>
                 <p>
                   Stream recent ACS / IUCr / RSC / Wiley titles via Crossref
                   (metadata + DOI only), or browse the curated COD set by year and
@@ -202,7 +205,10 @@ export default function IndexPage() {
                   <span className="cif-spotlight-badge">Growth</span>
                   <span className="cif-spotlight-badge soft">Interactive</span>
                 </div>
-                <h2 id="teach-spotlight-title">Morphology &amp; kinetics</h2>
+                <h2 id="teach-spotlight-title" className="lattice-lab-title">
+                  <MorphLogo size={26} className="lattice-lab-logo" />
+                  <KineticsLogo size={26} className="lattice-lab-logo" />
+                  Morphology &amp; kinetics</h2>
                 <p>
                   Explore how relative face growth rates set crystal habit (2D Wulff
                   schematic), and how supersaturation drives nucleation and growth

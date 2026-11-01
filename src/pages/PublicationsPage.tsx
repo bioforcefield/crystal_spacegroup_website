@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { PubsLogo } from '../components/brand/SectionLogos'
 import {
   COD_PUBS,
   COD_PUBS_NOTE,
@@ -34,7 +35,10 @@ export default function PublicationsPage() {
     <div className="pubs-page">
       <header className="pubs-hero">
         <p className="eyebrow">Literature · metadata only</p>
-        <h1>Publications &amp; structures</h1>
+        <h1 className="lattice-lab-title">
+          <PubsLogo size={30} className="lattice-lab-logo" />
+          Publications &amp; structures
+        </h1>
         <p className="pubs-lead">
           Switch between a <strong>curated COD</strong> teaching set (historical
           + recent deposits) and <strong>Recent titles</strong> streamed live
