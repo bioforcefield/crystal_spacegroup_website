@@ -20,7 +20,7 @@ interface Props {
   /** Draw only the emphasized (selected-op) element instance. */
   onlySelected?: boolean
   /**
-   * Soften overlays when drawn over dense molecular content (CIF explorer).
+   * Soften overlays when drawn over dense molecular content (Lattice Lab).
    * Scales faint/emphasized opacities ~0.72× so atoms stay readable.
    */
   soft?: boolean

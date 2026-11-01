@@ -2616,7 +2616,7 @@ a.csd-bar-row.ready:hover {
   opacity: 0.85;
 }
 
-/* —— CIF explorer —— */
+/* —— Lattice Lab (route /cif) —— */
 .cif-explorer .cif-upload {
   display: flex;
   flex-direction: column;

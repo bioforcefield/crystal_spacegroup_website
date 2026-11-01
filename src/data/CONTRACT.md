@@ -47,4 +47,4 @@ Hand modules (`p1.ts`, `pbar1.ts`, `p21.ts`, `c2.ts`, `cc.ts`, `p21c.ts`, `c2c.t
 - **Element derivation** (`deriveElements`): tuned for unique-b monoclinic 2/2₁ and mirrors/glides ⊥ b, plus generic inversion (`R = −I`). Orthorhombic / tetragonal / cubic screws and glides often have **empty or partial** overlay lists — do not claim perfect element geometry for every group yet.
 - Class labels for generated ops are heuristics (identity / inversion / unique-b / fallback improper→glide-ish, proper→screw-ish).
 - Tolerances: fractional coords within ~`1e-6` for op equality; locus checks typically ~`1e-3`–`0.02`.
-- **CIF explorer** (`/cif`): client-side parse of user-uploaded CSD/COD CIFs; expands AU atoms by ITA operators (or CIF symops) and colors each copy by operator index.
+- **Lattice Lab** (`/cif`, `/cif/cod/:id`, `/cif/pdb/:id`): client-side parse of uploaded or fetched CIF / mmCIF / PDB / Maestro files; small molecules expand AU atoms by ITA operators (or CIF symops) and colour each copy by operator index; macromolecules use the PDB space-group operators and add sequence, ligand-interaction and validation (Ramachandran, MolProbity Top8000) analysis.
