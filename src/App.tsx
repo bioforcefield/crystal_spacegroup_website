@@ -236,7 +236,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<IndexRoute />} />
         <Route path="/sg/:id" element={<DemoRoute />} />
-        <Route path="/cif" element={<CifRoute />} />
+                <Route path="/cif/*" element={<CifRoute />} />
         <Route path="/pubs" element={<PubsRoute />} />
         <Route path="/morphology" element={<MorphologyRoute />} />
         <Route path="/morph" element={<Navigate to="/morphology" replace />} />

@@ -8,7 +8,21 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import {
+  breadcrumbLabel,
+  cifPath,
+  loadStoredFile,
+  parseCifPath,
+  parseViewQuery,
+  SAMPLES,
+  serializeViewQuery,
+  storeFile,
+  targetKey,
+  VIEW_DEFAULTS,
+  type CifTarget,
+  type CifViewQuery,
+} from '../data/cif/cifRoute'
 import CifLoadPanel from '../components/cif/CifLoadPanel'
 import CifStructurePanel from '../components/cif/CifStructurePanel'
 import CifViewport from '../components/cif/CifViewport'
@@ -38,7 +52,14 @@ import {
 } from '../data/cif/structureCode'
 import type { ExpandedStructure } from '../data/cif/types'
 
-const SAMPLE_URL = `${import.meta.env.BASE_URL}samples/acetic_p21c.cif`
+const SAMPLE_BASE = `${import.meta.env.BASE_URL}samples/`
+const safeSession = () => {
+  try {
+    return typeof window !== 'undefined' ? window.sessionStorage : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export default function CifExplorerPage() {
   const [structure, setStructure] = useState<ExpandedStructure | null>(null)
@@ -61,11 +82,19 @@ export default function CifExplorerPage() {
   const [remoteHint, setRemoteHint] = useState<string | null>(null)
   const [remoteLink, setRemoteLink] = useState<string | null>(null)
   const phone = usePhone()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const target = useMemo(() => parseCifPath(location.pathname), [location.pathname])
+  const tKey = targetKey(target)
+  /** Route key of the structure currently shown (null while nothing / failed). */
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
+  const [routeNote, setRouteNote] = useState<string | null>(null)
 
   const loadText = useCallback((
     text: string,
     name: string,
     remote?: { hint?: string | null; link?: string | null },
+    route?: { key: string; view: CifViewQuery },
   ) => {
     setBusy(true)
     setError(null)
@@ -77,46 +106,93 @@ export default function CifExplorerPage() {
       setStructure(expanded)
       setFileName(name)
       setSourceText(text)
-      setSelectedOp(1)
-      setVisibility('molecules')
+      const view = route?.view ?? VIEW_DEFAULTS
+      setSelectedOp(
+        expanded.operators.some((o) => o.index === view.op) ? view.op : 1,
+      )
+      setVisibility(view.show)
+      if (route) {
+        setPlacementMode(view.view)
+        setColorMode(view.color)
+      }
+      setLoadedKey(route?.key ?? null)
       setResetToken((t) => t + 1)
       if (!expanded.atoms.length) {
         setError('Parsed CIF but found no atoms to display.')
       }
     } catch (e) {
       setStructure(null)
+      setLoadedKey(null)
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
     }
   }, [])
 
+  /** Current view carried into a newly opened structure (op/show reset as before). */
+  const carryView = useCallback(
+    () => serializeViewQuery({ ...VIEW_DEFAULTS, view: placementMode, color: colorMode }),
+    [placementMode, colorMode],
+  )
+
+  /** Navigate (push) to a structure route; the route effect performs the load. */
+  const openTarget = useCallback(
+    (t: CifTarget, state?: unknown) => {
+      setRouteNote(null)
+      navigate({ pathname: cifPath(t), search: carryView() }, { state })
+    },
+    [navigate, carryView],
+  )
+
+  const openFile = useCallback(
+    (name: string, text: string) => {
+      const clean = name.replace(/[\/]/g, '_') || 'upload.cif'
+      storeFile(safeSession(), clean, text)
+      const t: CifTarget = { kind: 'file', name: clean }
+      if (targetKey(t) === tKey) {
+        loadText(text, clean, undefined, { key: tKey, view: { ...VIEW_DEFAULTS, view: placementMode, color: colorMode } })
+        navigate({ pathname: cifPath(t), search: carryView() }, { replace: true, state: { cifText: text } })
+        return
+      }
+      openTarget(t, { cifText: text })
+    },
+    [openTarget, tKey, loadText, navigate, carryView, placementMode, colorMode],
+  )
+
   const onFile = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file) return
       const text = await file.text()
-      loadText(text, file.name)
       e.target.value = ''
+      openFile(file.name, text)
     },
-    [loadText],
+    [openFile],
   )
 
-  const loadSample = useCallback(async () => {
+  const fetchSample = useCallback(async (name: string, route: { key: string; view: CifViewQuery }) => {
+    const sample = SAMPLES[name]
     setBusy(true)
     setError(null)
     try {
-      const res = await fetch(SAMPLE_URL)
+      if (!sample) throw new Error(`Unknown sample "${name}".`)
+      const res = await fetch(SAMPLE_BASE + sample.file)
       if (!res.ok) throw new Error(`Could not load sample (${res.status})`)
       const text = await res.text()
-      loadText(text, 'acetic_p21c.cif (sample)')
+      loadText(text, sample.label, undefined, route)
     } catch (e) {
+      setStructure(null)
+      setLoadedKey(null)
       setError(e instanceof Error ? e.message : String(e))
       setBusy(false)
     }
   }, [loadText])
 
-  const loadByCode = useCallback(async (override?: string) => {
+  const loadSample = useCallback(() => {
+    openTarget({ kind: 'sample', name: 'acetic_p21c' })
+  }, [openTarget])
+
+  const loadByCode = useCallback(async (override?: string, route?: { key: string; view: CifViewQuery }) => {
     const parsed = parseStructureCode(override ?? codeInput)
     if (!parsed.ok) {
       setError(parsed.error)
@@ -141,6 +217,15 @@ export default function CifExplorerPage() {
         )
         return
       }
+      if (!route) {
+        // user action → give the structure its own URL; route effect loads it
+        const t: CifTarget = { kind: 'cod', id: parsed.code.id }
+        if (targetKey(t) !== tKey) {
+          openTarget(t)
+          return
+        }
+        route = { key: targetKey(t), view: parseViewQuery(location.search) }
+      }
       const remote = await fetchRemoteCif(parsed.code.id)
       loadText(
         remote.text,
@@ -149,8 +234,13 @@ export default function CifExplorerPage() {
           hint: `${remote.sourceNote} Source: ${sourceBadgeLabel(remote.source)}.`,
           link: `https://www.crystallography.net/cod/${parsed.code.id}.cif`,
         },
+        route,
       )
     } catch (e) {
+      if (route) {
+        setStructure(null)
+        setLoadedKey(null)
+      }
       if (e instanceof CsdManualError) {
         setRemoteLink(e.accessUrl)
         setRemoteHint(e.message)
@@ -171,27 +261,75 @@ export default function CifExplorerPage() {
     } finally {
       setBusy(false)
     }
-  }, [codeInput, loadText])
+  }, [codeInput, loadText, tKey, openTarget, location.search])
 
-  const [searchParams, setSearchParams] = useSearchParams()
-  const codAutoloadDone = useRef(false)
-
-  // Deep link: /cif?cod=1100303 → fill input and fetch once
+  // Legacy deep link: /cif?cod=1100303 → /cif/cod/1100303
   useEffect(() => {
-    if (codAutoloadDone.current) return
-    const raw = searchParams.get('cod') ?? searchParams.get('id')
-    if (!raw) return
-    const id = raw.replace(/\D/g, '')
+    if (target.kind !== 'none') return
+    const q = new URLSearchParams(location.search)
+    const id = (q.get('cod') ?? q.get('id') ?? '').replace(/\D/g, '')
     if (!/^\d{5,10}$/.test(id)) return
-    codAutoloadDone.current = true
-    setCodeInput(id)
-    void loadByCode(id)
-    // Drop the query so refresh doesn't re-trigger unexpectedly mid-session edits
-    const next = new URLSearchParams(searchParams)
-    next.delete('cod')
-    next.delete('id')
-    setSearchParams(next, { replace: true })
-  }, [searchParams, setSearchParams, loadByCode])
+    navigate(cifPath({ kind: 'cod', id }), { replace: true })
+  }, [target.kind, location.search, navigate])
+
+  // Route → structure: load on direct visit / refresh / Back / Forward.
+  const loadedKeyRef = useRef(loadedKey)
+  loadedKeyRef.current = loadedKey
+  const routeState = location.state as { cifText?: string } | null
+  useEffect(() => {
+    if (loadedKeyRef.current === tKey) return
+    const view = parseViewQuery(location.search)
+    const route = { key: tKey, view }
+    if (target.kind === 'none') {
+      if (new URLSearchParams(location.search).get('cod')) return
+      setStructure(null)
+      setFileName(null)
+      setSourceText(null)
+      setError(null)
+      setRemoteHint(null)
+      setRemoteLink(null)
+      setLoadedKey('none')
+      return
+    }
+    if (target.kind === 'invalid') {
+      setStructure(null)
+      setLoadedKey(null)
+      setError(`Unrecognised CIF map address “/cif/${target.raw}”.`)
+      return
+    }
+    if (target.kind === 'cod') {
+      setCodeInput(target.id)
+      void loadByCode(target.id, route)
+    } else if (target.kind === 'sample') {
+      void fetchSample(target.name, route)
+    } else {
+      const text = routeState?.cifText ?? loadStoredFile(safeSession(), target.name)
+      if (text == null) {
+        setRouteNote(
+          `“${target.name}” was a local upload and is no longer available in this tab — please upload it again.`,
+        )
+        setLoadedKey(null)
+        navigate('/cif', { replace: true })
+        return
+      }
+      loadText(text, target.name, undefined, route)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tKey])
+
+  // View state → query string (replace; defaults omitted).
+  useEffect(() => {
+    if (!structure || loadedKey !== tKey || target.kind === 'none') return
+    const search = serializeViewQuery({
+      op: selectedOp,
+      view: placementMode,
+      show: visibility,
+      color: colorMode,
+    })
+    if (search !== location.search) {
+      navigate({ pathname: location.pathname, search }, { replace: true, state: location.state })
+    }
+  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, location.search, location.pathname, location.state, navigate])
 
   const loadPaste = useCallback(() => {
     if (!pasteText.trim()) {
@@ -199,9 +337,9 @@ export default function CifExplorerPage() {
       return
     }
     const guess = parseStructureCode(codeInput)
-    const name = guess.ok ? `${guess.code.display} (pasted)` : 'pasted.cif'
-    loadText(pasteText, name)
-  }, [pasteText, codeInput, loadText])
+    const name = guess.ok ? `${guess.code.display}-pasted.cif` : 'pasted.cif'
+    openFile(name, pasteText)
+  }, [pasteText, codeInput, openFile])
 
   const selected = useMemo(() => {
     if (!structure) return null
@@ -272,8 +410,27 @@ export default function CifExplorerPage() {
               Try P21/c
             </Link>
           </div>
-          <p className="eyebrow">Application</p>
+          {breadcrumbLabel(target) ? (
+            <nav className="cif-breadcrumb" aria-label="Breadcrumb">
+              <Link to="/cif">CIF map</Link>
+              <span aria-hidden="true"> › </span>
+              <span aria-current="page">{breadcrumbLabel(target)}</span>
+            </nav>
+          ) : (
+            <p className="eyebrow">Application</p>
+          )}
           <h1>CIF symmetry map</h1>
+          {routeNote && (
+            <p className="cif-route-note" role="status">
+              {routeNote}
+            </p>
+          )}
+          {error && target.kind !== 'none' && !structure && !busy && (
+            <p className="cif-route-error" role="alert">
+              Could not open {breadcrumbLabel(target) ?? 'this address'}.{' '}
+              <Link to="/cif">← Back to CIF map start</Link>
+            </p>
+          )}
           <p className="sr-only" id="cif-status-live" aria-live="polite" aria-atomic="true">
             {error
               ? `Error: ${error}`
@@ -307,7 +464,7 @@ export default function CifExplorerPage() {
             selected={selected}
             onLoadCodId={(id) => {
               setCodeInput(id)
-              void loadByCode(id)
+              openTarget({ kind: 'cod', id })
             }}
           />
           </PhoneSection>
@@ -321,10 +478,10 @@ export default function CifExplorerPage() {
           onLoadByCode={() => void loadByCode()}
           onLoadCodId={(id) => {
             setCodeInput(id)
-            void loadByCode(id)
+            openTarget({ kind: 'cod', id })
           }}
           onFile={onFile}
-          onLoadSample={() => void loadSample()}
+          onLoadSample={loadSample}
           pasteOpen={pasteOpen}
           onTogglePaste={() => setPasteOpen((o) => !o)}
           pasteText={pasteText}

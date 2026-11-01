@@ -5355,3 +5355,11 @@ button.linkish {
   .cif-explorer .viewport-toolbar.cif-toolbar-row { gap: 0.3rem; padding: 0.4rem 0.5rem; }
 }
 @media (max-width: 1350px) { .cif-sw-long { display: none; } }
+
+/* CIF map breadcrumb + route notes */
+.cif-breadcrumb { font-size: 0.8rem; margin: 0 0 0.15rem; color: var(--muted, #94a3b8); }
+.cif-breadcrumb a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.cif-breadcrumb [aria-current] { color: var(--text, #e2e8f0); font-weight: 600; }
+.cif-route-note, .cif-route-error { font-size: 0.8rem; margin: 0.35rem 0; padding: 0.35rem 0.5rem; border-radius: 6px; background: rgba(148,163,184,0.12); }
+.cif-route-error { background: rgba(248,113,113,0.12); }
+.cif-route-error a { margin-left: 0.25rem; }
