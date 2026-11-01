@@ -69,7 +69,10 @@ export default function PdbLigandPanel({ model, focusId, onFocus, site, types, o
           </div>
           <p className="muted">
             {site.pocket.length} residues within {POCKET_CUTOFF} Å
-            {site.pocket.some((p) => p.symCode) ? ' (incl. symmetry mates, shown with their symmetry code)' : ''}.
+            {site.pocket.some((p) => p.symCode) ? ' (incl. symmetry mates, shown with their symmetry code)' : ''}.{' '}
+            <span title="Heavy-atom geometry, PLIP default cutoffs: H-bond D···A ≤ 4.1 Å (weak > 3.5 Å) with heavy-atom angle ≥ 90°; salt bridge ≤ 5.5 Å between charge centres; metal ≤ 3.0 Å; π-stacking ≤ 5.5 Å, offset ≤ 2.0 Å; cation–π ≤ 6.0 Å; hydrophobic C···C ≤ 4.0 Å." style={{ textDecoration: 'underline dotted', cursor: 'help' }}>
+              Criteria
+            </span>
           </p>
           <div className="cif-pdb-inter-toggles" role="group" aria-label="Interaction types">
             {INTERACTION_TYPES.map((t) => {
@@ -106,7 +109,7 @@ export default function PdbLigandPanel({ model, focusId, onFocus, site, types, o
                       onClick={() => i.resKey && onCenterRes?.(i.resKey)}
                       style={{ cursor: 'pointer' }}
                     >
-                      <td style={{ color: typeInfo.get(i.type)?.color }}>{typeInfo.get(i.type)?.label}</td>
+                      <td style={{ color: typeInfo.get(i.type)?.color }}>{typeInfo.get(i.type)?.label}{i.weak ? ' (weak)' : ''}</td>
                       <td>{i.ligAtom}</td>
                       <td>
                         {i.resLabel} · {i.resAtom}

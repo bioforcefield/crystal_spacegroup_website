@@ -142,7 +142,8 @@ describe('ligand interactions — HIV protease + indinavir (1HSG)', () => {
     expect(hb.some((i) => /^ASP 25 B/.test(i.resLabel))).toBe(true)
     for (const i of hb) {
       expect(i.dist).toBeGreaterThanOrEqual(2.5)
-      expect(i.dist).toBeLessThanOrEqual(3.5)
+      expect(i.dist).toBeLessThanOrEqual(4.1)
+      expect(!!i.weak).toBe(i.dist > 3.5)
     }
     expect(site.pocket.some((p) => p.symCode !== '')).toBe(true)
     expect(site.pocket.every((p) => p.minDist <= 4.5 + 1e-6)).toBe(true)

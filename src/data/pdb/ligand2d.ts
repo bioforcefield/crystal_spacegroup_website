@@ -284,7 +284,7 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '
 const f1 = (v: number) => (Math.round(v * 10) / 10).toString()
 const TYPE_COLOR = new Map(INTERACTION_TYPES.map((t) => [t.v, t.color]))
 /** Darker strokes for print legibility on white (same hue family as the 3D legend). */
-const PRINT: Record<InteractionType, string> = { hbond: '#0284c7', salt: '#db2777', metal: '#7c3aed', pi: '#ca8a04', hydrophobic: '#64748b' }
+const PRINT: Record<InteractionType, string> = { hbond: '#0284c7', salt: '#db2777', metal: '#7c3aed', pi: '#ca8a04', cationpi: '#ea580c', hydrophobic: '#64748b' }
 
 /** Point where the segment from (x,y) toward box centre meets the box border. */
 function boxHit(r: RNode, x: number, y: number): [number, number] {
