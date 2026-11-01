@@ -7,7 +7,7 @@
  */
 export function saltProbability(dpka: number): number {
   if (dpka < -1) return 0 // essentially neutral (fit applies only for −1 ≤ ΔpKa ≤ 4)
-  if (dpka >= 4) return 1
+  if (dpka > 4) return 1
   return Math.min(1, Math.max(0, (17 * dpka + 28) / 100))
 }
 export type DpkaClass = 'cocrystal' | 'continuum' | 'salt'

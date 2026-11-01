@@ -44,6 +44,7 @@ describe('forms models', () => {
     expect(saltProbability(2)).toBeCloseTo(0.62, 9)
     expect(saltProbability(-1)).toBeCloseTo(0.11, 9)
     expect(saltProbability(4.5)).toBe(1)
+    expect(saltProbability(4)).toBeCloseTo(0.96, 9)
   })
   it('pH-solubility envelope meets at pHmax', () => {
     const pm = pHmax(7, 0.01, 1)

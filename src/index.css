@@ -5590,7 +5590,7 @@ button.linkish {
   .cif-spotlight-cta { flex-wrap: wrap; gap: 0.5rem; }
 }
 /* Anchored sections/figures clear the sticky header when jumped to by hash. */
-.know-sec, .know-fig, .know-refs li, .teach-section, .teach-page h2[id] { scroll-margin-top: 5rem; }
+.know-sec, .know-fig, .know-refs li, .teach-section, .teach-page h2[id] { scroll-margin-top: 6.5rem; }
 .proc-page .teach-panel h3 { font-size: 1rem; margin: 0 0 0.4rem; }
 .proc-page .pubs-mode-tabs { margin-bottom: 0.5rem; }
 .forms-verdict { margin: 0.5rem 0; padding: 0.4rem 0.6rem; border-radius: 0.35rem; background: #111827; border-left: 3px solid #38bdf8; }
