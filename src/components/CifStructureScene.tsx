@@ -95,6 +95,8 @@ interface Props {
   hoverAtom?: AtomPick | null
   /** PDB ligand focus (macromolecules only). */
   ligandSite?: LigandSite | null
+  highlightRes?: string | null
+  centerRes?: string | null
   interactionTypes?: Set<InteractionType>
 }
 
@@ -602,6 +604,8 @@ function SceneBody({
   annotations = null,
   hoverAtom = null,
   ligandSite = null,
+  highlightRes = null,
+  centerRes = null,
   interactionTypes,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const supercell = !isDefaultMultiples(multiples)
@@ -745,9 +749,14 @@ function SceneBody({
     const p = placement.positions[ai]!
     return [p[0] - c[0], p[1] - c[1], p[2] - c[2]]
   }, [macro, ligandSite, structure.atoms, placement.positions])
-  const focusTarget = useMemo(
-    () =>
-      ligandSite && focusDelta
+  const focusTarget = useMemo(() => {
+    const cr = ligandSite && focusDelta && centerRes ? ligandSite.pocket.find((p) => p.key === centerRes) : null
+    if (cr && focusDelta) {
+      const c = cr.atoms.reduce<Vec3>((s, a) => [s[0] + a.cart[0], s[1] + a.cart[1], s[2] + a.cart[2]], [0, 0, 0])
+      const n = cr.atoms.length || 1
+      return { center: [c[0] / n + focusDelta[0], c[1] / n + focusDelta[1], c[2] / n + focusDelta[2]] as Vec3, radius: 3 }
+    }
+    return ligandSite && focusDelta
         ? {
             center: [
               ligandSite.centroid[0] + focusDelta[0],
@@ -756,9 +765,8 @@ function SceneBody({
             ] as Vec3,
             radius: ligandSite.radius,
           }
-        : null,
-    [ligandSite, focusDelta],
-  )
+        : null
+  }, [ligandSite, focusDelta, centerRes])
   const fade = focusTarget ? 0.18 : 1
 
   return (
@@ -812,7 +820,7 @@ function SceneBody({
               bondColorOf={(ai) => colorOf(ai)}
             />
             {ligandSite && focusDelta && (
-              <LigandFocusOverlay site={ligandSite} delta={focusDelta} types={interactionTypes} />
+              <LigandFocusOverlay site={ligandSite} delta={focusDelta} types={interactionTypes} highlight={highlightRes} />
             )}
           </>
         )}

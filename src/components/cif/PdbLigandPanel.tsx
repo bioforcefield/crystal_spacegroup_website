@@ -8,10 +8,13 @@ export interface PdbLigandPanelProps {
   site: LigandSite | null
   types: Set<InteractionType>
   onToggleType: (t: InteractionType) => void
+  highlightRes?: string | null
+  onHighlightRes?: (key: string | null) => void
+  onCenterRes?: (key: string) => void
 }
 
 /** Ligand picker + interaction table for PDB entries. */
-export default function PdbLigandPanel({ model, focusId, onFocus, site, types, onToggleType }: PdbLigandPanelProps) {
+export default function PdbLigandPanel({ model, focusId, onFocus, site, types, onToggleType, highlightRes = null, onHighlightRes, onCenterRes }: PdbLigandPanelProps) {
   const ligs = model.ligands
   const typeInfo = new Map(INTERACTION_TYPES.map((t) => [t.v, t]))
   const shown = site ? site.interactions.filter((i) => types.has(i.type)) : []
@@ -78,7 +81,14 @@ export default function PdbLigandPanel({ model, focusId, onFocus, site, types, o
                 </thead>
                 <tbody>
                   {shown.map((i, k) => (
-                    <tr key={k}>
+                    <tr
+                      key={k}
+                      className={highlightRes && i.resKey === highlightRes ? 'is-hl' : undefined}
+                      onMouseEnter={() => onHighlightRes?.(i.resKey ?? null)}
+                      onMouseLeave={() => onHighlightRes?.(null)}
+                      onClick={() => i.resKey && onCenterRes?.(i.resKey)}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <td style={{ color: typeInfo.get(i.type)?.color }}>{typeInfo.get(i.type)?.label}</td>
                       <td>{i.ligAtom}</td>
                       <td>

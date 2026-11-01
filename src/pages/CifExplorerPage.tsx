@@ -90,7 +90,16 @@ export default function CifExplorerPage() {
   const [macroModel, setMacroModel] = useState<MacroModel | null>(null)
   const [pdbRep, setPdbRep] = useState<PdbRepresentation>('cartoon')
   const [showWaters, setShowWaters] = useState(false)
-  const [focusLig, setFocusLig] = useState<string | null>(null)
+  const [focusLig, setFocusLigRaw] = useState<string | null>(null)
+  const [diagramOpen, setDiagramOpen] = useState(false)
+  const [highlightRes, setHighlightRes] = useState<string | null>(null)
+  const [centerRes, setCenterRes] = useState<string | null>(null)
+  const setFocusLig = useCallback((id: string | null) => {
+    setFocusLigRaw(id)
+    setCenterRes(null)
+    setHighlightRes(null)
+    if (!id) setDiagramOpen(false)
+  }, [])
   const [interTypes, setInterTypes] = useState<Set<InteractionType>>(() => new Set(INTERACTION_TYPES.map((t) => t.v)))
   const [pdbInput, setPdbInput] = useState('1crn')
   const expandKeyRef = useRef('')
@@ -124,7 +133,9 @@ export default function CifExplorerPage() {
         setMacroModel(model)
         setPdbRep(r)
         setShowWaters(false)
-        setFocusLig(view0.lig && model.ligands.some((l) => l.id === view0.lig) ? view0.lig : null)
+        const lig0 = view0.lig && model.ligands.some((l) => l.id === view0.lig) ? view0.lig : null
+        setFocusLig(lig0)
+        setDiagramOpen(!!lig0 && !!view0.diagram)
       } else {
         expanded = expandStructure(parseCif(text))
         setMacroModel(null)
@@ -404,11 +415,12 @@ export default function CifExplorerPage() {
       color: colorMode,
       rep: macroModel ? pdbRep : undefined,
       lig: macroModel ? focusLig : null,
+      diagram: diagramOpen,
     })
     if (search !== location.search) {
       navigate({ pathname: location.pathname, search }, { replace: true, state: location.state })
     }
-  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, location.search, location.pathname, location.state, navigate])
+  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, diagramOpen, location.search, location.pathname, location.state, navigate])
 
   const loadPaste = useCallback(() => {
     if (!pasteText.trim()) {
@@ -565,6 +577,9 @@ export default function CifExplorerPage() {
               onFocus={setFocusLig}
               site={ligandSite}
               types={interTypes}
+              highlightRes={highlightRes}
+              onHighlightRes={setHighlightRes}
+              onCenterRes={setCenterRes}
               onToggleType={(t) =>
                 setInterTypes((s) => {
                   const n = new Set(s)
@@ -640,6 +655,12 @@ export default function CifExplorerPage() {
         ligandSite={ligandSite}
         interactionTypes={interTypes}
         onExitFocus={() => setFocusLig(null)}
+        diagramOpen={diagramOpen}
+        onDiagramOpenChange={setDiagramOpen}
+        highlightRes={highlightRes}
+        onHighlightRes={setHighlightRes}
+        centerRes={centerRes}
+        onCenterRes={setCenterRes}
       />
     </div>
   )

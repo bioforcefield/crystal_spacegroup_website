@@ -70,6 +70,8 @@ export type CifViewQuery = {
   rep?: 'cartoon' | 'trace' | 'full'
   /** PDB ligand focus id, e.g. HEM_A_142. */
   lig?: string | null
+  /** 2D ligand interaction diagram open. */
+  diagram?: boolean
 }
 export const VIEW_DEFAULTS: CifViewQuery = { op: 1, view: 'nearest', show: 'molecules', color: 'operator' }
 const REPS = ['cartoon', 'trace', 'full'] as const
@@ -95,6 +97,7 @@ export function parseViewQuery(search: string | URLSearchParams): CifViewQuery {
   if (rep && (REPS as readonly string[]).includes(rep) && rep !== 'cartoon') out.rep = rep
   const lig = q.get('lig')
   if (lig && /^[A-Za-z0-9]{1,5}_[A-Za-z0-9]{1,4}_-?[0-9A-Za-z]{1,6}$/.test(lig)) out.lig = lig
+  if (out.lig && q.get('diagram') === '1') out.diagram = true
   return out
 }
 
@@ -106,6 +109,7 @@ export function serializeViewQuery(v: CifViewQuery): string {
   if (v.color !== VIEW_DEFAULTS.color) q.set('color', v.color)
   if (v.rep && v.rep !== 'cartoon') q.set('rep', v.rep)
   if (v.lig) q.set('lig', v.lig)
+  if (v.lig && v.diagram) q.set('diagram', '1')
   const s = q.toString()
   return s ? `?${s}` : ''
 }

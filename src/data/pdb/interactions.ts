@@ -42,6 +42,10 @@ export interface Interaction {
   dist: number
   a: Vec3
   b: Vec3
+  /** Indices into LigandSite.atoms (one atom, or the ring for π). */
+  ligIdx?: number[]
+  /** PocketResidue.key of the partner residue. */
+  resKey?: string
 }
 export interface LigandSite {
   ligand: LigandInfo
@@ -189,7 +193,7 @@ export function analyzeLigand(m: MacroModel, ligand: LigandInfo, cutoff = POCKET
       for (const ra of res.atoms) {
         const d = dist(la.cart, ra.cart)
         if (d > 4.0) continue
-        const mk = (type: InteractionType): Interaction => ({ type, ligAtom: la.name, resLabel: res.label, resAtom: ra.name, dist: d, a: la.cart, b: ra.cart })
+        const mk = (type: InteractionType): Interaction => ({ type, ligAtom: la.name, resLabel: res.label, resAtom: ra.name, dist: d, a: la.cart, b: ra.cart, ligIdx: [k], resKey: res.key })
         const lMetal = METALS.has(la.element), rMetal = METALS.has(ra.element)
         const polar = (e: string) => e === 'N' || e === 'O' || e === 'S'
         if ((lMetal && polar(ra.element)) || (rMetal && polar(la.element))) { if (d <= 2.8) out.push(mk('metal')); continue }
@@ -214,7 +218,7 @@ export function analyzeLigand(m: MacroModel, ligand: LigandInfo, cutoff = POCKET
         const d = dist(L.c, R.c)
         const ang = (Math.acos(Math.min(1, Math.abs(L.n[0] * R.n[0] + L.n[1] * R.n[1] + L.n[2] * R.n[2]))) * 180) / Math.PI
         if ((d < 5.5 && ang < 30) || (d < 5.0 && ang > 60)) {
-          out.push({ type: 'pi', ligAtom: `ring(${lr2.map((k) => ligAtoms[k]!.name).slice(0, 2).join(',')}…)`, resLabel: res.label, resAtom: `ring ${names[0]}`, dist: d, a: L.c, b: R.c })
+          out.push({ type: 'pi', ligAtom: `ring(${lr2.map((k) => ligAtoms[k]!.name).slice(0, 2).join(',')}…)`, resLabel: res.label, resAtom: `ring ${names[0]}`, dist: d, a: L.c, b: R.c, ligIdx: [...lr2], resKey: res.key })
         }
       }
     }

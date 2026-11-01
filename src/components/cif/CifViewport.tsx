@@ -57,6 +57,7 @@ import {
 import { PDB_REPS, PDB_SUPERCELL_ATOM_CAP, type PdbRepresentation } from '../../data/pdb/macro'
 import { INTERACTION_TYPES, type InteractionType, type LigandSite } from '../../data/pdb/interactions'
 import { chainColor } from '../../data/pdb/chainColors'
+import LigandDiagram2D from './LigandDiagram2D'
 
 const CifStructureScene = lazy(() => import('../CifStructureScene'))
 
@@ -94,6 +95,15 @@ export interface CifViewportProps {
   ligandSite?: LigandSite | null
   interactionTypes?: Set<InteractionType>
   onExitFocus?: () => void
+  /** 2D interaction diagram open (ligand focus). */
+  diagramOpen?: boolean
+  onDiagramOpenChange?: (open: boolean) => void
+  /** Residue key highlighted from table/diagram hover. */
+  highlightRes?: string | null
+  onHighlightRes?: (key: string | null) => void
+  /** Residue key the 3D camera centres on. */
+  centerRes?: string | null
+  onCenterRes?: (key: string | null) => void
 }
 
 function displaySummary(
@@ -147,6 +157,12 @@ export default function CifViewport({
   ligandSite = null,
   interactionTypes,
   onExitFocus,
+  diagramOpen = false,
+  onDiagramOpenChange,
+  highlightRes = null,
+  onHighlightRes,
+  centerRes = null,
+  onCenterRes,
 }: CifViewportProps) {
   const macro = structure?.macro ?? null
   const atomCap = macro ? PDB_SUPERCELL_ATOM_CAP : CIF_ATOM_CAP
@@ -835,6 +851,14 @@ export default function CifViewport({
                   {t.label}
                 </span>
               ))}
+              <span className="cif-seg" role="group" aria-label="Ligand view">
+                <button type="button" className={`btn btn-small${!diagramOpen ? ' is-active' : ''}`} aria-pressed={!diagramOpen} onClick={() => onDiagramOpenChange?.(false)}>
+                  3D
+                </button>
+                <button type="button" className={`btn btn-small${diagramOpen ? ' is-active' : ''}`} aria-pressed={diagramOpen} onClick={() => onDiagramOpenChange?.(true)} data-testid="lig2d-toggle">
+                  2D diagram
+                </button>
+              </span>
               <button type="button" className="btn btn-small" onClick={onExitFocus}>
                 Exit focus
               </button>
@@ -900,6 +924,16 @@ export default function CifViewport({
           aria-label={canvasLabel}
           tabIndex={-1}
         >
+          {ligandSite && diagramOpen && (
+            <LigandDiagram2D
+              site={ligandSite}
+              types={interactionTypes ?? new Set(INTERACTION_TYPES.map((t) => t.v))}
+              highlight={highlightRes}
+              onHover={(k) => onHighlightRes?.(k)}
+              onPick={(k) => onCenterRes?.(k)}
+              onClose={() => onDiagramOpenChange?.(false)}
+            />
+          )}
           {structure ? (
             <Suspense
               fallback={
@@ -929,6 +963,8 @@ export default function CifViewport({
                 hoverAtom={hover?.pick ?? null}
                 ligandSite={ligandSite}
                 interactionTypes={interactionTypes}
+                highlightRes={highlightRes}
+                centerRes={centerRes}
               />
             </Suspense>
           ) : (

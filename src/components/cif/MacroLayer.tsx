@@ -180,10 +180,12 @@ export function LigandFocusOverlay({
   site,
   delta,
   types,
+  highlight = null,
 }: {
   site: LigandSite
   delta: Vec3
   types?: Set<InteractionType>
+  highlight?: string | null
 }) {
   const colorOfType = new Map(INTERACTION_TYPES.map((t) => [t.v, t.color]))
   const items: ReactNode[] = []
@@ -206,10 +208,11 @@ export function LigandFocusOverlay({
     res.bonds.forEach(([i, j], k) => {
       const A = add3(res.atoms[i]!.cart, delta), B = add3(res.atoms[j]!.cart, delta)
       const m: Vec3 = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2]
-      const ca = res.symCode ? '#c4b5fd' : jmolColor(res.atoms[i]!.element)
-      const cb = res.symCode ? '#c4b5fd' : jmolColor(res.atoms[j]!.element)
-      items.push(<Stick key={`p${ri}_${k}a`} a={A} b={m} color={ca} r={0.08} />)
-      items.push(<Stick key={`p${ri}_${k}b`} a={m} b={B} color={cb} r={0.08} />)
+      const hi = highlight === res.key
+      const ca = hi ? '#fde047' : res.symCode ? '#c4b5fd' : jmolColor(res.atoms[i]!.element)
+      const cb = hi ? '#fde047' : res.symCode ? '#c4b5fd' : jmolColor(res.atoms[j]!.element)
+      items.push(<Stick key={`p${ri}_${k}a`} a={A} b={m} color={ca} r={hi ? 0.16 : 0.08} />)
+      items.push(<Stick key={`p${ri}_${k}b`} a={m} b={B} color={cb} r={hi ? 0.16 : 0.08} />)
     })
     const anchor = res.atoms.find((a) => a.name === 'CA') ?? res.atoms[0]
     if (anchor)
@@ -226,7 +229,7 @@ export function LigandFocusOverlay({
     const A = add3(it.a, delta), B = add3(it.b, delta)
     const color = colorOfType.get(it.type) ?? '#fff'
     items.push(
-      <Line key={`i${k}`} points={[A, B]} color={color} lineWidth={2} dashed dashSize={0.18} gapSize={0.12} />,
+      <Line key={`i${k}`} points={[A, B]} color={color} lineWidth={highlight && it.resKey === highlight ? 5 : 2} dashed dashSize={0.18} gapSize={0.12} />,
     )
     items.push(
       <Billboard key={`il${k}`} position={[(A[0] + B[0]) / 2, (A[1] + B[1]) / 2 + 0.15, (A[2] + B[2]) / 2]}>

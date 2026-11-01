@@ -5376,3 +5376,16 @@ button.linkish {
 .cif-pdb-inter-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
 .cif-pdb-inter-table th, .cif-pdb-inter-table td { padding: 0.15rem 0.3rem; text-align: left; border-bottom: 1px solid rgba(148, 163, 184, 0.15); }
 .cif-pdb-waters { display: block; margin-top: 0.4rem; font-size: 0.85rem; }
+
+/* 2D ligand interaction diagram */
+.cif-lig2d { position: absolute; top: 0.5rem; right: 0.5rem; bottom: 0.5rem; width: min(52%, 640px); z-index: 6; display: flex; flex-direction: column; background: #fff; color: #0f172a; border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.45); overflow: hidden; }
+.cif-lig2d-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; border-bottom: 1px solid #e2e8f0; font-size: 0.82rem; }
+.cif-lig2d-head .muted, .cif-lig2d-foot { color: #64748b; }
+.cif-lig2d-actions { margin-left: auto; display: flex; gap: 0.3rem; }
+.cif-lig2d-svg { flex: 1; min-height: 0; padding: 0.25rem; }
+.cif-lig2d-svg svg { width: 100%; height: 100%; }
+.cif-lig2d-svg .lig2d-int:hover line { stroke-width: 3; }
+.cif-lig2d-foot { font-size: 0.72rem; margin: 0; padding: 0.25rem 0.5rem; }
+.cif-lig2d-empty { padding: 0.5rem; margin: 0; }
+.cif-pdb-inter-table tr.is-hl td { background: rgba(250, 204, 21, 0.22); }
+@media (max-width: 640px) { .cif-lig2d { position: relative; width: auto; height: 420px; inset: auto; margin-top: 0.5rem; } }
