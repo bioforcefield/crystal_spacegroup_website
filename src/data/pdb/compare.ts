@@ -1,7 +1,7 @@
 /** Sequence comparison across loaded structures + sequence-based Cα superposition. */
 import type { Vec3 } from '../types'
 import { alignMultiple, conservation, identityOf } from './align'
-import { kabsch, applySuperposition } from './kabsch'
+import { kabsch, applySuperposition, type Superposition } from './kabsch'
 import type { ChainSequence, SeqResidue } from './sequence'
 
 export interface ChainAlignment {
@@ -25,7 +25,7 @@ export function alignChains(chains: ChainSequence[]): ChainAlignment {
   return { rows, strings, identity, conservation: conservation(strings) }
 }
 
-export interface OverlayResult { rmsd: number; n: number; segments: Vec3[][] }
+export interface OverlayResult { rmsd: number; n: number; segments: Vec3[][]; /** Final fit (mobile → reference frame). */ sp?: Superposition }
 
 /** Superpose row `k` onto row 0 using aligned, observed Cα/C1' pairs; returns the moved trace. */
 export function superposeRow(al: ChainAlignment, k: number): OverlayResult | null {
@@ -59,5 +59,5 @@ export function superposeRow(al: ChainAlignment, k: number): OverlayResult | nul
     prev = t
   }
   if (cur.length > 1) segments.push(cur)
-  return { rmsd: Math.sqrt(ss / mobile.length), n: mobile.length, segments }
+  return { rmsd: Math.sqrt(ss / mobile.length), n: mobile.length, segments, sp }
 }

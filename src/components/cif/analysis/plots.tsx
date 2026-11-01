@@ -232,3 +232,139 @@ export function SeriesPlot({ title, name, labels, values, unit, onPick, ids, ref
     </PlotCard>
   )
 }
+
+/* ───────── Overlay (multi-structure) variants — used only in compare mode ───────── */
+
+export interface OvSeries { key: string; label: string; color: string }
+export interface OvPt extends Pt { s: string }
+
+export function OverlayLegend({ series }: { series: OvSeries[] }) {
+  return (
+    <ul className="ana-legend" data-testid="ana-legend" aria-label="Structures">
+      {series.map((s) => <li key={s.key}><i style={{ background: s.color }} aria-hidden="true" />{s.label}</li>)}
+    </ul>
+  )
+}
+
+/** Scatter with one colour per structure (optionally over Ramachandran contours). */
+export function OverlayScatter({ title, name, pts, series, rama, xl, yl, onPick, selected }: {
+  title: string; name: string; pts: OvPt[]; series: OvSeries[]; rama?: RamaCategory | null; xl: string; yl: string; onPick: (id: string) => void; selected?: string | null
+}) {
+  const [hov, setHov] = useState<Pt | null>(null)
+  const w = 360, h = 330
+  const X = (v: number) => M.l + ((v + 180) / 360) * (w - M.l - M.r)
+  const Y = (v: number) => h - M.b - ((v + 180) / 360) * (h - M.t - M.b)
+  const sx = (w - M.l - M.r) / 360, sy = (h - M.t - M.b) / 360
+  const R = rama ? ramaRuns(rama) : null
+  const col = new Map(series.map((s) => [s.key, s.color]))
+  return (
+    <PlotCard title={title} name={name} width={w} height={h} info={R ? RAMA_SOURCE : undefined}
+      readout={hov ? hov.label : `${pts.length} points · ${series.length} structures · click a point to centre it in 3D`}>
+      <defs><clipPath id={`clip-${name}`}><rect x={M.l} y={M.t} width={w - M.l - M.r} height={h - M.t - M.b} /></clipPath></defs>
+      {R && <g clipPath={`url(#clip-${name})`} shapeRendering="crispEdges" data-testid="rama-contours" opacity={0.75}>{R.map((r) => (
+        <rect key={`${r.i}-${r.j0}`} x={X(-180 + r.i * 2)} y={Y(-180 + (r.j0 + r.n) * 2)} width={2 * sx + 0.3} height={r.n * 2 * sy} fill={r.lv === 2 ? '#dbeafe' : '#fef9c3'} />
+      ))}</g>}
+      <line x1={X(0)} x2={X(0)} y1={M.t} y2={h - M.b} stroke="#cbd5e1" strokeDasharray="2 2" />
+      <line x1={M.l} x2={w - M.r} y1={Y(0)} y2={Y(0)} stroke="#cbd5e1" strokeDasharray="2 2" />
+      <Axes w={w} h={h} xr={[-180, 180]} yr={[-180, 180]} xt={[-180, -90, 0, 90, 180]} yt={[-180, -90, 0, 90, 180]} xl={xl} yl={yl} />
+      {pts.map((p) => (
+        <circle key={p.id} cx={X(p.x)} cy={Y(p.y)} r={selected === p.id ? 4.5 : p.cls === 'outlier' ? 3.2 : 2.4}
+          fill={selected === p.id ? CLS_COLOR.sel : col.get(p.s) ?? '#2563eb'} fillOpacity={0.85} stroke={p.cls === 'outlier' ? '#7f1d1d' : '#0f172a'} strokeWidth={p.cls === 'outlier' ? 1 : 0.3}
+          style={{ cursor: 'pointer' }} data-id={p.id} data-s={p.s}
+          onMouseEnter={() => setHov(p)} onMouseLeave={() => setHov(null)} onClick={() => onPick(p.id)}>
+          <title>{p.label}</title>
+        </circle>
+      ))}
+    </PlotCard>
+  )
+}
+
+/** Histogram per structure: semi-transparent step outlines; counts or fraction. */
+export function OverlayHistogram({ title, name, groups, range = [-180, 180], bin = 10, xl, info, normalize }: {
+  title: string; name: string; groups: (OvSeries & { values: number[] })[]; range?: [number, number]; bin?: number; xl: string; info?: string; normalize: boolean
+}) {
+  const [hov, setHov] = useState<string | null>(null)
+  const w = 360, h = 220
+  const nb = Math.max(1, Math.ceil((range[1] - range[0]) / bin))
+  const hist = groups.map((g) => {
+    const c = new Array(nb).fill(0) as number[]
+    for (const v of g.values) c[Math.min(nb - 1, Math.max(0, Math.floor((v - range[0]) / bin)))]!++
+    return normalize && g.values.length ? c.map((x) => x / g.values.length) : c
+  })
+  const maxRaw = Math.max(...hist.flat(), normalize ? 0.01 : 1)
+  const max = normalize ? Math.ceil(maxRaw * 20) / 20 : maxRaw
+  const X = (v: number) => M.l + ((v - range[0]) / (range[1] - range[0])) * (w - M.l - M.r)
+  const Y = (c: number) => h - M.b - (c / max) * (h - M.t - M.b)
+  const span = range[1] - range[0]
+  const step = span >= 300 ? 90 : span >= 60 ? 20 : span >= 10 ? 2 : 0.5
+  const xt: number[] = []
+  for (let v = Math.ceil(range[0] / step) * step; v <= range[1] + 1e-9; v += step) xt.push(+v.toFixed(2))
+  const yt = (normalize ? [0, +(max / 2).toFixed(3), max] : [0, Math.round(max / 2), max]).filter((v, i, a) => a.indexOf(v) === i)
+  const fmt = (c: number) => (normalize ? `${(100 * c).toFixed(1)}%` : String(c))
+  return (
+    <PlotCard title={title} name={name} width={w} height={h} info={info}
+      readout={hov ?? groups.map((g) => `${g.label} n=${g.values.length}`).join(' · ')}>
+      <Axes w={w} h={h} xr={range} yr={[0, max]} xt={xt} yt={yt} xl={xl} yl={normalize ? 'fraction' : 'count'} />
+      {hist.map((c, gi) => {
+        const g = groups[gi]!
+        let d = `M${X(range[0])},${Y(0)}`
+        c.forEach((v, k) => { d += ` L${X(range[0] + k * bin)},${Y(v)} L${X(Math.min(range[1], range[0] + (k + 1) * bin))},${Y(v)}` })
+        d += ` L${X(range[1])},${Y(0)} Z`
+        return (
+          <g key={g.key} data-s={g.key}>
+            <path d={d} fill={g.color} fillOpacity={0.18} stroke={g.color} strokeWidth={1.6} />
+            {c.map((v, k) => v > 0 && (
+              <rect key={k} x={X(range[0] + k * bin)} width={X(range[0] + bin) - X(range[0])} y={Y(v)} height={2} fill="transparent"
+                onMouseEnter={() => setHov(`${g.label} · ${(range[0] + k * bin).toFixed(1)} to ${(range[0] + (k + 1) * bin).toFixed(1)}: ${fmt(v)}`)} onMouseLeave={() => setHov(null)}>
+                <title>{`${g.label} ${(range[0] + k * bin).toFixed(1)}–${(range[0] + (k + 1) * bin).toFixed(1)}: ${fmt(v)}`}</title>
+              </rect>
+            ))}
+          </g>
+        )
+      })}
+    </PlotCard>
+  )
+}
+
+/** Per-residue series per structure on a shared x axis (alignment column or index). */
+export function OverlaySeries({ title, name, lines, xMax, xLabel, unit, onPick, ref0 }: {
+  title: string; name: string; lines: (OvSeries & { pts: { x: number; v: number; id: string; label: string }[] })[]; xMax: number; xLabel: string; unit: string; onPick?: (id: string) => void; ref0?: number
+}) {
+  const [hov, setHov] = useState<string | null>(null)
+  const w = 360, h = 200
+  const all = lines.flatMap((l) => l.pts.map((p) => p.v))
+  if (!all.length) return null
+  let lo = Math.min(...all), hi = Math.max(...all)
+  if (ref0 != null) { lo = Math.min(lo, ref0); hi = Math.max(hi, ref0) }
+  const pad = (hi - lo) * 0.1 || 1
+  lo -= pad; hi += pad
+  const X = (x: number) => M.l + (xMax <= 0 ? 0.5 : x / xMax) * (w - M.l - M.r)
+  const Y = (v: number) => h - M.b - ((v - lo) / (hi - lo)) * (h - M.t - M.b)
+  const nice = (v: number) => +v.toFixed(Math.abs(hi - lo) < 5 ? 1 : 0)
+  return (
+    <PlotCard title={title} name={name} width={w} height={h}
+      readout={hov ?? lines.map((l) => `${l.label} mean ${l.pts.length ? (l.pts.reduce((s, p) => s + p.v, 0) / l.pts.length).toFixed(2) : '—'} ${unit}`).join(' · ')}>
+      <Axes w={w} h={h} xr={[0, 1]} yr={[lo, hi]} xt={[]} yt={[nice(lo + pad), nice((lo + hi) / 2), nice(hi - pad)]} xl={xLabel} yl={unit} />
+      {ref0 != null && <line x1={M.l} x2={w - M.r} y1={Y(ref0)} y2={Y(ref0)} stroke="#94a3b8" strokeDasharray="3 3" />}
+      {lines.map((l) => {
+        // break the line where alignment columns are not consecutive (gaps)
+        const segs: string[][] = []
+        let cur: string[] = [], px = -2
+        for (const p of l.pts) { if (p.x - px > 1.5 && cur.length) { segs.push(cur); cur = [] } cur.push(`${X(p.x)},${Y(p.v)}`); px = p.x }
+        if (cur.length) segs.push(cur)
+        return (
+          <g key={l.key} data-s={l.key}>
+            {segs.map((s, i) => <polyline key={i} fill="none" stroke={l.color} strokeWidth={1.5} strokeOpacity={0.85} points={s.join(' ')} />)}
+            {l.pts.map((p) => (
+              <circle key={p.id} cx={X(p.x)} cy={Y(p.v)} r={2.6} fill={l.color} style={{ cursor: onPick ? 'pointer' : undefined }} data-id={p.id}
+                onMouseEnter={() => setHov(`${l.label} · ${p.label}: ${p.v.toFixed(2)} ${unit}`)} onMouseLeave={() => setHov(null)}
+                onClick={() => onPick?.(p.id)}>
+                <title>{`${l.label} · ${p.label}: ${p.v.toFixed(2)} ${unit}`}</title>
+              </circle>
+            ))}
+          </g>
+        )
+      })}
+    </PlotCard>
+  )
+}

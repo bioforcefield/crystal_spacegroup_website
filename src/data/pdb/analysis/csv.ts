@@ -61,3 +61,26 @@ export function fullReportCsv(a: ReportInput, m: CsvMeta): string {
   for (const [s, on] of secs) if (on) parts.push('\n' + sectionCsv(s, a, { ...m, notes: [] }).split('\n').filter((l, i) => i === 0 || !/^# (PDB|Date|Selection):/.test(l)).join('\n'))
   return parts.join('')
 }
+
+/** Multi-structure (overlay) CSV: same sections with a leading `structure` column. */
+export type CsvSection = 'backbone' | 'chi' | 'na' | 'bp' | 'step'
+const SECTION_DEF: Record<CsvSection, { title: string; note: keyof typeof NOTES; cols: string[]; rows: (a: ReportInput) => unknown[][]; has: (a: ReportInput) => boolean }> = {
+  backbone: { title: 'Protein backbone', note: 'backbone', cols: BACKBONE_COLS, rows: (a) => backboneRows(a.protein), has: (a) => a.protein.length > 0 },
+  chi: { title: 'Side-chain chi', note: 'chi', cols: CHI_COLS, rows: (a) => chiRows(a.protein), has: (a) => a.protein.length > 0 },
+  na: { title: 'Nucleic-acid torsions and pucker', note: 'na', cols: NA_COLS, rows: (a) => naRows(a.nucleic), has: (a) => a.nucleic.length > 0 },
+  bp: { title: 'Base-pair parameters (Å, °)', note: 'bp', cols: BP_COLS, rows: (a) => bpRows(a.pairs), has: (a) => a.pairs.length > 0 },
+  step: { title: 'Base-pair step parameters (Å, °)', note: 'bp', cols: STEP_COLS, rows: (a) => stepRows(a.steps), has: (a) => a.steps.length > 0 },
+}
+export function overlaySectionCsv(section: CsvSection, list: { label: string; a: ReportInput }[], m: CsvMeta): string {
+  const d = SECTION_DEF[section]
+  const rows = list.flatMap(({ label, a }) => d.rows(a).map((r) => [label, ...r]))
+  return csvHeader(`${d.title} — overlay of ${list.length} structures`, { ...m, notes: [...(m.notes ?? []), NOTES[d.note]] }) + toCsv(['structure', ...d.cols], rows)
+}
+export function overlayFullReportCsv(list: { label: string; a: ReportInput }[], m: CsvMeta): string {
+  const parts: string[] = [csvHeader(`Full report — overlay of ${list.length} structures`, m)]
+  for (const s of Object.keys(SECTION_DEF) as CsvSection[]) {
+    if (!list.some((x) => SECTION_DEF[s].has(x.a))) continue
+    parts.push('\n' + overlaySectionCsv(s, list, { ...m, notes: [] }).split('\n').filter((l, i) => i === 0 || !/^# (PDB|Date|Selection):/.test(l)).join('\n'))
+  }
+  return parts.join('')
+}

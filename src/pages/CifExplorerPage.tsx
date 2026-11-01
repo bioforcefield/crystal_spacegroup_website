@@ -854,6 +854,7 @@ export default function CifExplorerPage() {
             onFocus={setAnalysisFocus}
             pocketKeys={ligandSite ? ligandSite.pocket.filter((p) => !p.symCode).map((p) => `${p.chain}|${p.seq}|${p.comp}`) : null}
             pocketLabel={ligandSite ? ligandSite.ligand.label : null}
+            compare={compareSet.length ? compareSet : undefined}
           />
         </Suspense>
       )}

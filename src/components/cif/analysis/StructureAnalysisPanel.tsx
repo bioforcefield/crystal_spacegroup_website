@@ -1,4 +1,6 @@
-import { useMemo, useState, type ReactElement } from 'react'
+import { useMemo, useRef, useState, type ReactElement } from 'react'
+import OverlayBody, { REF_COLOR, type OverlayEntry } from './OverlayAnalysis'
+import { OVERLAY_COLORS } from '../SequenceStrip'
 import type { MacroModel } from '../../../data/pdb/macro'
 import type { AnalysisTab } from '../../../data/cif/cifRoute'
 import {
@@ -18,12 +20,22 @@ export interface StructureAnalysisPanelProps {
   /** Residue keys (chain|seq|comp) of the focused ligand pocket = "current 3D selection". */
   pocketKeys: string[] | null
   pocketLabel: string | null
+  /** Other structures loaded for comparison (sequence strip). ≥1 enables the overlay toggle. */
+  compare?: { key: string; label: string; model: MacroModel }[]
 }
 
 const f1 = (v: number | null | undefined, d = 1) => (v == null ? '—' : v.toFixed(d))
 const TAB_LABEL: Record<AnalysisTab, string> = { rama: 'Backbone φ/ψ/ω', chi: 'Side chains χ', na: 'NA torsions', pucker: 'Sugar pucker', bp: 'Base pairs', step: 'Steps' }
 
-export default function StructureAnalysisPanel({ model, tab, onTab, onClose, focus, onFocus, pocketKeys, pocketLabel }: StructureAnalysisPanelProps) {
+export default function StructureAnalysisPanel({ model, tab, onTab, onClose, focus, onFocus, pocketKeys, pocketLabel, compare }: StructureAnalysisPanelProps) {
+  const [overlayPref, setOverlayPref] = useState(true)
+  const comparing = !!compare && compare.length > 0
+  const overlayOn = comparing && overlayPref
+  const ovEntries: OverlayEntry[] = useMemo(() => comparing ? [
+    { key: 'active', label: (model.pdbId ?? 'structure').toUpperCase(), model, color: REF_COLOR },
+    ...compare!.map((e, k) => ({ key: e.key, label: e.label, model: e.model, color: OVERLAY_COLORS[k % OVERLAY_COLORS.length]! })),
+  ] : [], [comparing, compare, model])
+  const fullCsvRef = useRef<(() => string) | null>(null)
   const full = useMemo(() => analyzeStructure(model), [model])
   const chains = useMemo(() => [...new Set(full.residues.filter((r) => r.kind !== 'other').map((r) => r.chain))], [full])
   const [scope, setScope] = useState<string>('all')
@@ -70,7 +82,7 @@ export default function StructureAnalysisPanel({ model, tab, onTab, onClose, foc
       <header className="ana-head">
         <h2>Structure analysis · {id}</h2>
         <span className="ana-head-actions">
-          <button type="button" className="btn btn-small" data-testid="ana-csv-full" onClick={() => downloadCsv(`${id}_structure_report.csv`, fullReportCsv(a, meta))}>Full report CSV</button>
+          <button type="button" className="btn btn-small" data-testid="ana-csv-full" onClick={() => (overlayOn && fullCsvRef.current ? downloadCsv(`${id}_overlay_report.csv`, fullCsvRef.current()) : downloadCsv(`${id}_structure_report.csv`, fullReportCsv(a, meta)))}>Full report CSV</button>
           <button type="button" className="btn btn-small" data-testid="ana-print" onClick={() => printReport(id, a, selText, full.form)}>Printable report</button>
           <button type="button" className="btn btn-small" onClick={onClose} aria-label="Close structure analysis">✕</button>
         </span>
@@ -86,6 +98,11 @@ export default function StructureAnalysisPanel({ model, tab, onTab, onClose, foc
         <label>Residues <input size={5} value={from} onChange={(e) => setFrom(e.target.value)} placeholder="from" inputMode="numeric" disabled={scope === 'pocket'} /></label>
         <label>– <input size={5} value={to} onChange={(e) => setTo(e.target.value)} placeholder="to" inputMode="numeric" disabled={scope === 'pocket'} /></label>
         <span className="muted">{protein.length} aa · {nucleic.length} nt · computed in {full.ms.toFixed(0)} ms</span>
+        {comparing && (
+          <label className="ana-overlay-toggle" title="Draw every structure loaded in the sequence strip on the same plots">
+            <input type="checkbox" checked={overlayPref} onChange={(e) => setOverlayPref(e.target.checked)} data-testid="ana-overlay-toggle" /> Overlay all loaded structures ({compare!.length + 1})
+          </label>
+        )}
         {focus && <span className="ana-focus">Centred: <strong>{focus.label}</strong> <button type="button" className="btn btn-small" onClick={() => onFocus(null)}>Clear</button></span>}
       </div>
       <nav className="ana-tabs" role="tablist">
@@ -94,14 +111,15 @@ export default function StructureAnalysisPanel({ model, tab, onTab, onClose, foc
         ))}
       </nav>
       {!tabs.length && <p className="muted">No standard protein or nucleic-acid residues in this entry.</p>}
-      <div className="ana-body">
+      {overlayOn && cur && <div className="ana-body"><OverlayBody entries={ovEntries} tab={cur} inSel={inSel} focus={focus} onFocus={onFocus} meta={{ pdbId: ovEntries.map((e) => e.label).join(' vs '), filter: selText }} fullCsvRef={fullCsvRef} /></div>}
+      {!overlayOn && <div className="ana-body">
         {cur === 'rama' && <RamaSection rows={protein} cat={ramaCat} onCat={setRamaCat} pick={pick} sel={focus?.key ?? null} csv={csvBtn('backbone', 'Backbone')} />}
         {cur === 'chi' && <ChiSection rows={protein} resType={chiRes} onResType={setChiRes} pick={pick} sel={focus?.key ?? null} csv={csvBtn('chi', 'χ')} />}
         {cur === 'na' && <NaSection rows={nucleic} pick={pick} sel={focus?.key ?? null} csv={csvBtn('na', 'NA torsion')} />}
         {cur === 'pucker' && <PuckerSection rows={nucleic} pick={pick} sel={focus?.key ?? null} csv={csvBtn('na', 'Pucker + torsion')} />}
         {cur === 'bp' && <BpSection pairs={pairs} pick={pick} sel={focus?.key ?? null} csv={csvBtn('bp', 'Base-pair')} />}
         {cur === 'step' && <StepSection steps={steps} form={full.form} pick={pick} sel={focus?.key ?? null} csv={csvBtn('step', 'Step')} />}
-      </div>
+      </div>}
     </aside>
   )
 }

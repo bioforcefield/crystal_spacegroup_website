@@ -5599,3 +5599,11 @@ button.linkish {
 .footer-disclaimer { margin: 0.4rem 0 0.35rem; max-width: 46rem; font-size: 0.78rem; line-height: 1.45; color: #94a3b8; }
 .footer-disclaimer a { color: #7dd3fc; }
 @media (max-width: 480px) { .footer-disclaimer { font-size: 0.74rem; } }
+
+/* Structure analysis — compare/overlay mode */
+.ana-overlay-toggle { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 600; }
+.ana-norm { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.8rem; }
+.ana-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 0.35rem 0.9rem; margin: 0.2rem 0 0.5rem; padding: 0; font-size: 0.8rem; }
+.ana-legend li { display: inline-flex; align-items: center; gap: 0.35rem; }
+.ana-legend i, .ana-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 2px; margin-right: 0.3rem; vertical-align: -1px; }
+.ana-summary-table th[scope='row'] { text-align: left; font-weight: 500; }
