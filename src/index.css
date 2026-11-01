@@ -5491,3 +5491,9 @@ button.linkish {
 .cif-hit-text { display: flex; flex-direction: column; gap: 0.15rem; overflow: hidden; }
 .cif-hit-text .muted { font-size: 0.72rem; }
 .cif-pdb-recent { margin-top: 0.3rem; align-items: center; }
+.cif-pdb-lig-rows { list-style: none; padding: 0; margin: 0.4rem 0; max-height: 180px; overflow-y: auto; }
+.cif-pdb-lig-rows li { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; padding: 0.1rem 0.2rem; border-radius: 4px; }
+.cif-pdb-lig-rows li.active { background: rgba(125, 211, 252, 0.1); }
+.cif-lig-name { background: transparent; border: 0; color: #e2e8f0; font: inherit; font-size: 0.8rem; text-align: left; cursor: pointer; padding: 0.15rem 0; }
+.cif-lig-name:hover { color: #7dd3fc; }
+.cif-lig-2d { font-size: 0.72rem; padding: 0.1rem 0.45rem; }

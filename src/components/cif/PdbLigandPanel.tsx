@@ -11,10 +11,12 @@ export interface PdbLigandPanelProps {
   highlightRes?: string | null
   onHighlightRes?: (key: string | null) => void
   onCenterRes?: (key: string) => void
+  /** Focus a ligand and open its 2D interaction diagram. */
+  onOpen2D?: (id: string) => void
 }
 
 /** Ligand picker + interaction table for PDB entries. */
-export default function PdbLigandPanel({ model, focusId, onFocus, site, types, onToggleType, highlightRes = null, onHighlightRes, onCenterRes }: PdbLigandPanelProps) {
+export default function PdbLigandPanel({ model, focusId, onFocus, site, types, onToggleType, highlightRes = null, onHighlightRes, onCenterRes, onOpen2D }: PdbLigandPanelProps) {
   const ligs = model.ligands
   const typeInfo = new Map(INTERACTION_TYPES.map((t) => [t.v, t]))
   const shown = site ? site.interactions.filter((i) => types.has(i.type)) : []
@@ -41,6 +43,21 @@ export default function PdbLigandPanel({ model, focusId, onFocus, site, types, o
             ))}
           </select>
         </label>
+      )}
+      {ligs.length > 0 && onOpen2D && (
+        <ul className="cif-pdb-lig-rows" data-testid="pdb-ligand-rows">
+          {ligs.map((l) => (
+            <li key={l.id} className={l.id === focusId ? 'active' : undefined}>
+              <button type="button" className="cif-lig-name" onClick={() => onFocus(l.id)} title={`Focus ${l.label} in 3D`}>
+                {l.label}{l.additive ? <span className="muted"> · ion/buffer</span> : null}
+              </button>
+              <button type="button" className="btn btn-sm cif-lig-2d" onClick={() => onOpen2D(l.id)}
+                title={`Focus ${l.label} and open its 2D interaction diagram`} aria-label={`2D diagram for ${l.label}`} data-testid={`lig-2d-${l.id}`}>
+                2D
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
       {site && (
         <>

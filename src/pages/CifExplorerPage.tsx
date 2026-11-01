@@ -421,7 +421,7 @@ export default function CifExplorerPage() {
     setError(null)
     setPdbWarnings([])
     setPdbProgress({ id: t.id, loaded: 0, total: null })
-    void entrySummary(t.id).then((h) => { if (!ac.signal.aborted) setPdbWarnings(entryWarnings(h)) })
+    void entrySummary(t.id).then((h) => { if (!ac.signal.aborted) setPdbWarnings((w) => [...w, ...entryWarnings(h)]) })
     try {
       const r = await loadPdbMmcif(t.id, { assembly: asm, source: src, signal: ac.signal, onProgress: (p) => setPdbProgress({ id: t.id, ...p }) })
       const what = asm ? `biological assembly ${asm}` : src === 'redo' && !r.note?.includes('instead') ? 'PDB-REDO model' : 'mmCIF'
@@ -695,6 +695,7 @@ export default function CifExplorerPage() {
               highlightRes={highlightRes}
               onHighlightRes={setHighlightRes}
               onCenterRes={setCenterRes}
+              onOpen2D={(id) => { setFocusLig(id); setDiagramOpen(true) }}
               onToggleType={(t) =>
                 setInterTypes((s) => {
                   const n = new Set(s)
