@@ -11,6 +11,8 @@ import type { PubTag } from './types'
 export const CROSSREF_USER_AGENT =
   'CrystalSpaceGroups/1.0 (mailto:chuanjiewu@gmail.com)'
 
+export const CROSSREF_MAILTO = 'chuanjiewu@gmail.com'
+
 export const CROSSREF_ROWS = 20
 
 /** Known crystallography / crystal-engineering ISSNs (print + electronic). */
@@ -180,6 +182,8 @@ export function buildCrossrefUrl(
     searchBase?: string | null
     localPath?: string
     directBase?: string
+    /** Use same-origin Vite middleware (dev only; GitHub Pages has no /crossref). */
+    useLocal?: boolean
   } = {},
 ): string {
   const preset = presetById(query.preset)
@@ -221,10 +225,16 @@ export function buildCrossrefUrl(
     return `${stripSlash(base)}/crossref?${params.toString()}`
   }
   const local = opts.localPath ?? '/crossref'
-  if (typeof window !== 'undefined' || opts.localPath) {
+  const useLocal =
+    opts.useLocal ??
+    (Boolean(opts.localPath) ||
+      (typeof window !== 'undefined' && Boolean(import.meta.env?.DEV)))
+  if (useLocal) {
     // Prefer same-origin Vite middleware when no worker base.
     return `${local}?${params.toString()}`
   }
+  // Direct Crossref (CORS-enabled). mailto puts us in the polite pool.
+  params.set('mailto', CROSSREF_MAILTO)
   const direct = opts.directBase ?? 'https://api.crossref.org/works'
   return `${direct}?${params.toString()}`
 }
@@ -486,7 +496,12 @@ export async function fetchCrossrefPage(
   if (typeof window === 'undefined') {
     headers['User-Agent'] = CROSSREF_USER_AGENT
   }
-  const res = await fetchImpl(url, { headers, signal: opts.signal })
+  let res = await fetchImpl(url, { headers, signal: opts.signal })
+  if (!res.ok && !url.startsWith('https://api.crossref.org/')) {
+    // Proxy/worker missing or down — retry straight against Crossref.
+    const directUrl = buildCrossrefUrl(query, { searchBase: null, useLocal: false })
+    res = await fetchImpl(directUrl, { headers, signal: opts.signal })
+  }
   if (!res.ok) {
     let detail = ''
     try {

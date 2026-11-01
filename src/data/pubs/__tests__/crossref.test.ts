@@ -393,3 +393,33 @@ describe('fetch wiring (mocked)', () => {
     expect(page.nextOffset).toBe(20)
   })
 })
+
+describe('buildCrossrefUrl production routing', () => {
+  it('goes direct to api.crossref.org with mailto when no worker and not local', async () => {
+    const { buildCrossrefUrl } = await import('../crossref')
+    const url = buildCrossrefUrl(
+      { preset: 'acs', year: 2025, now: new Date('2026-10-31') },
+      { searchBase: null, useLocal: false },
+    )
+    const u = new URL(url)
+    expect(u.origin + u.pathname).toBe('https://api.crossref.org/works')
+    expect(u.searchParams.get('mailto')).toBe('chuanjiewu@gmail.com')
+    expect(u.searchParams.get('filter')).toContain('issn:1528-7483')
+    expect(u.searchParams.get('filter')).toContain('until-pub-date:2025-12-31')
+    expect(u.searchParams.get('sort')).toBe('published')
+    expect(u.searchParams.get('rows')).toBe('20')
+  })
+  it('retries direct when the proxy 404s', async () => {
+    const { fetchCrossrefPage } = await import('../crossref')
+    const calls: string[] = []
+    const fetchImpl = (async (url: string) => {
+      calls.push(url)
+      if (!url.startsWith('https://api.crossref.org/'))
+        return new Response('nope', { status: 404 })
+      return new Response(JSON.stringify({ message: { items: [{ DOI: '10.1/x', title: ['T'] }], 'total-results': 1 } }), { status: 200 })
+    }) as unknown as typeof fetch
+    const page = await fetchCrossrefPage({ preset: 'acs', year: null }, { searchBase: 'https://w.example', fetchImpl })
+    expect(calls).toHaveLength(2)
+    expect(page.works[0].doi).toBe('10.1/x')
+  })
+})

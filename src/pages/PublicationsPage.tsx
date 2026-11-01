@@ -371,6 +371,16 @@ function RecentTitlesPanel() {
         { signal: ac.signal },
       )
       if (ac.signal.aborted) return
+      if (mode === 'replace') {
+        try {
+          sessionStorage.setItem(
+            `crossref:${preset}:${year}:${qParts.join(' ')}`,
+            JSON.stringify(page),
+          )
+        } catch {
+          /* storage unavailable */
+        }
+      }
       setTotal(page.total)
       nextOffsetRef.current = page.nextOffset
       setNextOffset(page.nextOffset)
@@ -382,6 +392,21 @@ function RecentTitlesPanel() {
       const msg = e instanceof Error ? e.message : String(e)
       setError(msg)
       if (mode === 'replace') {
+        try {
+          const topicQ2 = crossrefQueryForHintTags(hintFilter)
+          const key = `crossref:${preset}:${year}:${[debouncedQuery, topicQ2].filter((s) => Boolean(s && s.trim())).join(' ')}`
+          const cached = sessionStorage.getItem(key)
+          if (cached) {
+            const pg = JSON.parse(cached) as { works: CrossrefWork[]; total: number }
+            setWorks(pg.works)
+            setTotal(pg.total)
+            nextOffsetRef.current = null
+            setNextOffset(null)
+            return
+          }
+        } catch {
+          /* ignore */
+        }
         setWorks([])
         setTotal(0)
         nextOffsetRef.current = null
@@ -540,7 +565,16 @@ function RecentTitlesPanel() {
           {loading
             ? 'Loading Crossref titles…'
             : error
-              ? `Error: ${error}`
+              ? (
+                  <>
+                    Couldn’t reach Crossref right now
+                    {works.length ? ' — showing the last titles loaded.' : '.'}{' '}
+                    <button type="button" className="pubs-retry" onClick={() => void load('replace')}>
+                      Retry
+                    </button>
+                    <span className="sr-only"> ({error})</span>
+                  </>
+                )
               : topicOrQueryActive
                 ? `Showing ${visible.length} top matches loaded · Crossref reports ~${total.toLocaleString()} bag-of-words hits · ${rankingNote}${
                     hintFilter.length
