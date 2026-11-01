@@ -1,3 +1,4 @@
+import CifEmptyState, { type CifExample } from './CifEmptyState'
 import {
   Suspense,
   lazy,
@@ -67,7 +68,7 @@ import {
 
 const CifStructureScene = lazy(() => import('../CifStructureScene'))
 
-export type CifExample = 'pdb:4hhb' | 'pdb:1bna' | 'sample'
+export type { CifExample }
 
 export interface CifViewportProps {
   /** First-run example buttons in the empty viewport. */
@@ -1060,36 +1061,7 @@ export default function CifViewport({
               />
             </Suspense>
           ) : (
-            <div className="cif-empty">
-              {busy ? (
-                <div className="cif-loading" role="status">
-                  <span className="cif-spinner" aria-hidden="true" />
-                  <p>Loading structure…</p>
-                </div>
-              ) : (
-                <div className="cif-welcome" data-testid="cif-welcome">
-                  <p className="cif-welcome-title">Explore a crystal structure</p>
-                  <p>
-                    Load a PDB ID, a COD id or a file (<code>.cif</code> <code>.mmcif</code> <code>.pdb</code>{' '}
-                    <code>.mae</code>) from the panel, or drop a file here. Every copy is coloured by the symmetry
-                    operator that generated it.
-                  </p>
-                  {onOpenExample && (
-                    <div className="cif-welcome-examples" role="group" aria-label="Examples">
-                      <button type="button" className="btn" onClick={() => onOpenExample('pdb:4hhb')}>
-                        4HHB · haemoglobin
-                      </button>
-                      <button type="button" className="btn" onClick={() => onOpenExample('pdb:1bna')}>
-                        1BNA · B-DNA
-                      </button>
-                      <button type="button" className="btn" onClick={() => onOpenExample('sample')}>
-                        Acetic acid · P2₁/c
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            <CifEmptyState busy={busy} onOpenExample={onOpenExample} />
           )}
           {structure && busy && (
             <div className="cif-busy-veil" role="status">
