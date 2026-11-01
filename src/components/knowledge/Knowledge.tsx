@@ -1,10 +1,24 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import type { Ref } from '../../data/literature/refs'
 
 export type KSection = { id: string; title: string; body: ReactNode }
 
 /** Table of contents + collapsible sections; first section open. */
 export function KnowledgeSections({ id, title, intro, sections }: { id: string; title: string; intro: ReactNode; sections: KSection[] }) {
+  useEffect(() => {
+    // Open (and scroll to) a section when the URL hash targets it or a ref/figure inside it.
+    const open = () => {
+      const h = decodeURIComponent(window.location.hash.slice(1))
+      if (!h) return
+      const el = document.getElementById(h)
+      const d = el?.closest('details') ?? (el instanceof HTMLDetailsElement ? el : null)
+      if (d && !d.open) d.open = true
+      el?.scrollIntoView({ block: 'start' })
+    }
+    open()
+    window.addEventListener('hashchange', open)
+    return () => window.removeEventListener('hashchange', open)
+  }, [])
   return (
     <section className="know" id={id} aria-labelledby={`${id}-title`}>
       <h2 id={`${id}-title`}>{title}</h2>
