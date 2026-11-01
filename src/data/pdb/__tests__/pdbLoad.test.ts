@@ -100,3 +100,29 @@ describe('obsolete entries served as files', () => {
     await expect(loadPdbMmcif('9zzz', { fetchImpl: empty })).rejects.toMatchObject({ kind: 'notfound' })
   })
 })
+
+describe('loadPdbMmcif network paths (extra)', () => {
+  const CIFTXT = 'data_1CRN\n_atom_site.id 1\n'
+  it('maps AbortError to an aborted PdbLoadError', async () => {
+    const f = (async () => { const e = new Error('aborted'); e.name = 'AbortError'; throw e }) as unknown as typeof fetch
+    await expect(loadPdbMmcif('1crn', { fetchImpl: f })).rejects.toMatchObject({ kind: 'aborted' })
+  })
+  it('streams progress with content-length', async () => {
+    const seen: number[] = []
+    const f = (async () => new Response(CIFTXT, { headers: { 'content-length': String(CIFTXT.length) } })) as unknown as typeof fetch
+    const r = await loadPdbMmcif('1crn', { fetchImpl: f, onProgress: (p) => seen.push(p.loaded) })
+    expect(r.text).toBe(CIFTXT)
+    expect(seen.at(-1)).toBe(CIFTXT.length)
+  })
+  it('falls back to RCSB when PDB-REDO is unreachable', async () => {
+    const f = (async (u: string) => { if (String(u).includes('pdb-redo')) throw new TypeError('Failed to fetch'); return new Response(CIFTXT) }) as unknown as typeof fetch
+    const r = await loadPdbMmcif('1crn', { source: 'redo', fetchImpl: f })
+    expect(r.note).toMatch(/PDB-REDO unreachable/)
+  })
+  it('reports files without coordinates and missing assemblies', async () => {
+    const empty = (async () => new Response('data_X\n')) as unknown as typeof fetch
+    await expect(loadPdbMmcif('1crn', { fetchImpl: empty })).rejects.toMatchObject({ kind: 'notfound' })
+    const nf = (async () => new Response('', { status: 404 })) as unknown as typeof fetch
+    await expect(loadPdbMmcif('1crn', { fetchImpl: nf, assembly: 2 })).rejects.toThrow(/no biological assembly 2/)
+  })
+})
