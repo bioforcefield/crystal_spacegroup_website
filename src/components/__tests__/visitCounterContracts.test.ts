@@ -88,3 +88,12 @@ describe('footer disclaimer', () => {
     expect(idx.slice(d)).toMatch(/github\.com\/bioforcefield\/crystal_spacegroup_website\/discussions/)
   })
 })
+
+import { readFileSync as _rf } from 'node:fs'
+describe('hero copy', () => {
+  it('is audience-neutral', () => {
+    const s = _rf('src/pages/IndexPage.tsx', 'utf8')
+    expect(s).toMatch(/with linked, interactive 3D\s+and 2D diagrams\./)
+    expect(s).not.toMatch(/for students/)
+  })
+})

@@ -75,8 +75,8 @@ export default function IndexPage() {
             <h1>Crystal Space Groups</h1>
             <p className="hero-lead">
               Learn how the 230 crystallographic space groups rearrange atoms —
-              rotations, screws, mirrors, and glides — with linked 3D and 2D
-              diagrams built for students.
+              rotations, screws, mirrors, and glides — with linked, interactive 3D
+              and 2D diagrams.
             </p>
             <div className="hero-stats">
               <div>
