@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import MorphologyKnowledge from '../components/knowledge/MorphologyKnowledge'
+import { MorphLogo } from '../components/brand/SectionLogos'
 import {
   HABIT_PRESETS,
   classifyHabit,
@@ -83,7 +85,10 @@ export default function MorphologyPage() {
     <div className="teach-page morph-page">
       <header className="teach-hero">
         <p className="eyebrow">Crystal growth · shape</p>
-        <h1>Crystal morphology</h1>
+        <h1 className="lattice-lab-title">
+          <MorphLogo size={30} className="lattice-lab-logo" />
+          Crystal morphology
+        </h1>
         <p className="teach-lead">
           Habit is the outer shape a crystal tends to show — which faces appear
           and how large they are. In a simple kinetic picture,{' '}
@@ -203,6 +208,7 @@ export default function MorphologyPage() {
 
       <MorphologyBfdhSection />
 
+      <MorphologyKnowledge />
       <footer className="teach-footer">
         <p>
           Schematic 2D Wulff / relative-velocity model for teaching. The BFDH

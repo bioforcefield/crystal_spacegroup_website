@@ -5559,3 +5559,26 @@ button.linkish {
   .app.layout-demo.cif-explorer:not(.has-structure) .cif-overlay-body,
   .app.layout-demo.cif-explorer:not(.has-structure) .cif-overlay-body .canvas-wrap { min-height: 260px; }
 }
+
+/* —— Knowledge sections (Morph / Kinetics) —— */
+.know { margin: 2rem auto 0; max-width: 60rem; padding: 0 1rem; color: #e2e8f0; }
+.know-toc ol { columns: 2; font-size: 0.9rem; padding-left: 1.2rem; }
+.know-toc a, .know a { color: #7dd3fc; }
+.know-sec { border: 1px solid #334155; border-radius: 0.5rem; margin: 0.6rem 0; background: #0b1220; }
+.know-sec > summary { cursor: pointer; padding: 0.5rem 0.8rem; list-style-position: inside; }
+.know-sec > summary h3 { display: inline; font-size: 1.05rem; margin: 0; }
+.know-body { padding: 0 1rem 0.8rem; line-height: 1.55; }
+.know-body h4 { margin: 0.9rem 0 0.3rem; color: #a78bfa; }
+.know-eq { font-family: 'Cambria Math', 'STIX Two Math', Georgia, serif; font-size: 1.05rem; background: #111827; border-left: 3px solid #38bdf8; padding: 0.45rem 0.8rem; margin: 0.5rem 0; overflow-x: auto; }
+.know-cite a { color: #a78bfa; text-decoration: none; }
+.know-fig { margin: 1rem 0; padding: 0.6rem; border: 1px solid #1e293b; border-radius: 0.4rem; }
+.know-svg { width: 100%; height: auto; max-width: 640px; display: block; }
+.know-legend { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.2rem 0.9rem; font-size: 0.75rem; }
+.know-legend span { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 2px; margin-right: 0.3rem; vertical-align: -0.1rem; }
+.know-src { font-size: 0.78rem; color: #94a3b8; }
+.know-table { border-collapse: collapse; font-size: 0.85rem; margin: 0.5rem 0; }
+.know-table th, .know-table td { border: 1px solid #334155; padding: 0.25rem 0.6rem; }
+.know-refs { font-size: 0.82rem; line-height: 1.45; }
+.know-refs li:target { background: #1e293b; }
+.know-note { font-size: 0.85rem; color: #94a3b8; }
+@media (max-width: 640px) { .know-toc ol { columns: 1; } }

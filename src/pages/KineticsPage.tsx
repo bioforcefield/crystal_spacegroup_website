@@ -1,5 +1,7 @@
 import { useId, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import KineticsKnowledge from '../components/knowledge/KineticsKnowledge'
+import { KineticsLogo } from '../components/brand/SectionLogos'
 import {
   growthRate,
   inductionTime,
@@ -229,7 +231,10 @@ export default function KineticsPage() {
     <div className="teach-page kinet-page">
       <header className="teach-hero">
         <p className="eyebrow">Crystal growth · rates</p>
-        <h1>Crystal kinetics</h1>
+        <h1 className="lattice-lab-title">
+          <KineticsLogo size={30} className="lattice-lab-logo" />
+          Crystal kinetics
+        </h1>
         <p className="teach-lead">
           How fast crystals appear and grow depends on the{' '}
           <strong>driving force</strong> — often written as relative
@@ -417,6 +422,7 @@ export default function KineticsPage() {
         </div>
       </section>
 
+      <KineticsKnowledge />
       <footer className="teach-footer">
         <p>
           Teaching models only — classical nucleation and textbook growth-rate
