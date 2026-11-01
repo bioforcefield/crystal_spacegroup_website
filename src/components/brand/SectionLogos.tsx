@@ -60,3 +60,16 @@ export function KineticsLogo(p: P) {
     </Svg>
   )
 }
+
+/** Process: jacketed stirred crystallizer with impeller and suspended crystals. */
+export function ProcessLogo(p: P) {
+  return (
+    <Svg {...p} testId="process">
+      <path d="M7 7v15a9 6 0 0 0 18 0V7" fill={S} fillOpacity=".1" stroke={S} strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M4 10v12a12 8 0 0 0 24 0V10" stroke={V} strokeWidth="1.5" strokeLinecap="round" opacity=".7" />
+      <path d="M16 3v19M11 21h10" stroke={S} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M11 21l-2 2M21 21l2 2" stroke={S} strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M10 13l1.5-1.5 1.5 1.5-1.5 1.5zM19 16l1.5-1.5 1.5 1.5-1.5 1.5zM20 10l1.2-1.2 1.2 1.2-1.2 1.2z" fill={V} />
+    </Svg>
+  )
+}

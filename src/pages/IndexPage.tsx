@@ -1,6 +1,6 @@
 import { LatticeLabLogo } from '../components/brand/LatticeLabLogo'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
-import { KineticsLogo, MorphLogo, PubsLogo } from '../components/brand/SectionLogos'
+import { KineticsLogo, MorphLogo, ProcessLogo, PubsLogo } from '../components/brand/SectionLogos'
 import { Link } from 'react-router-dom'
 import SymmetryPrimer from '../components/SymmetryPrimer'
 import CsdStatistics from '../components/CsdStatistics'
@@ -241,6 +241,36 @@ export default function IndexPage() {
               </div>
             </div>
           </section>
+          <section className="teach-spotlight" aria-labelledby="proc-spotlight-title">
+            <div className="teach-spotlight-inner home-spotlight-card">
+              <div className="teach-spotlight-copy">
+                <div className="cif-spotlight-badges">
+                  <span className="cif-spotlight-badge">Process</span>
+                  <span className="cif-spotlight-badge soft">Interactive</span>
+                  <span className="cif-spotlight-badge soft">Literature</span>
+                </div>
+                <h2 id="proc-spotlight-title" className="lattice-lab-title">
+                  <ProcessLogo size={26} className="lattice-lab-logo" />
+                  Industrial crystallization
+                </h2>
+                <p>
+                  Solubility and metastable-zone explorer with cooling, evaporative and
+                  antisolvent trajectories, cooling profiles, MSMPR size distributions,
+                  yield and seed-loading calculators, plus a review of PAT, control and
+                  continuous crystallization with Crossref-checked references.
+                </p>
+                <div className="cif-spotlight-cta">
+                  <Link to="/process" className="btn btn-primary btn-logo">
+                    <ProcessLogo size={16} className="nav-logo" />
+                    Process
+                  </Link>
+                  <span className="cif-spotlight-hint">
+                    MSZW · seeding · PBM · PAT · continuous
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
 
@@ -259,7 +289,8 @@ export default function IndexPage() {
               Real structures:{' '}
               <Link to="/cif">Lattice Lab</Link>. Growth:{' '}
               <Link to="/morphology">morphology</Link>,{' '}
-              <Link to="/kinetics">kinetics</Link>.
+              <Link to="/kinetics">kinetics</Link>. Process:{' '}
+              <Link to="/process">industrial crystallization</Link>.
             </p>
           </div>
           <p className="explore-hint">Click a system to filter the index below.</p>
@@ -502,6 +533,8 @@ export default function IndexPage() {
             <Link to="/morphology">Morphology</Link>
             <span className="sep"> · </span>
             <Link to="/kinetics">Kinetics</Link>
+            <span className="sep"> · </span>
+            <Link to="/process">Process</Link>
           </div>
         </div>
         <span className="footer-demos">

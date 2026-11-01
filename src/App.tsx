@@ -1,6 +1,6 @@
 import { Suspense, lazy, type ReactNode } from 'react'
 import { LatticeLabLogo } from './components/brand/LatticeLabLogo'
-import { KineticsLogo, MorphLogo, PubsLogo } from './components/brand/SectionLogos'
+import { KineticsLogo, MorphLogo, ProcessLogo, PubsLogo } from './components/brand/SectionLogos'
 import {
   BrowserRouter,
   Navigate,
@@ -20,6 +20,7 @@ const CifExplorerPage = lazy(() => import('./pages/CifExplorerPage'))
 const PublicationsPage = lazy(() => import('./pages/PublicationsPage'))
 const MorphologyPage = lazy(() => import('./pages/MorphologyPage'))
 const KineticsPage = lazy(() => import('./pages/KineticsPage'))
+const ProcessPage = lazy(() => import('./pages/ProcessPage'))
 
 const SECTION_NAV = [
   { id: 'explore', label: 'Explore' },
@@ -91,6 +92,10 @@ function SiteChrome({
             <NavLink to="/kinetics" className="nav-demo nav-lattice-lab">
               <KineticsLogo size={16} className="nav-logo" />              Kinetics
             </NavLink>
+            <NavLink to="/process" className="nav-demo nav-lattice-lab">
+              <ProcessLogo size={16} className="nav-logo" />
+              Process
+            </NavLink>
             <NavLink to="/sg/14" className="nav-demo nav-demo-hide-xs">
               P21/c
             </NavLink>
@@ -161,6 +166,10 @@ function SiteChrome({
           </NavLink>
           <NavLink to="/kinetics" className="nav-demo nav-lattice-lab">
             <KineticsLogo size={16} className="nav-logo" />            Kinetics
+          </NavLink>
+          <NavLink to="/process" className="nav-demo nav-lattice-lab">
+            <ProcessLogo size={16} className="nav-logo" />
+            Process
           </NavLink>
         </nav>
       </header>
@@ -234,6 +243,16 @@ function KineticsRoute() {
   )
 }
 
+function ProcessRoute() {
+  return (
+    <SiteChrome variant="index">
+      <Suspense fallback={<RouteFallback />}>
+        <ProcessPage />
+      </Suspense>
+    </SiteChrome>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter basename={ROUTER_BASENAME || undefined}>
@@ -245,6 +264,8 @@ export default function App() {
         <Route path="/morphology" element={<MorphologyRoute />} />
         <Route path="/morph" element={<Navigate to="/morphology" replace />} />
         <Route path="/kinetics" element={<KineticsRoute />} />
+        <Route path="/process" element={<ProcessRoute />} />
+        <Route path="/industrial-crystallization" element={<Navigate to="/process" replace />} />
         <Route path="/pbca" element={<Navigate to="/sg/61" replace />} />
         <Route path="/c2c" element={<Navigate to="/sg/15" replace />} />
         <Route path="/p21c" element={<Navigate to="/sg/14" replace />} />
