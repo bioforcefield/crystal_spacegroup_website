@@ -560,15 +560,6 @@ export default function IndexPage() {
             <a href="mailto:contact@crystalspacegroups.com">contact@crystalspacegroups.com</a>.
           </p>
           <div className="footer-feedback">
-            <a
-              href="https://github.com/bioforcefield/crystal_spacegroup_website/discussions"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Suggest an improvement
-            </a>
-            <span className="muted"> — ideas &amp; discussion on GitHub</span>
-            <span className="sep"> · </span>
             <Link to="/pubs">Publications</Link>
             <span className="sep"> · </span>
             <Link to="/morphology">Morphology</Link>
