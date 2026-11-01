@@ -9,6 +9,10 @@
 const SESSION_KEY = 'csg-visits-session'
 const COUNT_KEY = 'csg-visits-count'
 
+/** Production counter (Cloudflare worker Durable Object). */
+export const DEFAULT_VISITS_URL =
+  'https://crystal-cod-proxy.crystal-sg.workers.dev/visits'
+
 export type VisitsEnv = {
   VITE_VISITS_URL?: string
   VITE_COD_PROXY?: string
@@ -43,7 +47,8 @@ export function resolveVisitsUrl(
   if (explicit) return stripTrailingSlash(explicit)
 
   const proxy = env.VITE_COD_PROXY?.trim()
-  if (!proxy) return null
+  // Built-in default so a deploy without env vars never silently drops the counter.
+  if (!proxy) return DEFAULT_VISITS_URL
 
   let base = proxy.replace(/\{id\}/g, '0').replace(/\/+\d+\.cif\/?$/i, '')
   base = stripTrailingSlash(base)

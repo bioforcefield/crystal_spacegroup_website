@@ -4,6 +4,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+export VITE_COD_PROXY="${VITE_COD_PROXY:-https://crystal-cod-proxy.crystal-sg.workers.dev/{id}.cif}"
 npm run build:pages
 TMP="$(mktemp -d)"
 cleanup() { rm -rf "$TMP"; }

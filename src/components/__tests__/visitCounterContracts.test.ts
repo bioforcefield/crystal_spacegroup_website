@@ -16,11 +16,18 @@ describe('Visit counter footer contracts', () => {
     const src = readSrc('src/components/SiteCopyright.tsx')
     expect(src).toMatch(/import VisitCounter from '\.\/VisitCounter'/)
     expect(src).not.toMatch(/site-copyright-meta/)
-    expect(src).toMatch(/Powered by Grok Bot\. \(\s*<VisitCounter\s*\/>\)\s*<\/p>/)
+    expect(src).toMatch(/Powered by Grok Bot\.\s*<VisitCounter parens \/>\s*<\/p>/)
     expect(src).not.toMatch(/bioforcefield/)
     expect(src).toMatch(/href="mailto:contact@crystalspacegroups\.com"/)
     expect(src).toMatch(/Contact:\{' '\}\s*<a [^>]*>contact@crystalspacegroups\.com<\/a>\. Powered by Grok Bot/)
     expect((src.match(/<p\b/g) ?? []).length).toBe(1)
+  })
+
+  it('VisitCounter never renders a dash placeholder; deploy bakes in the worker URL', () => {
+    const vc = readSrc('src/components/VisitCounter.tsx')
+    expect(vc).toMatch(/if \(!known\) return null/)
+    const sh = readSrc('scripts/deploy-gh-pages.sh')
+    expect(sh).toMatch(/VITE_COD_PROXY=.*crystal-cod-proxy/)
   })
 
   it('visit counter CSS is inline (no meta block)', () => {
@@ -42,9 +49,10 @@ describe('Visit counter footer contracts', () => {
     expect(sg).toMatch(/visit-counter--footer/)
     expect(cif).toMatch(/VisitCounter/)
     expect(cif).toMatch(/visit-counter--footer/)
-    expect(sg).toMatch(/\{' \('\}\s*<VisitCounter className="visit-counter--footer" \/>\s*\{'\)'\}\s*<\/span>/)
+    expect(sg).toMatch(/<VisitCounter className="visit-counter--footer" parens \/>\s*<\/span>/)
+    expect(sg).not.toMatch(/\{' \('\}\s*<VisitCounter/)
     // CIF caption: no "(—)" placeholder — counter renders itself only once a count is known.
-    expect(cif).toMatch(/<VisitCounter className="visit-counter--footer" parens \/>/)
+    expect(cif).toMatch(/<VisitCounter className="visit-counter--footer" parens dotted \/>/)
     expect(cif).not.toMatch(/\{' \('\}\s*<VisitCounter/)
   })
 

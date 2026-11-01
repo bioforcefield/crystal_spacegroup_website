@@ -6,8 +6,8 @@ export default function SiteCopyright() {
     <div className="site-copyright">
       <p className="site-copyright-line">
         Copyright © 2026–2027, all rights reserved. Contact:{' '}
-        <a href="mailto:contact@crystalspacegroups.com">contact@crystalspacegroups.com</a>. Powered by Grok Bot. (
-        <VisitCounter />)
+        <a href="mailto:contact@crystalspacegroups.com">contact@crystalspacegroups.com</a>. Powered by Grok Bot.
+        <VisitCounter parens />
       </p>
     </div>
   )

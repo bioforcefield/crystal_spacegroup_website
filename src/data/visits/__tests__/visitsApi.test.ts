@@ -3,6 +3,7 @@ import {
   fetchVisitCount,
   formatVisitCount,
   resolveVisitsUrl,
+  DEFAULT_VISITS_URL,
   visitCounterLabel,
   type VisitStorage,
 } from '../visitsApi'
@@ -35,8 +36,8 @@ describe('resolveVisitsUrl', () => {
     ).toBe('https://crystal-cod-proxy.crystal-sg.workers.dev/visits')
   })
 
-  it('returns null when neither env is set', () => {
-    expect(resolveVisitsUrl({})).toBeNull()
+  it('falls back to the production worker when neither env is set', () => {
+    expect(resolveVisitsUrl({})).toBe(DEFAULT_VISITS_URL)
   })
 })
 
@@ -90,14 +91,14 @@ describe('fetchVisitCount', () => {
     expect(count).toBeNull()
   })
 
-  it('returns null when no visits URL is configured', async () => {
-    const fetchImpl = vi.fn()
+  it('uses the default worker when no env is configured; null on failure', async () => {
+    const fetchImpl = vi.fn(async () => { throw new Error('offline') })
     const count = await fetchVisitCount({
       env: {},
       fetchImpl,
       storage: memoryStorage(),
     })
     expect(count).toBeNull()
-    expect(fetchImpl).not.toHaveBeenCalled()
+    expect(fetchImpl).toHaveBeenCalledWith(DEFAULT_VISITS_URL, expect.anything())
   })
 })

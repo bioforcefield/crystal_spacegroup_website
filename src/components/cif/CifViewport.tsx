@@ -1078,7 +1078,7 @@ export default function CifViewport({
           {structure?.spaceGroupNumber != null ? ` · demo /sg/${structure.spaceGroupNumber}` : ''}
           {structure ? (placementMode === 'nearest' ? ' · Nearest images' : ' · In cell [0,1)³') : ''}
           {symOn ? ` · ${elementCount} symmetry loci` : ''}
-          <VisitCounter className="visit-counter--footer" parens />
+          <VisitCounter className="visit-counter--footer" parens dotted />
         </span>
       </footer>
       {hoverInfo && hover && (
