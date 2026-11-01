@@ -1,8 +1,11 @@
 /**
  * Protein backbone / side-chain torsions, Ramachandran categories and rotamer labels.
- * Ramachandran regions are approximate ellipse fits to the MolProbity Top8000
- * contours (Lovell et al. 2003 Proteins 50:437; Williams et al. 2018 Protein Sci 27:293).
+ * Ramachandran classes use the MolProbity Top8000 contour grids (rama8000;
+ * Williams et al. 2018 Protein Sci 27:293, CC BY 4.0 data from the Richardson Lab)
+ * with the six MolProbity residue classes and thresholds (favored ≥ 2%,
+ * outlier < 0.05% general / < 0.1% other), looked up at 2° resolution.
  */
+import { RAMA8000_RLE, type Rama8000Table } from './rama8000'
 import type { Vec3 } from '../../types'
 import { dihedral, dist, wrap180 } from './geom'
 import type { Residue } from './residues'
@@ -17,6 +20,8 @@ export interface ProteinRow {
   omega: number | null
   cis: boolean
   category: RamaCategory
+  /** MolProbity table used (general, gly, transpro, cispro, prepro, ileval). */
+  ramaTable: Rama8000Table
   rama: RamaClass | null
   chi: (number | null)[]
   rotamer: string | null
@@ -70,40 +75,34 @@ export function gauche(x: number): string | null {
   return l === 'p' ? 'g+' : l === 'm' ? 'g−' : l === 't' ? 't' : null
 }
 
-interface Ell { c: [number, number]; r: [number, number] }
-const E = (px: number, py: number, rx: number, ry: number): Ell => ({ c: [px, py], r: [rx, ry] })
-/** Approximate favored (≈98%) and allowed (≈99.95%) regions as ellipses (deg). */
-export const RAMA_REGIONS: Record<RamaCategory, { favored: Ell[]; allowed: Ell[] }> = {
-  general: {
-    favored: [E(-120, 140, 50, 40), E(-70, 145, 25, 35), E(-65, -40, 30, 28), E(-90, -10, 25, 22), E(60, 40, 14, 18)],
-    allowed: [E(-110, 145, 75, 65), E(-75, -35, 62, 60), E(-110, 70, 72, 48), E(-120, 15, 40, 40), E(60, 35, 30, 40), E(-95, -175, 70, 20), E(75, -170, 20, 25)],
-  },
-  gly: {
-    favored: [E(-65, -40, 30, 30), E(65, 40, 30, 30), E(-80, 175, 40, 25), E(80, -175, 40, 25), E(80, 0, 20, 25), E(-80, 0, 20, 25)],
-    allowed: [E(-80, -25, 60, 60), E(80, 25, 60, 60), E(-100, 170, 80, 45), E(100, -170, 80, 45), E(180, 180, 50, 50), E(-180, 0, 30, 60), E(180, 0, 30, 60), E(80, -140, 45, 50), E(-80, 140, 45, 50), E(-100, 40, 40, 40), E(100, -40, 40, 40)],
-  },
-  pro: {
-    favored: [E(-65, 145, 20, 30), E(-65, -30, 25, 30)],
-    allowed: [E(-70, 140, 35, 55), E(-60, -35, 40, 50), E(-80, 60, 25, 35)],
-  },
-  prepro: {
-    favored: [E(-120, 140, 45, 35), E(-65, 145, 25, 30), E(-65, -40, 25, 25)],
-    allowed: [E(-110, 145, 70, 60), E(-80, -30, 50, 50), E(-110, 55, 50, 50), E(-75, -175, 35, 25), E(55, 40, 15, 25)],
-  },
+const gridCache = new Map<Rama8000Table, Uint8Array>()
+/** Decoded 180×180 level grid (0 outlier, 1 allowed, 2 favored), index (φ bin)·180 + ψ bin. */
+export function ramaGrid(t: Rama8000Table): Uint8Array {
+  let g = gridCache.get(t)
+  if (g) return g
+  g = new Uint8Array(180 * 180)
+  let i = 0
+  for (const tok of RAMA8000_RLE[t].split(',')) {
+    const lv = +tok[0]!, n = +tok.slice(1)
+    g.fill(lv, i, i + n)
+    i += n
+  }
+  gridCache.set(t, g)
+  return g
 }
+const bin = (x: number) => Math.min(179, Math.max(0, Math.floor((wrap180(x) + 180) / 2)))
+export function ramaLevel(t: Rama8000Table, phi: number, psi: number): number {
+  return ramaGrid(t)[bin(phi) * 180 + bin(psi)]!
+}
+/** Display category → default MolProbity table (Pro shown with the trans-Pro contours). */
+export const RAMA_DISPLAY_TABLE: Record<RamaCategory, Rama8000Table> = { general: 'general', gly: 'gly', pro: 'transpro', prepro: 'prepro' }
 export const RAMA_SOURCE =
-  'Regions are approximate ellipse fits to the MolProbity Top8000 Ramachandran contours (Lovell et al. 2003, Proteins 50:437–450; Williams et al. 2018, Protein Sci 27:293–315). For validation use MolProbity or the wwPDB report.'
+  'MolProbity Top8000 Ramachandran contours (rama8000, 2° grid): favored ≥ 2%, allowed ≥ 0.05% (general) or 0.1% (Gly, Pro, pre-Pro, Ile/Val). Data: Richardson Lab, Duke (CC BY 4.0); Williams et al. 2018, Protein Sci 27:293–315. Grid lookup without interpolation, so points on a contour edge may differ from MolProbity.'
 
-function inEll(e: Ell, phi: number, psi: number) {
-  const dx = wrap180(phi - e.c[0]) / e.r[0]
-  const dy = wrap180(psi - e.c[1]) / e.r[1]
-  return dx * dx + dy * dy <= 1
-}
-export function ramaClass(cat: RamaCategory, phi: number, psi: number): RamaClass {
-  const R = RAMA_REGIONS[cat]
-  if (R.favored.some((e) => inEll(e, phi, psi))) return 'favored'
-  if (R.allowed.some((e) => inEll(e, phi, psi))) return 'allowed'
-  return 'outlier'
+export function ramaClass(cat: RamaCategory | Rama8000Table, phi: number, psi: number): RamaClass {
+  const t = (cat in RAMA_DISPLAY_TABLE ? RAMA_DISPLAY_TABLE[cat as RamaCategory] : cat) as Rama8000Table
+  const lv = ramaLevel(t, phi, psi)
+  return lv === 2 ? 'favored' : lv === 1 ? 'allowed' : 'outlier'
 }
 
 const PEPTIDE_MAX = 2.0
@@ -123,6 +122,11 @@ export function proteinAnalysis(residues: Residue[]): ProteinRow[] {
     const psi = linkedNext && N && CA && C ? dihedral(N, CA, C, nN!) : null
     const omega = linkedNext && CA && C && nCA ? dihedral(CA, C, nN!, nCA) : null
     const category: RamaCategory = r.comp === 'GLY' ? 'gly' : r.comp === 'PRO' ? 'pro' : linkedNext && next!.comp === 'PRO' ? 'prepro' : 'general'
+    const pCA = prev?.atoms.get('CA')
+    const omegaPrev = linkedPrev && pCA && N && CA ? dihedral(pCA, pC!, N, CA) : null
+    const ramaTable: Rama8000Table = category === 'pro'
+      ? (omegaPrev != null && Math.abs(omegaPrev) < 30 ? 'cispro' : 'transpro')
+      : category === 'general' && (r.comp === 'ILE' || r.comp === 'VAL') ? 'ileval' : category
     const defs = CHI_DEFS[r.comp] ?? []
     const chi: (number | null)[] = [null, null, null, null]
     defs.forEach((d, j) => {
@@ -146,8 +150,8 @@ export function proteinAnalysis(residues: Residue[]): ProteinRow[] {
       if (r.comp === 'PRO' && chi[0] != null) rotamer = chi[0] > 0 ? 'Cγ-endo' : 'Cγ-exo'
     }
     rows.push({
-      res: r, phi, psi, omega, cis: omega != null && Math.abs(omega) < 30, category,
-      rama: phi != null && psi != null ? ramaClass(category, phi, psi) : null, chi, rotamer,
+      res: r, phi, psi, omega, cis: omega != null && Math.abs(omega) < 30, category, ramaTable,
+      rama: phi != null && psi != null ? ramaClass(ramaTable, phi, psi) : null, chi, rotamer,
     })
   }
   return rows

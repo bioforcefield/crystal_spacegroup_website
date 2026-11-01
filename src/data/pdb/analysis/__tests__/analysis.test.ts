@@ -28,7 +28,7 @@ describe('dihedral math', () => {
     expect([mtp(62), mtp(-175), mtp(-58), mtp(120)]).toEqual(['p', 't', 'm', null])
     expect(ramaClass('general', -63, -41)).toBe('favored')
     expect(ramaClass('general', -120, 130)).toBe('favored')
-    expect(ramaClass('general', 60, -120)).toBe('outlier')
+    expect(ramaClass('general', 100, -90)).toBe('outlier')
   })
   it('least-squares fit recovers a rigid motion', () => {
     const P: Vec3[] = [[0, 0, 0], [1, 0, 0], [0, 2, 0], [0, 0, 3], [1, 1, 1]]

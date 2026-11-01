@@ -25,7 +25,7 @@ export function toCsv(cols: string[], rows: unknown[][]): string {
 }
 
 export const NOTES = {
-  backbone: 'Angles in degrees (IUPAC). phi C(i-1)-N-CA-C; psi N-CA-C-N(i+1); omega CA-C-N(i+1)-CA(i+1); cis if |omega|<30. Ramachandran class from approximate MolProbity-style regions (Lovell 2003) — not a validation report.',
+  backbone: 'Angles in degrees (IUPAC). phi C(i-1)-N-CA-C; psi N-CA-C-N(i+1); omega CA-C-N(i+1)-CA(i+1); cis if |omega|<30. Ramachandran class from the MolProbity Top8000 contours (Williams 2018; 2° grid lookup) — not a full validation report.',
   chi: 'chi per IUPAC-IUB 1970; symmetric groups (Asp chi2, Glu chi3, Phe/Tyr chi2) folded to [-90,90]. Rotamer letters p/t/m = +60/180/-60 within ±30° (Lovell 2000); planar terminal chi given as rounded value.',
   na: "Backbone alpha..zeta and chi (O4'-C1'-N9-C4 purines, O4'-C1'-N1-C2 pyrimidines); syn if |chi|<90. Pucker: Altona & Sundaralingam 1972 phase P and amplitude tau_m.",
   bp: 'Base frames from standard bases (Olson et al. 2001); parameters by the 3DNA algorithm (Lu & Olson 2003). Pairs = Watson-Crick H-bond geometry (2.5-3.5 Å).',

@@ -1,5 +1,22 @@
 import { useRef, useState, type ReactNode } from 'react'
-import { RAMA_REGIONS, RAMA_SOURCE, type RamaCategory } from '../../../data/pdb/analysis/protein'
+import { RAMA_DISPLAY_TABLE, RAMA_SOURCE, ramaGrid, type RamaCategory } from '../../../data/pdb/analysis/protein'
+
+/** Vertical runs of equal level per φ column → few SVG rects. */
+export function ramaRuns(cat: RamaCategory): { i: number; j0: number; n: number; lv: number }[] {
+  const g = ramaGrid(RAMA_DISPLAY_TABLE[cat])
+  const out: { i: number; j0: number; n: number; lv: number }[] = []
+  for (let i = 0; i < 180; i++) {
+    let j = 0
+    while (j < 180) {
+      const lv = g[i * 180 + j]!
+      let k = j + 1
+      while (k < 180 && g[i * 180 + k] === lv) k++
+      if (lv) out.push({ i, j0: j, n: k - j, lv })
+      j = k
+    }
+  }
+  return out
+}
 
 export interface Pt { x: number; y: number; id: string; label: string; cls?: string }
 
@@ -89,18 +106,14 @@ export function AngleScatter({ title, name, pts, rama, xl, yl, onPick, selected 
   const X = (v: number) => M.l + ((v + 180) / 360) * (w - M.l - M.r)
   const Y = (v: number) => h - M.b - ((v + 180) / 360) * (h - M.t - M.b)
   const sx = (w - M.l - M.r) / 360, sy = (h - M.t - M.b) / 360
-  const R = rama ? RAMA_REGIONS[rama] : null
-  const ells = (list: { c: [number, number]; r: [number, number] }[], fill: string) =>
-    list.flatMap((e, k) => [-360, 0, 360].flatMap((dx) => [-360, 0, 360].map((dy) => {
-      const cx = e.c[0] + dx, cy = e.c[1] + dy
-      if (cx + e.r[0] < -180 || cx - e.r[0] > 180 || cy + e.r[1] < -180 || cy - e.r[1] > 180) return null
-      return <ellipse key={`${fill}${k}${dx}${dy}`} cx={X(cx)} cy={Y(cy)} rx={e.r[0] * sx} ry={e.r[1] * sy} fill={fill} />
-    })))
+  const R = rama ? ramaRuns(rama) : null
   return (
     <PlotCard title={title} name={name} width={w} height={h} info={R ? RAMA_SOURCE : undefined}
       readout={hov ? hov.label : `${pts.length} points · click a point to centre it in 3D`}>
       <defs><clipPath id={`clip-${name}`}><rect x={M.l} y={M.t} width={w - M.l - M.r} height={h - M.t - M.b} /></clipPath></defs>
-      {R && <g clipPath={`url(#clip-${name})`}>{ells(R.allowed, '#fde68a')}{ells(R.favored, '#93c5fd')}</g>}
+      {R && <g clipPath={`url(#clip-${name})`} shapeRendering="crispEdges" data-testid="rama-contours">{R.map((r) => (
+        <rect key={`${r.i}-${r.j0}`} x={X(-180 + r.i * 2)} y={Y(-180 + (r.j0 + r.n) * 2)} width={2 * sx + 0.3} height={r.n * 2 * sy} fill={r.lv === 2 ? '#93c5fd' : '#fde68a'} />
+      ))}</g>}
       <line x1={X(0)} x2={X(0)} y1={M.t} y2={h - M.b} stroke="#cbd5e1" strokeDasharray="2 2" />
       <line x1={M.l} x2={w - M.r} y1={Y(0)} y2={Y(0)} stroke="#cbd5e1" strokeDasharray="2 2" />
       <Axes w={w} h={h} xr={[-180, 180]} yr={[-180, 180]} xt={[-180, -90, 0, 90, 180]} yt={[-180, -90, 0, 90, 180]} xl={xl} yl={yl} />
@@ -115,8 +128,8 @@ export function AngleScatter({ title, name, pts, rama, xl, yl, onPick, selected 
       {R && (
         <g fontSize="9">
           <rect x={w - 118} y={M.t + 4} width={104} height={40} fill="#ffffffcc" stroke="#cbd5e1" />
-          <rect x={w - 112} y={M.t + 10} width={8} height={8} fill="#93c5fd" /><text x={w - 100} y={M.t + 17}>favored (approx.)</text>
-          <rect x={w - 112} y={M.t + 24} width={8} height={8} fill="#fde68a" /><text x={w - 100} y={M.t + 31}>allowed (approx.)</text>
+          <rect x={w - 112} y={M.t + 10} width={8} height={8} fill="#93c5fd" /><text x={w - 100} y={M.t + 17}>favored</text>
+          <rect x={w - 112} y={M.t + 24} width={8} height={8} fill="#fde68a" /><text x={w - 100} y={M.t + 31}>allowed</text>
         </g>
       )}
     </PlotCard>
