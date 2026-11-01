@@ -99,7 +99,7 @@ export default function PublicationsPage() {
           No paywalled PDFs are hosted here. CSD literature is not scraped.
         </p>
         <p>
-          <Link to="/cif">CIF symmetry map</Link>
+          <Link to="/cif">Lattice Lab</Link>
           {' · '}
           <Link to="/">Home</Link>
         </p>
@@ -307,7 +307,7 @@ function CuratedCodPanel() {
                         className="btn btn-primary pubs-btn"
                         to={`/cif?cod=${e.id}`}
                       >
-                        Open in CIF map
+                        Open in Lattice Lab
                       </Link>
                     </div>
                   </li>

@@ -10,6 +10,7 @@ import {
   lazy,
   Suspense,
 } from 'react'
+import { LatticeLabLogo } from '../components/brand/LatticeLabLogo'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   breadcrumbLabel,
@@ -391,7 +392,7 @@ export default function CifExplorerPage() {
     if (target.kind === 'invalid') {
       setStructure(null)
       setLoadedKey(null)
-      setError(`Unrecognised CIF map address “/cif/${target.raw}”.`)
+      setError(`Unrecognised Lattice Lab address “/cif/${target.raw}”.`)
       return
     }
     if (target.kind === 'pdb') {
@@ -516,14 +517,17 @@ export default function CifExplorerPage() {
           </div>
           {breadcrumbLabel(target) ? (
             <nav className="cif-breadcrumb" aria-label="Breadcrumb">
-              <Link to="/cif">CIF map</Link>
+              <Link to="/cif">Lattice Lab</Link>
               <span aria-hidden="true"> › </span>
               <span aria-current="page">{breadcrumbLabel(target)}</span>
             </nav>
           ) : (
             <p className="eyebrow">Application</p>
           )}
-          <h1>CIF symmetry map</h1>
+          <h1 className="lattice-lab-title">
+            <LatticeLabLogo size={30} className="lattice-lab-logo" />
+            Lattice Lab
+          </h1>
           {routeNote && (
             <p className="cif-route-note" role="status">
               {routeNote}
@@ -532,7 +536,7 @@ export default function CifExplorerPage() {
           {error && target.kind !== 'none' && !structure && !busy && (
             <p className="cif-route-error" role="alert">
               Could not open {breadcrumbLabel(target) ?? 'this address'}.{' '}
-              <Link to="/cif">← Back to CIF map start</Link>
+              <Link to="/cif">← Back to Lattice Lab start</Link>
             </p>
           )}
           <p className="sr-only" id="cif-status-live" aria-live="polite" aria-atomic="true">
@@ -559,7 +563,7 @@ export default function CifExplorerPage() {
           <div className="cif-pdb-noncrystal" role="status" data-testid="pdb-noncrystal">
             <strong>No crystal lattice.</strong> {macroModel.pdbId ? `${macroModel.pdbId.toUpperCase()}: ` : ''}
             {macroModel.nonCrystalReason ?? 'non-crystallographic entry'}. There is no unit cell or space group, so the
-            symmetry map shows the deposited model (model 1) only. Try an X-ray entry such as 1CRN or 4HHB.
+            Lattice Lab shows the deposited model (model 1) only. Try an X-ray entry such as 1CRN or 4HHB.
           </div>
         )}
 

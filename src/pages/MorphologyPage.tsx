@@ -213,7 +213,7 @@ export default function MorphologyPage() {
         <p>
           <Link to="/kinetics">Crystal kinetics</Link>
           {' · '}
-          <Link to="/cif">CIF map</Link>
+          <Link to="/cif">Lattice Lab</Link>
           {' · '}
           <Link to="/pubs">Publications</Link>
           {' · '}

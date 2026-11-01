@@ -106,7 +106,7 @@ describe('doiUrl / cifMapPath', () => {
     expect(doiUrl(null)).toBeNull()
   })
 
-  it('builds CIF map deep link', () => {
+  it('builds Lattice Lab deep link', () => {
     expect(cifMapPath('1100303')).toBe('/cif?cod=1100303')
     expect(cifMapPath('1100303', '/crystal_spacegroup_website')).toBe(
       '/crystal_spacegroup_website/cif?cod=1100303',

@@ -1049,4 +1049,4 @@ export const COD_PUBS: readonly CodPubEntry[] = [
 export const COD_PUBS_NOTE =
   'Curated COD subset for teaching (includes a 2020–2024 refresh) — not a live feed of every paper. ' +
   'For ACS/IUCr/RSC/Wiley titles, use the Recent titles tab (Crossref metadata). ' +
-  'DOI links go to the publisher; Open in CIF map loads the structure on this site.'
+  'DOI links go to the publisher; Open in Lattice Lab loads the structure on this site.'

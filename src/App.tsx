@@ -1,4 +1,5 @@
 import { Suspense, lazy, type ReactNode } from 'react'
+import { LatticeLabLogo } from './components/brand/LatticeLabLogo'
 import {
   BrowserRouter,
   Navigate,
@@ -76,8 +77,9 @@ function SiteChrome({
             <NavLink to="/" end>
               Home
             </NavLink>
-            <NavLink to="/cif" className="nav-demo">
-              CIF map
+            <NavLink to="/cif" className="nav-demo nav-lattice-lab">
+              <LatticeLabLogo size={16} className="nav-logo" />
+              Lattice Lab
             </NavLink>
             <NavLink to="/pubs" className="nav-demo">
               Pubs
@@ -146,8 +148,9 @@ function SiteChrome({
           <NavLink to="/sg/19" className="nav-demo">
             P212121
           </NavLink>
-          <NavLink to="/cif" className="nav-demo">
-            CIF map
+          <NavLink to="/cif" className="nav-demo nav-lattice-lab">
+            <LatticeLabLogo size={16} className="nav-logo" />
+            Lattice Lab
           </NavLink>
           <NavLink to="/pubs" className="nav-demo">
             Pubs

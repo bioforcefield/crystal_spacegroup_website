@@ -12,7 +12,7 @@ Live: https://bioforcefield.github.io/crystal_spacegroup_website/
 - BASE → IMAGE highlight with nearest-image or in-cell placement
 - Geometric element overlays where axis-aligned loci can be derived; honest “operators / limited geometry” note otherwise
 - ITA Vol. A primary diagrams + Birkbeck/UCL reference links per group
-- **Publications** (`/pubs`): **Recent titles** (live Crossref metadata for ACS / IUCr / RSC / Wiley crystallography journals) + curated COD by **year** + tags → DOI (+ CIF map for COD)
+- **Publications** (`/pubs`): **Recent titles** (live Crossref metadata for ACS / IUCr / RSC / Wiley crystallography journals) + curated COD by **year** + tags → DOI (+ Lattice Lab for COD)
 - **CIF symmetry map** (`/cif`): load by **COD code** (e.g. `1100303`), paste/upload a CIF (CSD via Access Structures), intact molecules + operator colors + lattice a/b/c on the cell
 - **Morphology** (`/morphology`): 2D Wulff / relative-velocity outline from face growth-rate sliders + habit labels
 - **Kinetics** (`/kinetics`): schematic nucleation rate / induction time vs σ, growth-mechanism overlays, size vs time
@@ -69,7 +69,7 @@ CIF UI contract tests (`cifUiContracts.test.ts`) are **source-string contracts**
 | `src/data/groups/` | Triplet parse, det/trace classify, element derivation |
 | `src/data/cif/` | CIF parse + AU×ops expand |
 | `src/pages/SpaceGroupPage.tsx` | Demo chrome |
-| `src/pages/CifExplorerPage.tsx` | CIF map |
+| `src/pages/CifExplorerPage.tsx` | Lattice Lab |
 | `src/pages/PublicationsPage.tsx` | Pubs browser (Crossref + curated COD) |
 | `src/data/pubs/` | Curated COD cards, Crossref client, tag filters |
 | `src/pages/MorphologyPage.tsx` | Crystal morphology teaching + 2D Wulff |
@@ -80,7 +80,7 @@ CIF UI contract tests (`cifUiContracts.test.ts`) are **source-string contracts**
 | `public/ita-diagrams/` | ITA Vol. A plates |
 | `CONTINUITY.md` | Agent resume notes |
 
-## CIF map (`/cif`)
+## Lattice Lab (`/cif`)
 
 - **Intact molecules**: min-image bonding + unwrap so copies are not chopped by the cell
 - **Symmetry operators**: ITA xyz list, color-matched to 3D copies; Molecules / All / BASE+IMAGE / AU

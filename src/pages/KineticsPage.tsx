@@ -425,7 +425,7 @@ export default function KineticsPage() {
         <p>
           <Link to="/morphology">Crystal morphology</Link>
           {' · '}
-          <Link to="/cif">CIF map</Link>
+          <Link to="/cif">Lattice Lab</Link>
           {' · '}
           <Link to="/pubs">Publications</Link>
           {' · '}

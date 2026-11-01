@@ -110,7 +110,7 @@ export default function OperatorPanel({
             ← All space groups
           </Link>
           <Link to="/cif" className="back-link cif-jump">
-            CIF map
+            Lattice Lab
           </Link>
         </div>
         <p className="eyebrow">Space group</p>

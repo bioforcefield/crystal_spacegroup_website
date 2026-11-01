@@ -141,7 +141,7 @@ export default function IndexPage() {
                 <span className="cif-spotlight-badge">Structures</span>
                 <span className="cif-spotlight-badge soft">New</span>
               </div>
-              <h2 id="cif-spotlight-title">CIF symmetry map</h2>
+              <h2 id="cif-spotlight-title">Lattice Lab</h2>
               <p>
                 Upload a CSD or COD CIF and see each symmetry operator colored on
                 the real unit cell — screws, glides, mirrors, and inversions over
@@ -150,7 +150,7 @@ export default function IndexPage() {
               </p>
               <div className="cif-spotlight-cta">
                 <Link to="/cif" className="btn btn-primary">
-                  Open CIF symmetry map
+                  Open Lattice Lab
                 </Link>
                 <span className="cif-spotlight-hint">
                   or try a teaching COD chip on that page
@@ -181,7 +181,7 @@ export default function IndexPage() {
                 <p>
                   Stream recent ACS / IUCr / RSC / Wiley titles via Crossref
                   (metadata + DOI only), or browse the curated COD set by year and
-                  tags — then open the paper or the structure in the CIF map.
+                  tags — then open the paper or the structure in the Lattice Lab.
                 </p>
                 <div className="cif-spotlight-cta">
                   <Link to="/pubs" className="btn btn-primary">
@@ -238,7 +238,7 @@ export default function IndexPage() {
               <Link to="/sg/61">Pbca (61)</Link>, and{' '}
               <Link to="/sg/19">P212121 (19)</Link>.
               Real structures:{' '}
-              <Link to="/cif">CIF symmetry map</Link>. Growth:{' '}
+              <Link to="/cif">Lattice Lab</Link>. Growth:{' '}
               <Link to="/morphology">morphology</Link>,{' '}
               <Link to="/kinetics">kinetics</Link>.
             </p>

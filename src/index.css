@@ -5358,7 +5358,7 @@ button.linkish {
 }
 @media (max-width: 1350px) { .cif-sw-long { display: none; } }
 
-/* CIF map breadcrumb + route notes */
+/* Lattice Lab breadcrumb + route notes */
 .cif-breadcrumb { font-size: 0.8rem; margin: 0 0 0.15rem; color: var(--muted, #94a3b8); }
 .cif-breadcrumb a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .cif-breadcrumb [aria-current] { color: var(--text, #e2e8f0); font-weight: 600; }
@@ -5425,3 +5425,9 @@ button.linkish {
 .ana-note { font-size: 0.72rem; margin-top: 0.5rem; }
 @media (max-width: 900px) { .cif-analysis-drawer { width: 100vw; top: 30vh; border-left: 0; border-top: 1px solid #334155; } }
 @media print { .cif-analysis-drawer { position: static; width: auto; box-shadow: none; } }
+
+/* Lattice Lab brand */
+.lattice-lab-title { display: flex; align-items: center; gap: 0.5rem; }
+.lattice-lab-logo { flex: none; }
+.nav-lattice-lab { display: inline-flex; align-items: center; gap: 0.3rem; }
+.nav-logo { flex: none; }
