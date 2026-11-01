@@ -18,8 +18,8 @@ describe('Visit counter footer contracts', () => {
     expect(src).not.toMatch(/site-copyright-meta/)
     expect(src).toMatch(/Powered by Grok Bot\.\s*\{showVisits \? <VisitCounter parens \/> : <VisitCounter silent \/>\}\s*<\/p>/)
     expect(src).not.toMatch(/bioforcefield/)
-    expect(src).toMatch(/href="mailto:contact@crystalspacegroups\.com"/)
-    expect(src).toMatch(/Contact:\{' '\}\s*<a [^>]*>contact@crystalspacegroups\.com<\/a>\. Powered by Grok Bot/)
+    expect(src).not.toMatch(/contact@crystalspacegroups/)
+    expect(src).toMatch(/all rights reserved\. Powered by Grok Bot\./)
     expect((src.match(/<p\b/g) ?? []).length).toBe(1)
   })
 
@@ -73,5 +73,17 @@ describe('Visit counter footer contracts', () => {
     for (const src of [api, counter]) {
       expect(src).not.toMatch(/google-analytics|gtag\(|GA_MEASUREMENT|googletagmanager/i)
     }
+  })
+})
+
+describe('footer disclaimer', () => {
+  it('sits before Suggest an improvement and holds the only email', () => {
+    const idx = readSrc('src/pages/IndexPage.tsx')
+    const d = idx.indexOf('data-footer="disclaimer"')
+    expect(d).toBeGreaterThan(0)
+    expect(d).toBeLessThan(idx.indexOf('Suggest an improvement'))
+    expect(idx).toMatch(/For educational use only\./)
+    expect((idx.match(/mailto:contact@crystalspacegroups\.com/g) ?? []).length).toBe(1)
+    expect(idx.slice(d)).toMatch(/github\.com\/bioforcefield\/crystal_spacegroup_website\/discussions/)
   })
 })

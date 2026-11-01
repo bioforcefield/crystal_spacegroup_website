@@ -5596,3 +5596,6 @@ button.linkish {
 .forms-verdict { margin: 0.5rem 0; padding: 0.4rem 0.6rem; border-radius: 0.35rem; background: #111827; border-left: 3px solid #38bdf8; }
 .forms-salt { border-left-color: #f472b6; }
 .forms-continuum { border-left-color: #fbbf24; }
+.footer-disclaimer { margin: 0.4rem 0 0.35rem; max-width: 46rem; font-size: 0.78rem; line-height: 1.45; color: #94a3b8; }
+.footer-disclaimer a { color: #7dd3fc; }
+@media (max-width: 480px) { .footer-disclaimer { font-size: 0.74rem; } }

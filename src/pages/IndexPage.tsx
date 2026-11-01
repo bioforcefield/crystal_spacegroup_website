@@ -549,6 +549,16 @@ export default function IndexPage() {
         <div>
           <strong>Crystal Space Groups</strong>
           <span className="muted"> · interactive teaching diagrams</span>
+          <p className="footer-disclaimer" data-footer="disclaimer">
+            For educational use only. Content is provided as is, without warranty of
+            accuracy or completeness; please verify against primary sources before
+            relying on it. Figures and data are cited to their original sources, and no
+            copyright infringement is intended. If you spot an error or a rights
+            concern, please{' '}
+            <a href="https://github.com/bioforcefield/crystal_spacegroup_website/discussions" target="_blank" rel="noopener noreferrer">suggest an improvement</a>{' '}
+            or email{' '}
+            <a href="mailto:contact@crystalspacegroups.com">contact@crystalspacegroups.com</a>.
+          </p>
           <div className="footer-feedback">
             <a
               href="https://github.com/bioforcefield/crystal_spacegroup_website/discussions"
