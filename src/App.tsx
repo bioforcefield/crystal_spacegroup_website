@@ -161,7 +161,7 @@ function SiteChrome({
         </nav>
       </header>
       {children}
-      <SiteCopyright />
+      <SiteCopyright showVisits={onIndex} />
     </div>
   )
 }

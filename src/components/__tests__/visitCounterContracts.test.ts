@@ -16,7 +16,7 @@ describe('Visit counter footer contracts', () => {
     const src = readSrc('src/components/SiteCopyright.tsx')
     expect(src).toMatch(/import VisitCounter from '\.\/VisitCounter'/)
     expect(src).not.toMatch(/site-copyright-meta/)
-    expect(src).toMatch(/Powered by Grok Bot\.\s*<VisitCounter parens \/>\s*<\/p>/)
+    expect(src).toMatch(/Powered by Grok Bot\.\s*\{showVisits \? <VisitCounter parens \/> : <VisitCounter silent \/>\}\s*<\/p>/)
     expect(src).not.toMatch(/bioforcefield/)
     expect(src).toMatch(/href="mailto:contact@crystalspacegroups\.com"/)
     expect(src).toMatch(/Contact:\{' '\}\s*<a [^>]*>contact@crystalspacegroups\.com<\/a>\. Powered by Grok Bot/)
@@ -25,7 +25,7 @@ describe('Visit counter footer contracts', () => {
 
   it('VisitCounter never renders a dash placeholder; deploy bakes in the worker URL', () => {
     const vc = readSrc('src/components/VisitCounter.tsx')
-    expect(vc).toMatch(/if \(!known\) return null/)
+    expect(vc).toMatch(/if \(silent \|\| !known\) return null/)
     const sh = readSrc('scripts/deploy-gh-pages.sh')
     expect(sh).toMatch(/VITE_COD_PROXY=.*crystal-cod-proxy/)
   })
@@ -39,21 +39,19 @@ describe('Visit counter footer contracts', () => {
   it('index-shell App chrome still mounts SiteCopyright', () => {
     const app = readSrc('src/App.tsx')
     expect(app).toMatch(/import SiteCopyright from '\.\/components\/SiteCopyright'/)
-    expect(app).toMatch(/<SiteCopyright\s*\/>/)
+    expect(app).toMatch(/<SiteCopyright showVisits=\{onIndex\} \/>/)
+    expect(app).toMatch(/const onIndex = location\.pathname === '\/'/)
   })
 
-  it('demo viewport footers include VisitCounter (no SiteCopyright there)', () => {
+  it('SG + CIF viewport footers count visits silently (count shown only on front page)', () => {
     const sg = readSrc('src/pages/SpaceGroupPage.tsx')
     const cif = readSrc('src/components/cif/CifViewport.tsx')
-    expect(sg).toMatch(/VisitCounter/)
-    expect(sg).toMatch(/visit-counter--footer/)
-    expect(cif).toMatch(/VisitCounter/)
-    expect(cif).toMatch(/visit-counter--footer/)
-    expect(sg).toMatch(/<VisitCounter className="visit-counter--footer" parens \/>\s*<\/span>/)
-    expect(sg).not.toMatch(/\{' \('\}\s*<VisitCounter/)
-    // CIF caption: no "(—)" placeholder — counter renders itself only once a count is known.
-    expect(cif).toMatch(/<VisitCounter className="visit-counter--footer" parens dotted \/>/)
-    expect(cif).not.toMatch(/\{' \('\}\s*<VisitCounter/)
+    for (const f of [sg, cif]) {
+      expect(f).toMatch(/<VisitCounter silent \/>/)
+      expect(f).not.toMatch(/<VisitCounter[^>]*parens/)
+      expect(f).not.toMatch(/visit-counter--footer/)
+      expect(f).not.toMatch(/Visits \$/)
+    }
   })
 
   it('worker exposes /visits with Durable Object binding', () => {
@@ -71,6 +69,7 @@ describe('Visit counter footer contracts', () => {
   it('no Google Analytics / heavy trackers wired for visits', () => {
     const api = readSrc('src/data/visits/visitsApi.ts')
     const counter = readSrc('src/components/VisitCounter.tsx')
+    expect(counter).toMatch(/if \(silent \|\| !known\) return null/)
     for (const src of [api, counter]) {
       expect(src).not.toMatch(/google-analytics|gtag\(|GA_MEASUREMENT|googletagmanager/i)
     }

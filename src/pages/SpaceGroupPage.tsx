@@ -373,7 +373,7 @@ export default function SpaceGroupPage({ demo }: Props) {
             {demo.cell.gammaDeg && demo.cell.gammaDeg !== 90
               ? ` · γ = ${demo.cell.gammaDeg}°`
               : ''}
-            <VisitCounter className="visit-counter--footer" parens />
+            <VisitCounter silent />
           </span>
         </footer>
       </main>

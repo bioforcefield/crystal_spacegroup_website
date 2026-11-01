@@ -11,13 +11,15 @@ type Props = {
   parens?: boolean
   /** CIF footer style: " · Visits N" instead of " (N)". */
   dotted?: boolean
+  /** Count the visit (same once-per-tab increment) but render nothing. */
+  silent?: boolean
 }
 
 /**
  * Compact privacy-light visit chip. Shows just the count "N" (or "—" on failure) inside the footer parentheses.
  * Increments once per browser tab session via the COD Cloudflare worker /visits.
  */
-export default function VisitCounter({ className, parens = false, dotted = false }: Props) {
+export default function VisitCounter({ className, parens = false, dotted = false, silent = false }: Props) {
   const [text, setText] = useState(() => visitCounterLabel(null))
   const [known, setKnown] = useState(false)
 
@@ -36,7 +38,7 @@ export default function VisitCounter({ className, parens = false, dotted = false
   }, [])
 
   // Never show a dash: hide entirely until a count (live or cached this tab) is known.
-  if (!known) return null
+  if (silent || !known) return null
   if (parens)
     return (
       <span className={['visit-counter', className].filter(Boolean).join(' ')} aria-label={`${text} visits`}>

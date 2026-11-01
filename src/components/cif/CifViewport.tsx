@@ -14,11 +14,11 @@ import type {
   CifThermalMode,
   CifVisibility,
 } from './cifViewTypes'
+import VisitCounter from '../VisitCounter'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
 import { describeCifStructure } from '../../data/a11y/structureSummary'
 import type { SpaceGroupDemo } from '../../data/types'
-import VisitCounter from '../VisitCounter'
 import SupercellPicker from '../SupercellPicker'
 import {
   baseFileName,
@@ -1078,7 +1078,7 @@ export default function CifViewport({
           {structure?.spaceGroupNumber != null ? ` · demo /sg/${structure.spaceGroupNumber}` : ''}
           {structure ? (placementMode === 'nearest' ? ' · Nearest images' : ' · In cell [0,1)³') : ''}
           {symOn ? ` · ${elementCount} symmetry loci` : ''}
-          <VisitCounter className="visit-counter--footer" parens dotted />
+          <VisitCounter silent />
         </span>
       </footer>
       {hoverInfo && hover && (
