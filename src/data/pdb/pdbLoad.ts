@@ -145,7 +145,7 @@ export async function fetchTextWithProgress(url: string, opts: { signal?: AbortS
 }
 
 /** Fetch an mmCIF (ASU, assembly N, or PDB-REDO with RCSB fallback). */
-export async function loadPdbMmcif(id: string, opts: { assembly?: number | null; source?: PdbSource; signal?: AbortSignal; onProgress?: (p: Progress) => void; fetchImpl?: typeof fetch } = {}): Promise<{ text: string; url: string; note?: string }> {
+export async function loadPdbMmcif(id: string, opts: { assembly?: number | null; source?: PdbSource; signal?: AbortSignal; onProgress?: (p: Progress) => void; fetchImpl?: typeof fetch } = {}): Promise<{ text: string; url: string; note?: string; replacedBy?: string[] }> {
   if (!PDB_ID_LOOSE.test(id)) throw new PdbLoadError(`“${id}” is not a PDB ID (4 characters, e.g. 1CRN).`, 'invalid')
   const f = opts.fetchImpl ?? fetch
   const get = async (url: string) => {
@@ -178,7 +178,22 @@ export async function loadPdbMmcif(id: string, opts: { assembly?: number | null;
     }
     throw mapPdbError(id, r.status, removed, opts.assembly)
   }
-  return { text: r.textBody ?? (await r.text()), url, note }
+  const text = r.textBody ?? (await r.text())
+  if (!/_atom_site\./.test(text)) throw new PdbLoadError(`PDB ${id.toUpperCase()} has no coordinates at RCSB (unreleased, withdrawn, or mistyped ID).`, 'notfound')
+  const obs = obsoleteInfo(text, id)
+  if (obs) {
+    const msg = `PDB ${id.toUpperCase()} is obsolete${obs.date ? ` (since ${obs.date})` : ''}${obs.replacedBy.length ? `; superseded by ${obs.replacedBy.map((x) => x.toUpperCase()).join(', ')}` : ''}.`
+    return { text, url, note: note ? `${note} ${msg}` : msg, replacedBy: obs.replacedBy }
+  }
+  return { text, url, note }
+}
+
+/** Obsolete-entry record in an mmCIF (_pdbx_database_PDB_obs_spr with OBSLTE replacing this ID). */
+export function obsoleteInfo(text: string, id: string): { replacedBy: string[]; date: string | null } | null {
+  const get = (k: string) => new RegExp(`^_pdbx_database_PDB_obs_spr\\.${k}\\s+(.+)$`, 'm').exec(text)?.[1]?.trim().replace(/^'(.*)'$/, '$1') ?? null
+  if (get('id') !== 'OBSLTE' || (get('replace_pdb_id') ?? '').toUpperCase() !== id.toUpperCase()) return null
+  const rep = (get('pdb_id') ?? '').split(/\s+/).filter((x) => PDB_ID_LOOSE.test(x)).map((x) => x.toLowerCase())
+  return { replacedBy: rep, date: get('date') }
 }
 
 /** Warnings shown before/after loading based on the entry summary. */

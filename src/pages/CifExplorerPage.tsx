@@ -430,6 +430,10 @@ export default function CifExplorerPage() {
         link: rcsbEntryUrl(t.id),
       }, route)
       setLoadedPdbOpts({ asm, src })
+      if (r.replacedBy?.length) {
+        setPdbReplacedBy(r.replacedBy)
+        setPdbWarnings((w) => [...w, r.note ?? ''])
+      }
       setPdbAsm(asm)
       setPdbSrc(src)
       setRecentPdb(pushRecent(window.localStorage, t.id))

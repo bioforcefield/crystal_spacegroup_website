@@ -63,9 +63,9 @@ describe('URLs and errors', () => {
     const e = await loadPdbMmcif('1hhb', { fetchImpl: obs }).catch((x) => x)
     expect(e).toBeInstanceOf(PdbLoadError)
     expect(e.replacedBy).toEqual(['4hhb'])
-    const redo = (async (u: string) => u.includes('pdb-redo') ? new Response('', { status: 404 }) : new Response('data_1CRN')) as unknown as typeof fetch
+    const redo = (async (u: string) => u.includes('pdb-redo') ? new Response('', { status: 404 }) : new Response('data_1CRN\n_atom_site.id 1\n')) as unknown as typeof fetch
     const r = await loadPdbMmcif('1crn', { source: 'redo', fetchImpl: redo })
-    expect(r.text).toBe('data_1CRN')
+    expect(r.text).toMatch(/^data_1CRN/)
     expect(r.note).toMatch(/instead/)
     await expect(loadPdbMmcif('xx', { fetchImpl: redo })).rejects.toMatchObject({ kind: 'invalid' })
   })
@@ -86,5 +86,17 @@ describe('URLs and errors', () => {
     expect(v.asm).toBe(2); expect(v.src).toBe('redo')
     expect(serializeViewQuery(v)).toBe('?asm=2&src=redo')
     expect(parseViewQuery('?asm=0').asm).toBeUndefined()
+  })
+})
+
+describe('obsolete entries served as files', () => {
+  it('detects OBSLTE and empty files', async () => {
+    const OBS = "data_1HHB\n_pdbx_database_PDB_obs_spr.id               OBSLTE \n_pdbx_database_PDB_obs_spr.date             1984-07-18 \n_pdbx_database_PDB_obs_spr.pdb_id           '2HHB 3HHB 4HHB' \n_pdbx_database_PDB_obs_spr.replace_pdb_id   1HHB \nloop_\n_atom_site.id\n1\n"
+    const f = (async () => new Response(OBS)) as unknown as typeof fetch
+    const r = await loadPdbMmcif('1hhb', { fetchImpl: f })
+    expect(r.replacedBy).toEqual(['2hhb', '3hhb', '4hhb'])
+    expect(r.note).toMatch(/obsolete \(since 1984-07-18\); superseded by 2HHB, 3HHB, 4HHB/)
+    const empty = (async () => new Response('data_9ZZZ\n_entry.id 9ZZZ\n')) as unknown as typeof fetch
+    await expect(loadPdbMmcif('9zzz', { fetchImpl: empty })).rejects.toMatchObject({ kind: 'notfound' })
   })
 })
