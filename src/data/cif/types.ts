@@ -1,4 +1,6 @@
 import type { CifMetadata } from './metadata'
+import type { PdbAtomExtra } from '../pdb/mmcif'
+import type { MacroInfo } from '../pdb/macro'
 /** Types for CIF upload → symmetry-mapped structure explorer. */
 
 import type { CellParams, Operator, Vec3 } from '../types'
@@ -65,6 +67,8 @@ export interface SymmetryCopyAtom {
   occupancy?: number
   uIso?: number
   aniso?: CifAnisoU
+  /** Macromolecule extras (PDB entries only). */
+  pdb?: PdbAtomExtra
 }
 
 export interface SymmetryBond {
@@ -110,4 +114,6 @@ export interface ExpandedStructure {
   hbonds: HBondContact[]
   metadata: CifMetadata
   warnings: string[]
+  /** Present for PDB macromolecule entries. */
+  macro?: MacroInfo
 }

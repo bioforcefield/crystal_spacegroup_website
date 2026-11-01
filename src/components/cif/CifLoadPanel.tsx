@@ -11,6 +11,7 @@ import {
   type CodSearchKind,
 } from '../../data/cif/codSearch'
 import { hasConfiguredCodProxy } from '../../data/cif/fetchRemoteCif'
+import { PDB_TEACHING_CHIPS } from '../../data/pdb/fetchPdb'
 
 export interface CifLoadPanelProps {
   busy: boolean
@@ -32,9 +33,13 @@ export interface CifLoadPanelProps {
   error: string | null
   /** When true, collapse teaching chips behind "Try another structure". */
   structureLoaded?: boolean
+  /** PDB ID input (RCSB mmCIF). */
+  pdbInput?: string
+  onPdbInputChange?: (v: string) => void
+  onLoadPdb?: (id: string) => void
 }
 
-type LoadMode = 'id' | 'name' | 'smiles'
+type LoadMode = 'id' | 'name' | 'smiles' | 'pdb'
 
 export default function CifLoadPanel({
   busy,
@@ -54,6 +59,9 @@ export default function CifLoadPanel({
   fileName,
   error,
   structureLoaded = false,
+  pdbInput = '',
+  onPdbInputChange,
+  onLoadPdb,
 }: CifLoadPanelProps) {
   const [extras, setExtras] = useState<CodSampleMeta[]>([])
   const [mode, setMode] = useState<LoadMode>('id')
@@ -133,11 +141,12 @@ export default function CifLoadPanel({
     { id: 'id', label: 'COD id' },
     { id: 'name', label: 'Name' },
     { id: 'smiles', label: 'SMILES' },
+    ...(onLoadPdb ? [{ id: 'pdb' as const, label: 'PDB ID' }] : []),
   ]
 
   return (
     <section className="seed-box cif-upload">
-      <h2>Load by code · COD / CSD</h2>
+      <h2>Load by code · COD / CSD / PDB</h2>
 
       <div
         className="cif-load-modes"
@@ -195,6 +204,45 @@ export default function CifLoadPanel({
           >
             Load
           </button>
+        </div>
+      )}
+
+      {mode === 'pdb' && onLoadPdb && (
+        <div className="cif-pdb-load">
+          <div className="cif-code-row">
+            <input
+              type="text"
+              className="cif-code-input"
+              value={pdbInput}
+              onChange={(e) => onPdbInputChange?.(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  onLoadPdb(pdbInput.trim())
+                }
+              }}
+              placeholder="1CRN"
+              aria-label="PDB ID"
+              maxLength={4}
+              disabled={busy}
+              autoCapitalize="characters"
+              spellCheck={false}
+            />
+            <button type="button" className="btn btn-primary" onClick={() => onLoadPdb(pdbInput.trim())} disabled={busy}>
+              Load
+            </button>
+          </div>
+          <p className="muted cif-pdb-note">
+            Protein / nucleic-acid crystal structures from RCSB (mmCIF). Proteins crystallize only in the 65 Sohncke
+            groups (no mirrors, glides or inversion).
+          </p>
+          <div className="cif-cod-chips cif-pdb-chips" role="group" aria-label="PDB teaching examples">
+            {PDB_TEACHING_CHIPS.map((c) => (
+              <button key={c.id} type="button" className="cif-cod-chip" disabled={busy} title={c.title} onClick={() => onLoadPdb(c.id)}>
+                {c.id.toUpperCase()} · {c.short}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

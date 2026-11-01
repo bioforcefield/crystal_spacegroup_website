@@ -67,3 +67,25 @@ describe('uploaded file store', () => {
     expect(storeFile(undefined, 'a', 'b')).toBe(false)
   })
 })
+
+describe('PDB routes', () => {
+  it('parses /cif/pdb/<id> (case-insensitive, stored lowercase)', () => {
+    expect(parseCifPath('/cif/pdb/1CRN')).toEqual({ kind: 'pdb', id: '1crn' })
+    expect(parseCifPath('/cif/pdb/4hhb/')).toEqual({ kind: 'pdb', id: '4hhb' })
+    expect(parseCifPath('/cif/pdb/abcd').kind).toBe('invalid')
+    expect(parseCifPath('/cif/pdb/12345').kind).toBe('invalid')
+  })
+  it('round-trips path + breadcrumb', () => {
+    const t = { kind: 'pdb' as const, id: '1hsg' }
+    expect(cifPath(t)).toBe('/cif/pdb/1hsg')
+    expect(breadcrumbLabel(t)).toBe('PDB 1HSG')
+  })
+  it('rep / lig / chain query params', () => {
+    const q = parseViewQuery('?color=chain&rep=full&lig=MK1_B_902')
+    expect(q.color).toBe('chain')
+    expect(q.rep).toBe('full')
+    expect(q.lig).toBe('MK1_B_902')
+    expect(serializeViewQuery({ ...VIEW_DEFAULTS, rep: 'cartoon', lig: 'HEM_A_142' })).toBe('?lig=HEM_A_142')
+    expect(parseViewQuery('?rep=bogus&lig=../x').rep).toBeUndefined()
+  })
+})

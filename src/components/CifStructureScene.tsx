@@ -30,6 +30,10 @@ import {
 } from '../data/cif/placement'
 import type { CellParams, SpaceGroupDemo, Vec3 } from '../data/types'
 import SymmetryElements from './SymmetryElements'
+import { CartoonMeshes, FocusCamera, LigandFocusOverlay } from './cif/MacroLayer'
+import { chainColor } from '../data/pdb/chainColors'
+import { isAmino, isNucleic } from '../data/pdb/macro'
+import type { InteractionType, LigandSite } from '../data/pdb/interactions'
 import type {
   CifColorMode,
   CifHBondMode,
@@ -89,6 +93,9 @@ interface Props {
   annotations?: SceneAnnotations | null
   /** Hovered atom (soft ring highlight). */
   hoverAtom?: AtomPick | null
+  /** PDB ligand focus (macromolecules only). */
+  ligandSite?: LigandSite | null
+  interactionTypes?: Set<InteractionType>
 }
 
 /** Instanced, dimmed lattice-translated copies of the visible atoms + bonds. */
@@ -106,7 +113,9 @@ function CifReplicas({
   bondColorOf,
   schemeKey,
   atomScale = 1,
+  opacity = 0.7,
 }: {
+  opacity?: number
   atomScale?: number
   schemeKey: string
   structure: ExpandedStructure
@@ -183,12 +192,13 @@ function CifReplicas({
           points={g.pts}
           meta={g.meta}
           scale={atomScale}
+          opacity={opacity}
           onHover={onHover}
           onPick={onPick}
         />
       ))}
       <lineSegments geometry={bondGeom}>
-        <lineBasicMaterial vertexColors transparent opacity={0.55} />
+        <lineBasicMaterial vertexColors transparent opacity={Math.min(0.55, opacity)} />
       </lineSegments>
     </group>
   )
@@ -203,7 +213,9 @@ function InstancedAtoms({
   onHover,
   onPick,
   scale = 1,
+  opacity = 0.7,
 }: {
+  opacity?: number
   scale?: number
   element: string
   color: string
@@ -250,7 +262,8 @@ function InstancedAtoms({
         emissiveIntensity={tint ? 0.25 : 0}
         roughness={0.5}
         transparent
-        opacity={0.7}
+        opacity={opacity}
+        depthWrite={opacity > 0.5}
       />
     </instancedMesh>
   )
@@ -588,6 +601,8 @@ function SceneBody({
   highlightElement = null,
   annotations = null,
   hoverAtom = null,
+  ligandSite = null,
+  interactionTypes,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const supercell = !isDefaultMultiples(multiples)
   const center = useMemo(
@@ -692,8 +707,64 @@ function SceneBody({
     return structure.hbonds
   }, [hbondMode, structure])
 
+  const macro = structure.macro ?? null
+  const chainIdx = useMemo(() => new Map((macro?.model.chains ?? []).map((c, k) => [c, k])), [macro])
+  const colorOf = (ai: number) => {
+    const a = structure.atoms[ai]!
+    if (macro && colorMode === 'chain') return chainColor(chainIdx.get(a.pdb?.chain ?? '') ?? 0)
+    if (colorMode === 'element') return jmolColor(a.element)
+    if (colorMode === 'equivalence') return equivalenceColor(eq.classOf[ai] ?? 0)
+    if (colorMode === 'residue') return residueColor(a.residue ?? a.label.split(/[0-9]/)[0], 1)
+    if (macro && colorMode === 'operator') return operatorColor(a.opIndex)
+    return elementColor(a.element)
+  }
+  const macroOffsets = useMemo<Vec3[]>(() => [[0, 0, 0], ...offsets], [offsets])
+  const macroTranslations = useMemo<Vec3[]>(() => [[0, 0, 0], ...translations], [translations])
+  /** Drawn atoms that are not polymer backbone in cartoon mode (ligands, ions). */
+  const macroAtomIdx = useMemo(() => {
+    if (!macro) return []
+    if (macro.rep !== 'cartoon') return visibleIndices
+    return visibleIndices.filter((ai) => {
+      const e = structure.atoms[ai]!.pdb
+      return e && !isAmino(e.comp) && !isNucleic(e.comp) && !e.ca
+    })
+  }, [macro, visibleIndices, structure.atoms])
+  const macroBonds = useMemo(() => {
+    if (!macro || macro.rep !== 'cartoon') return visibleBonds
+    const keep = new Set(macroAtomIdx)
+    return visibleBonds.filter((b) => keep.has(b.a) && keep.has(b.b))
+  }, [macro, visibleBonds, macroAtomIdx])
+  /** ASU-frame → drawn op-1 copy translation (Nearest/In-cell placement aware). */
+  const focusDelta = useMemo<Vec3 | null>(() => {
+    if (!macro || !ligandSite) return null
+    const ai = structure.atoms.findIndex((a) => a.opIndex === 1)
+    if (ai < 0) return null
+    const si = macro.siteOf[structure.atoms[ai]!.auIndex]!
+    const c = macro.model.cart[si]!
+    const p = placement.positions[ai]!
+    return [p[0] - c[0], p[1] - c[1], p[2] - c[2]]
+  }, [macro, ligandSite, structure.atoms, placement.positions])
+  const focusTarget = useMemo(
+    () =>
+      ligandSite && focusDelta
+        ? {
+            center: [
+              ligandSite.centroid[0] + focusDelta[0],
+              ligandSite.centroid[1] + focusDelta[1],
+              ligandSite.centroid[2] + focusDelta[2],
+            ] as Vec3,
+            radius: ligandSite.radius,
+          }
+        : null,
+    [ligandSite, focusDelta],
+  )
+  const fade = focusTarget ? 0.18 : 1
+
   return (
     <>
+      {macro && (
+        <FocusCamera target={focusTarget} controlsRef={controlsRef} groupOffset={[-center[0], -center[1], -center[2]]} />
+      )}
       <FitCifCamera
         bounds={viewBounds}
         controlsRef={controlsRef}
@@ -706,7 +777,45 @@ function SceneBody({
 
       <group position={[-center[0], -center[1], -center[2]]}>
         <CellWire cell={structure.cell} />
-        {supercell && (
+        {macro && (
+          <>
+            {supercell && <SupercellWire cell={structure.cell} multiples={multiples} fadeInterior={isDenseSupercell(multiples)} />}
+            {macro.rep === 'cartoon' && (
+              <CartoonMeshes
+                structure={structure}
+                positions={placement.positions as Vec3[]}
+                visibleIndices={visibleIndices}
+                colorOf={colorOf}
+                schemeKey={`${colorMode}`}
+                offsets={macroOffsets}
+                translations={macroTranslations}
+                opacity={fade}
+                onHover={onAtomHover}
+                onPick={onAtomPick}
+              />
+            )}
+            <CifReplicas
+              structure={structure}
+              positions={placement.positions as Vec3[]}
+              visibleIndices={macroAtomIdx}
+              bonds={macroBonds}
+              offsets={macroOffsets}
+              translations={macroTranslations}
+              onHover={onAtomHover}
+              onPick={onAtomPick}
+              schemeKey={`${colorMode}|${macro.rep}`}
+              atomScale={macro.rep === 'full' ? 0.6 : macro.rep === 'trace' ? 0.9 : 0.75}
+              opacity={focusTarget ? 0.12 : 0.9}
+              colorOf={(ai) => (macro.rep === 'cartoon' || colorMode === 'operator' ? (colorMode === 'operator' ? jmolColor(structure.atoms[ai]!.element) : colorOf(ai)) : colorOf(ai))}
+              tintOf={colorMode === 'operator' ? (ai) => operatorColor(structure.atoms[ai]!.opIndex) : null}
+              bondColorOf={(ai) => colorOf(ai)}
+            />
+            {ligandSite && focusDelta && (
+              <LigandFocusOverlay site={ligandSite} delta={focusDelta} types={interactionTypes} />
+            )}
+          </>
+        )}
+        {!macro && supercell && (
           <>
             <SupercellWire cell={structure.cell} multiples={multiples} fadeInterior={isDenseSupercell(multiples)} />
             <CifReplicas
@@ -752,7 +861,7 @@ function SceneBody({
           />
         )}
 
-        {visibleBonds.map((b, i) => {
+        {!macro && visibleBonds.map((b, i) => {
           const opMatch = b.opIndex === selectedOp
           const molFocus =
             selectedMolecule == null || b.moleculeId === selectedMolecule
@@ -798,7 +907,7 @@ function SceneBody({
         })}
 
 
-        {hbondLines.map((hb, i) => {
+        {!macro && hbondLines.map((hb, i) => {
           const a = placement.positions[hb.hydrogen]!
           const b = placement.positions[hb.acceptor]!
           const partnerOk =
@@ -825,7 +934,7 @@ function SceneBody({
           )
         })}
 
-        {visibleIndices.map((ai) => {
+        {!macro && visibleIndices.map((ai) => {
           const a = structure.atoms[ai]!
           const isSel = a.opIndex === selectedOp
           const isBase = a.opIndex === 1

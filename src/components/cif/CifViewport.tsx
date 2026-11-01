@@ -54,6 +54,10 @@ import {
   type CellMultiples,
 } from '../../data/supercell'
 
+import { PDB_REPS, PDB_SUPERCELL_ATOM_CAP, type PdbRepresentation } from '../../data/pdb/macro'
+import { INTERACTION_TYPES, type InteractionType, type LigandSite } from '../../data/pdb/interactions'
+import { chainColor } from '../../data/pdb/chainColors'
+
 const CifStructureScene = lazy(() => import('../CifStructureScene'))
 
 export interface CifViewportProps {
@@ -82,6 +86,14 @@ export interface CifViewportProps {
   onHBondModeChange: (m: CifHBondMode) => void
   /** A load is in flight (spinner over the viewer). */
   busy?: boolean
+  /** PDB / macromolecule controls (ignored for small-molecule CIFs). */
+  pdbRep?: PdbRepresentation
+  onPdbRepChange?: (r: PdbRepresentation) => void
+  showWaters?: boolean
+  onShowWatersChange?: (v: boolean) => void
+  ligandSite?: LigandSite | null
+  interactionTypes?: Set<InteractionType>
+  onExitFocus?: () => void
 }
 
 function displaySummary(
@@ -128,7 +140,16 @@ export default function CifViewport({
   hbondMode,
   onHBondModeChange,
   busy = false,
+  pdbRep = 'cartoon',
+  onPdbRepChange,
+  showWaters = false,
+  onShowWatersChange,
+  ligandSite = null,
+  interactionTypes,
+  onExitFocus,
 }: CifViewportProps) {
+  const macro = structure?.macro ?? null
+  const atomCap = macro ? PDB_SUPERCELL_ATOM_CAP : CIF_ATOM_CAP
   const [mult, setMult] = useState<{ s: ExpandedStructure | null; v: CellMultiples }>({
     s: null,
     v: DEFAULT_MULTIPLES,
@@ -411,6 +432,7 @@ export default function CifViewport({
           <button type="button" role="menuitem" onClick={() => doDownload('cif')} disabled={!sourceText}>
             Original file
           </button>
+          {!macro && (<>
           <button type="button" role="menuitem" onClick={() => doDownload('p1')}>
             P1 supercell ({multiples.join('×')})
           </button>
@@ -427,6 +449,12 @@ export default function CifViewport({
           <div className="cif-menu-hint" role="presentation">
             “Current view” = exactly what is drawn (Show filter + supercell).
           </div>
+          </>)}
+          {macro && (
+            <div className="cif-menu-hint" role="presentation">
+              PDB entries: original mmCIF only (SDF/P1 exports are for small molecules).
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -447,6 +475,7 @@ export default function CifViewport({
     onColorModeChange('operator')
     onThermalModeChange('off')
     onHBondModeChange('off')
+    if (macro) onPdbRepChange?.('cartoon')
     if (canShowElements && !showSymmetryElements) {
       onToggleSymmetryElements()
     }
@@ -512,6 +541,7 @@ export default function CifViewport({
     { v: 'element', label: 'Element', title: 'CPK / Jmol element colors; bonds half-colored' },
     { v: 'equivalence', label: 'Equivalence', title: 'Each independent molecule in the asymmetric unit gets a color; its symmetry copies share it' },
     { v: 'residue', label: 'Residue', title: 'Color by residue / component id when present' },
+    ...(macro ? [{ v: 'chain' as const, label: 'Chain', title: 'Color by polymer chain (auth chain id)' }] : []),
   ]
 
   /** Compact dropdown (radio menu) used for Show ▾ and Color ▾. */
@@ -606,10 +636,34 @@ export default function CifViewport({
       </button>
       {displayOpen && (
         <div id="cif-display-sheet" className="cif-display-sheet" role="dialog" aria-label="Display options">
-          <div className="cif-display-section-label">Thermal</div>
-          {thermalControls}
-          <div className="cif-display-section-label">H-bonds</div>
-          {hbondControls}
+          {macro ? (
+            <>
+              <div className="cif-display-section-label">Representation</div>
+              {seg('Representation', pdbRep, (r) => onPdbRepChange?.(r), PDB_REPS.map((r) => ({
+                ...r,
+                disabled: r.v === 'full' && !macro.fullAllowed,
+                title: r.v === 'full' && !macro.fullAllowed ? `Too many atoms (${macro.fullAtomCount.toLocaleString()})` : r.title,
+              })))}
+              {macro.model.hasWater && (
+                <label className="cif-pdb-waters">
+                  <input
+                    type="checkbox"
+                    checked={showWaters}
+                    disabled={pdbRep !== 'full'}
+                    onChange={(e) => onShowWatersChange?.(e.target.checked)}
+                  />{' '}
+                  Show waters{pdbRep !== 'full' ? ' (Full atoms only)' : ''}
+                </label>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="cif-display-section-label">Thermal</div>
+              {thermalControls}
+              <div className="cif-display-section-label">H-bonds</div>
+              {hbondControls}
+            </>
+          )}
           <div className="cif-display-section-label">Preset</div>
           <button
             type="button"
@@ -726,6 +780,13 @@ export default function CifViewport({
                 {eqInfo.labels[k] ? ` · ${eqInfo.labels[k]}` : ''}
               </span>
             ))
+          ) : structure && macro && colorMode === 'chain' ? (
+            macro.model.chains.map((c, k) => (
+              <span key={c} className="legend-item">
+                <span className="swatch" style={{ background: chainColor(k) }} />
+                Chain {c}
+              </span>
+            ))
           ) : structure && colorMode === 'residue' ? (
             <span className="legend-item muted">Residue / component colors</span>
           ) : structure ? (
@@ -753,6 +814,20 @@ export default function CifViewport({
             </>
           ) : (
             <span className="legend-item muted">Load a CIF to map intact molecules by symmetry operator</span>
+          )}
+          {ligandSite && (
+            <span className="cif-elements-inline" aria-label="Interaction types">
+              <span className="cif-legend-sep" aria-hidden="true">|</span>
+              {INTERACTION_TYPES.filter((t) => interactionTypes?.has(t.v) ?? true).map((t) => (
+                <span key={t.v} className="legend-item">
+                  <span className="swatch cif-dash-swatch" style={{ borderColor: t.color }} />
+                  {t.label}
+                </span>
+              ))}
+              <button type="button" className="btn btn-small" onClick={onExitFocus}>
+                Exit focus
+              </button>
+            </span>
           )}
           {elementDemo && symOn && (
             <span className="cif-elements-inline" aria-label="Symmetry element classes">
@@ -786,14 +861,14 @@ export default function CifViewport({
             id="cif-supercell"
             multiples={multiples}
             onAxis={(axis, n) =>
-              setMult({ s: structure, v: setAxisCapped(multiples, axis, n, perCell, CIF_ATOM_CAP) })
+              setMult({ s: structure, v: setAxisCapped(multiples, axis, n, perCell, atomCap) })
             }
             onReset={() => {
               setMult({ s: structure, v: DEFAULT_MULTIPLES })
               onResetView()
             }}
             perCell={perCell}
-            cap={CIF_ATOM_CAP}
+            cap={atomCap}
             unit="atoms"
             strictCap
             compact
@@ -841,6 +916,8 @@ export default function CifViewport({
                 pinnedAtom={pinned}
                 highlightElement={highlightElement}
                 hoverAtom={hover?.pick ?? null}
+                ligandSite={ligandSite}
+                interactionTypes={interactionTypes}
               />
             </Suspense>
           ) : (

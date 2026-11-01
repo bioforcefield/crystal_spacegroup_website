@@ -5363,3 +5363,16 @@ button.linkish {
 .cif-route-note, .cif-route-error { font-size: 0.8rem; margin: 0.35rem 0; padding: 0.35rem 0.5rem; border-radius: 6px; background: rgba(148,163,184,0.12); }
 .cif-route-error { background: rgba(248,113,113,0.12); }
 .cif-route-error a { margin-left: 0.25rem; }
+
+/* —— PDB / macromolecules —— */
+.cif-pdb-noncrystal { margin: 0 0 0.75rem; padding: 0.6rem 0.75rem; border-radius: 8px; background: rgba(250, 204, 21, 0.12); border: 1px solid rgba(250, 204, 21, 0.45); font-size: 0.9rem; line-height: 1.4; }
+.cif-pdb-note { font-size: 0.8rem; margin: 0.4rem 0; }
+.cif-pdb-lig-select select { width: 100%; padding: 0.35rem; background: #0f172a; color: inherit; border: 1px solid #334155; border-radius: 6px; }
+.cif-pdb-focus-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-top: 0.6rem; }
+.cif-pdb-inter-toggles { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; font-size: 0.82rem; margin: 0.4rem 0; }
+.cif-pdb-inter-toggle { display: inline-flex; align-items: center; gap: 0.3rem; cursor: pointer; }
+.cif-pdb-swatch, .cif-dash-swatch { display: inline-block; width: 16px; height: 0; border-top: 2px dashed; background: none !important; }
+.cif-pdb-inter-table-wrap { max-height: 260px; overflow: auto; }
+.cif-pdb-inter-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.cif-pdb-inter-table th, .cif-pdb-inter-table td { padding: 0.15rem 0.3rem; text-align: left; border-bottom: 1px solid rgba(148, 163, 184, 0.15); }
+.cif-pdb-waters { display: block; margin-top: 0.4rem; font-size: 0.85rem; }

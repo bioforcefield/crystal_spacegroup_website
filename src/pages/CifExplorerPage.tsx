@@ -51,6 +51,11 @@ import {
   parseStructureCode,
 } from '../data/cif/structureCode'
 import type { ExpandedStructure } from '../data/cif/types'
+import { looksLikeMmcif, parseMmcif } from '../data/pdb/mmcif'
+import { buildMacroModel, expandMacro, type MacroModel, type PdbRepresentation } from '../data/pdb/macro'
+import { analyzeLigand, INTERACTION_TYPES, type InteractionType } from '../data/pdb/interactions'
+import { fetchPdbCif, rcsbEntryUrl } from '../data/pdb/fetchPdb'
+import PdbLigandPanel from '../components/cif/PdbLigandPanel'
 
 const SAMPLE_BASE = `${import.meta.env.BASE_URL}samples/`
 const safeSession = () => {
@@ -81,6 +86,14 @@ export default function CifExplorerPage() {
   const [pasteText, setPasteText] = useState('')
   const [remoteHint, setRemoteHint] = useState<string | null>(null)
   const [remoteLink, setRemoteLink] = useState<string | null>(null)
+  // —— PDB (macromolecule) state ——
+  const [macroModel, setMacroModel] = useState<MacroModel | null>(null)
+  const [pdbRep, setPdbRep] = useState<PdbRepresentation>('cartoon')
+  const [showWaters, setShowWaters] = useState(false)
+  const [focusLig, setFocusLig] = useState<string | null>(null)
+  const [interTypes, setInterTypes] = useState<Set<InteractionType>>(() => new Set(INTERACTION_TYPES.map((t) => t.v)))
+  const [pdbInput, setPdbInput] = useState('1crn')
+  const expandKeyRef = useRef('')
   const phone = usePhone()
   const location = useLocation()
   const navigate = useNavigate()
@@ -101,8 +114,22 @@ export default function CifExplorerPage() {
     setRemoteHint(remote?.hint ?? null)
     setRemoteLink(remote?.link ?? null)
     try {
-      const parsed = parseCif(text)
-      const expanded = expandStructure(parsed)
+      const view0 = route?.view ?? VIEW_DEFAULTS
+      let expanded: ExpandedStructure
+      if (looksLikeMmcif(text)) {
+        const model = buildMacroModel(parseMmcif(text))
+        const r = view0.rep ?? 'cartoon'
+        expanded = expandMacro(model, r, false)
+        expandKeyRef.current = `${r}|false`
+        setMacroModel(model)
+        setPdbRep(r)
+        setShowWaters(false)
+        setFocusLig(view0.lig && model.ligands.some((l) => l.id === view0.lig) ? view0.lig : null)
+      } else {
+        expanded = expandStructure(parseCif(text))
+        setMacroModel(null)
+        setFocusLig(null)
+      }
       setStructure(expanded)
       setFileName(name)
       setSourceText(text)
@@ -122,12 +149,29 @@ export default function CifExplorerPage() {
       }
     } catch (e) {
       setStructure(null)
+      setMacroModel(null)
       setLoadedKey(null)
       setError(e instanceof Error ? e.message : String(e))
     } finally {
       setBusy(false)
     }
   }, [])
+
+  // PDB: representation / waters → re-expand the same model.
+  useEffect(() => {
+    if (!macroModel) return
+    const k = `${pdbRep}|${showWaters}`
+    if (expandKeyRef.current === k) return
+    expandKeyRef.current = k
+    setStructure(expandMacro(macroModel, pdbRep, showWaters))
+  }, [macroModel, pdbRep, showWaters])
+
+  const ligandSite = useMemo(() => {
+    if (!macroModel || !focusLig) return null
+    const L = macroModel.ligands.find((l) => l.id === focusLig)
+    return L ? analyzeLigand(macroModel, L) : null
+  }, [macroModel, focusLig])
+
 
   /** Current view carried into a newly opened structure (op/show reset as before). */
   const carryView = useCallback(
@@ -263,6 +307,36 @@ export default function CifExplorerPage() {
     }
   }, [codeInput, loadText, tKey, openTarget, location.search])
 
+  const loadByPdb = useCallback(async (id: string, route?: { key: string; view: CifViewQuery }) => {
+    const t: CifTarget = { kind: 'pdb', id: id.trim().toLowerCase() }
+    if (!route) {
+      if (!/^[0-9][a-z0-9]{3}$/i.test(id.trim())) {
+        setError(`“${id}” is not a PDB ID — use 4 characters, e.g. 1CRN.`)
+        return
+      }
+      if (targetKey(t) !== tKey) {
+        openTarget(t)
+        return
+      }
+      route = { key: targetKey(t), view: parseViewQuery(location.search) }
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      const text = await fetchPdbCif(t.id)
+      loadText(text, `PDB ${t.id.toUpperCase()} · RCSB`, {
+        hint: `PDB ${t.id.toUpperCase()} mmCIF from RCSB (files.rcsb.org).`,
+        link: rcsbEntryUrl(t.id),
+      }, route)
+    } catch (e) {
+      setStructure(null)
+      setMacroModel(null)
+      setLoadedKey(null)
+      setError(e instanceof Error ? e.message : String(e))
+      setBusy(false)
+    }
+  }, [loadText, tKey, openTarget, location.search])
+
   // Legacy deep link: /cif?cod=1100303 → /cif/cod/1100303
   useEffect(() => {
     if (target.kind !== 'none') return
@@ -297,7 +371,10 @@ export default function CifExplorerPage() {
       setError(`Unrecognised CIF map address “/cif/${target.raw}”.`)
       return
     }
-    if (target.kind === 'cod') {
+    if (target.kind === 'pdb') {
+      setPdbInput(target.id.toUpperCase())
+      void loadByPdb(target.id, route)
+    } else if (target.kind === 'cod') {
       setCodeInput(target.id)
       void loadByCode(target.id, route)
     } else if (target.kind === 'sample') {
@@ -325,11 +402,13 @@ export default function CifExplorerPage() {
       view: placementMode,
       show: visibility,
       color: colorMode,
+      rep: macroModel ? pdbRep : undefined,
+      lig: macroModel ? focusLig : null,
     })
     if (search !== location.search) {
       navigate({ pathname: location.pathname, search }, { replace: true, state: location.state })
     }
-  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, location.search, location.pathname, location.state, navigate])
+  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, location.search, location.pathname, location.state, navigate])
 
   const loadPaste = useCallback(() => {
     if (!pasteText.trim()) {
@@ -445,11 +524,19 @@ export default function CifExplorerPage() {
                 : 'No structure loaded yet.'}
           </p>
           <p className="blurb">
-            Load a COD code, paste/upload a CSD or COD CIF, and explore intact
+            Load a COD code or PDB ID, paste/upload a CSD or COD CIF (or PDB mmCIF), and explore intact
             molecules colored by the symmetry operator that generated each
             copy. Lattice a/b/c (and angles) label the unit-cell box.
           </p>
         </header>
+
+        {structure && macroModel && !macroModel.crystal && (
+          <div className="cif-pdb-noncrystal" role="status" data-testid="pdb-noncrystal">
+            <strong>No crystal lattice.</strong> {macroModel.pdbId ? `${macroModel.pdbId.toUpperCase()}: ` : ''}
+            {macroModel.nonCrystalReason ?? 'non-crystallographic entry'}. There is no unit cell or space group, so the
+            symmetry map shows the deposited model (model 1) only. Try an X-ray entry such as 1CRN or 4HHB.
+          </div>
+        )}
 
         {structure && (
           <PhoneSection phone={phone} title="Structure, operators & PXRD">
@@ -470,6 +557,26 @@ export default function CifExplorerPage() {
           </PhoneSection>
         )}
 
+        {structure && macroModel && (
+          <PhoneSection phone={phone} title="Ligands & interactions">
+            <PdbLigandPanel
+              model={macroModel}
+              focusId={focusLig}
+              onFocus={setFocusLig}
+              site={ligandSite}
+              types={interTypes}
+              onToggleType={(t) =>
+                setInterTypes((s) => {
+                  const n = new Set(s)
+                  if (n.has(t)) n.delete(t)
+                  else n.add(t)
+                  return n
+                })
+              }
+            />
+          </PhoneSection>
+        )}
+
         <PhoneSection phone={phone && structure != null} title="Load another CIF (COD / CSD / upload)">
         <CifLoadPanel
           busy={busy}
@@ -479,6 +586,12 @@ export default function CifExplorerPage() {
           onLoadCodId={(id) => {
             setCodeInput(id)
             openTarget({ kind: 'cod', id })
+          }}
+          pdbInput={pdbInput}
+          onPdbInputChange={setPdbInput}
+          onLoadPdb={(id) => {
+            setPdbInput(id.toUpperCase())
+            void loadByPdb(id)
           }}
           onFile={onFile}
           onLoadSample={loadSample}
@@ -520,6 +633,13 @@ export default function CifExplorerPage() {
         hbondMode={hbondMode}
         onHBondModeChange={setHBondMode}
         busy={busy}
+        pdbRep={pdbRep}
+        onPdbRepChange={setPdbRep}
+        showWaters={showWaters}
+        onShowWatersChange={setShowWaters}
+        ligandSite={ligandSite}
+        interactionTypes={interTypes}
+        onExitFocus={() => setFocusLig(null)}
       />
     </div>
   )
