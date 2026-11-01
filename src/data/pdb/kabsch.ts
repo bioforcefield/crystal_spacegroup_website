@@ -9,18 +9,20 @@ const centroid = (P: Vec3[]): Vec3 => {
   return [c[0] / P.length, c[1] / P.length, c[2] / P.length]
 }
 
-function jacobiMaxEig(A: number[][]): number[] {
-  const n = 4
+/** Jacobi eigen-decomposition of a symmetric n×n matrix. Returns eigenvalues + column eigenvectors. */
+export function jacobiEigen(A: number[][]): { values: number[]; vectors: number[][] } {
+  const n = A.length
   const a = A.map((r) => r.slice())
-  const V: number[][] = [0, 1, 2, 3].map((i) => [0, 1, 2, 3].map((j) => (i === j ? 1 : 0)))
+  const v: number[][] = a.map((_, i) => a.map((__, j) => (i === j ? 1 : 0)))
   for (let sweep = 0; sweep < 60; sweep++) {
     let off = 0
     for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) off += a[p]![q]! ** 2
     if (off < 1e-18) break
     for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
-      if (Math.abs(a[p]![q]!) < 1e-15) continue
-      const th = (a[q]![q]! - a[p]![p]!) / (2 * a[p]![q]!)
-      const t = Math.sign(th || 1) / (Math.abs(th) + Math.sqrt(th * th + 1))
+      const apq = a[p]![q]!
+      if (Math.abs(apq) < 1e-20) continue
+      const theta = (a[q]![q]! - a[p]![p]!) / (2 * apq)
+      const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
       const c = 1 / Math.sqrt(t * t + 1), s = t * c
       for (let k = 0; k < n; k++) {
         const akp = a[k]![p]!, akq = a[k]![q]!
@@ -31,20 +33,34 @@ function jacobiMaxEig(A: number[][]): number[] {
         a[p]![k] = c * apk - s * aqk; a[q]![k] = s * apk + c * aqk
       }
       for (let k = 0; k < n; k++) {
-        const vkp = V[k]![p]!, vkq = V[k]![q]!
-        V[k]![p] = c * vkp - s * vkq; V[k]![q] = s * vkp + c * vkq
+        const vkp = v[k]![p]!, vkq = v[k]![q]!
+        v[k]![p] = c * vkp - s * vkq; v[k]![q] = s * vkp + c * vkq
       }
     }
   }
+  return { values: a.map((r, i) => r[i]!), vectors: v }
+}
+
+function jacobiMaxEig(A: number[][]): number[] {
+  const { values, vectors } = jacobiEigen(A)
   let best = 0
-  for (let i = 1; i < n; i++) if (a[i]![i]! > a[best]![best]!) best = i
-  return [0, 1, 2, 3].map((k) => V[k]![best]!)
+  for (let i = 1; i < values.length; i++) if (values[i]! > values[best]!) best = i
+  return vectors.map((row) => row[best]!)
+}
+
+/** Horn (1987) quaternion superposition; no minimum point count (callers validate). */
+export function superpose(mobile: Vec3[], fixed: Vec3[]): Superposition {
+  return superposeImpl(mobile, fixed)
 }
 
 /** Best rotation taking `mobile` onto `fixed` (paired points, same length ≥ 3). */
 export function kabsch(mobile: Vec3[], fixed: Vec3[]): Superposition {
+  if (Math.min(mobile.length, fixed.length) < 3) throw new Error('Superposition needs at least 3 paired atoms')
+  return superpose(mobile, fixed)
+}
+
+function superposeImpl(mobile: Vec3[], fixed: Vec3[]): Superposition {
   const n = Math.min(mobile.length, fixed.length)
-  if (n < 3) throw new Error('Superposition needs at least 3 paired atoms')
   const P = mobile.slice(0, n), Q = fixed.slice(0, n)
   const cm = centroid(P), cf = centroid(Q)
   const S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]

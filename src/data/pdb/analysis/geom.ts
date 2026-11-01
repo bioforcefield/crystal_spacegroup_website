@@ -1,4 +1,5 @@
 /** Small vector / dihedral helpers for structure analysis (degrees out). */
+import { superpose } from '../kabsch'
 import type { Vec3 } from '../../types'
 
 export const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
@@ -46,73 +47,16 @@ export function signedAngle(a: Vec3, b: Vec3, ref: Vec3): number {
   return dot(cross(ap, bp), r) < 0 ? -ang : ang
 }
 
-/** Jacobi eigen-decomposition of a symmetric n×n matrix. Returns eigenvalues + column eigenvectors. */
-export function jacobiEigen(A: number[][]): { values: number[]; vectors: number[][] } {
-  const n = A.length
-  const a = A.map((r) => r.slice())
-  const v: number[][] = a.map((_, i) => a.map((__, j) => (i === j ? 1 : 0)))
-  for (let sweep = 0; sweep < 60; sweep++) {
-    let off = 0
-    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) off += a[p]![q]! ** 2
-    if (off < 1e-18) break
-    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) {
-      const apq = a[p]![q]!
-      if (Math.abs(apq) < 1e-20) continue
-      const theta = (a[q]![q]! - a[p]![p]!) / (2 * apq)
-      const t = Math.sign(theta || 1) / (Math.abs(theta) + Math.sqrt(theta * theta + 1))
-      const c = 1 / Math.sqrt(t * t + 1), s = t * c
-      for (let k = 0; k < n; k++) {
-        const akp = a[k]![p]!, akq = a[k]![q]!
-        a[k]![p] = c * akp - s * akq
-        a[k]![q] = s * akp + c * akq
-      }
-      for (let k = 0; k < n; k++) {
-        const apk = a[p]![k]!, aqk = a[q]![k]!
-        a[p]![k] = c * apk - s * aqk
-        a[q]![k] = s * apk + c * aqk
-      }
-      for (let k = 0; k < n; k++) {
-        const vkp = v[k]![p]!, vkq = v[k]![q]!
-        v[k]![p] = c * vkp - s * vkq
-        v[k]![q] = s * vkp + c * vkq
-      }
-    }
-  }
-  return { values: a.map((r, i) => r[i]!), vectors: v }
-}
+export { jacobiEigen } from '../kabsch'
 
 /**
- * Least-squares superposition (Horn 1987 quaternion) of reference points P onto
- * target points Q. Returns rotation R (rows) and translation t so Q ≈ R·P + t, plus rmsd.
+ * Least-squares superposition of reference points P onto target points Q (shared
+ * Horn-quaternion solver in ../kabsch). Returns rotation R (rows) and translation t
+ * so Q ≈ R·P + t, plus rmsd.
  */
 export function lsFit(P: Vec3[], Q: Vec3[]): { R: number[][]; t: Vec3; rmsd: number } {
-  const n = P.length
-  const cp = scale(P.reduce(add, [0, 0, 0]), 1 / n)
-  const cq = scale(Q.reduce(add, [0, 0, 0]), 1 / n)
-  const S = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-  for (let i = 0; i < n; i++) {
-    const p = sub(P[i]!, cp), q = sub(Q[i]!, cq)
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) S[r]![c]! += p[r]! * q[c]!
-  }
-  const [xx, xy, xz] = S[0] as Vec3, [yx, yy, yz] = S[1] as Vec3, [zx, zy, zz] = S[2] as Vec3
-  const N = [
-    [xx + yy + zz, yz - zy, zx - xz, xy - yx],
-    [yz - zy, xx - yy - zz, xy + yx, zx + xz],
-    [zx - xz, xy + yx, -xx + yy - zz, yz + zy],
-    [xy - yx, zx + xz, yz + zy, -xx - yy + zz],
-  ]
-  const { values, vectors } = jacobiEigen(N)
-  let k = 0
-  for (let i = 1; i < 4; i++) if (values[i]! > values[k]!) k = i
-  const [q0, q1, q2, q3] = [vectors[0]![k]!, vectors[1]![k]!, vectors[2]![k]!, vectors[3]![k]!]
-  const R = [
-    [q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3, 2 * (q1 * q2 - q0 * q3), 2 * (q1 * q3 + q0 * q2)],
-    [2 * (q1 * q2 + q0 * q3), q0 * q0 - q1 * q1 + q2 * q2 - q3 * q3, 2 * (q2 * q3 - q0 * q1)],
-    [2 * (q1 * q3 - q0 * q2), 2 * (q2 * q3 + q0 * q1), q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3],
-  ]
-  const mul = (v: Vec3): Vec3 => [dot(R[0] as Vec3, v), dot(R[1] as Vec3, v), dot(R[2] as Vec3, v)]
-  const t = sub(cq, mul(cp))
-  let e = 0
-  for (let i = 0; i < n; i++) e += dist(add(mul(P[i]!), t), Q[i]!) ** 2
-  return { R, t, rmsd: Math.sqrt(e / n) }
+  const sp = superpose(P, Q)
+  const R = sp.rot
+  const Rc: Vec3 = [dot(R[0] as Vec3, sp.cMobile), dot(R[1] as Vec3, sp.cMobile), dot(R[2] as Vec3, sp.cMobile)]
+  return { R, t: sub(sp.cFixed, Rc), rmsd: sp.rmsd }
 }
