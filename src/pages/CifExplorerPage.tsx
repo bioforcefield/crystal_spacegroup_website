@@ -7,6 +7,8 @@ import {
   type ChangeEvent,
   type KeyboardEvent,
   type ReactNode,
+  lazy,
+  Suspense,
 } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -56,6 +58,10 @@ import { buildMacroModel, expandMacro, type MacroModel, type PdbRepresentation }
 import { analyzeLigand, INTERACTION_TYPES, type InteractionType } from '../data/pdb/interactions'
 import { fetchPdbCif, rcsbEntryUrl } from '../data/pdb/fetchPdb'
 import PdbLigandPanel from '../components/cif/PdbLigandPanel'
+import CifXrayPanel from '../components/cif/CifXrayPanel'
+import type { AnalysisTab } from '../data/cif/cifRoute'
+import type { AnalysisFocus } from '../components/cif/analysis/types'
+const StructureAnalysisPanel = lazy(() => import('../components/cif/analysis/StructureAnalysisPanel'))
 
 const SAMPLE_BASE = `${import.meta.env.BASE_URL}samples/`
 const safeSession = () => {
@@ -94,6 +100,8 @@ export default function CifExplorerPage() {
   const [diagramOpen, setDiagramOpen] = useState(false)
   const [highlightRes, setHighlightRes] = useState<string | null>(null)
   const [centerRes, setCenterRes] = useState<string | null>(null)
+  const [analysisTab, setAnalysisTab] = useState<AnalysisTab | null>(null)
+  const [analysisFocus, setAnalysisFocus] = useState<AnalysisFocus | null>(null)
   const setFocusLig = useCallback((id: string | null) => {
     setFocusLigRaw(id)
     setCenterRes(null)
@@ -136,10 +144,14 @@ export default function CifExplorerPage() {
         const lig0 = view0.lig && model.ligands.some((l) => l.id === view0.lig) ? view0.lig : null
         setFocusLig(lig0)
         setDiagramOpen(!!lig0 && !!view0.diagram)
+        setAnalysisTab(view0.analysis ?? null)
+        setAnalysisFocus(null)
       } else {
         expanded = expandStructure(parseCif(text))
         setMacroModel(null)
         setFocusLig(null)
+        setAnalysisTab(null)
+        setAnalysisFocus(null)
       }
       setStructure(expanded)
       setFileName(name)
@@ -416,11 +428,12 @@ export default function CifExplorerPage() {
       rep: macroModel ? pdbRep : undefined,
       lig: macroModel ? focusLig : null,
       diagram: diagramOpen,
+      analysis: macroModel ? analysisTab : null,
     })
     if (search !== location.search) {
       navigate({ pathname: location.pathname, search }, { replace: true, state: location.state })
     }
-  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, diagramOpen, location.search, location.pathname, location.state, navigate])
+  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, diagramOpen, analysisTab, location.search, location.pathname, location.state, navigate])
 
   const loadPaste = useCallback(() => {
     if (!pasteText.trim()) {
@@ -551,7 +564,7 @@ export default function CifExplorerPage() {
         )}
 
         {structure && (
-          <PhoneSection phone={phone} title="Structure, operators & PXRD">
+          <PhoneSection phone={phone} title="Structure & operators">
           <CifStructurePanel
             structure={structure}
             selectedOp={selectedOp}
@@ -565,6 +578,7 @@ export default function CifExplorerPage() {
               setCodeInput(id)
               openTarget({ kind: 'cod', id })
             }}
+            showXray={false}
           />
           </PhoneSection>
         )}
@@ -588,6 +602,29 @@ export default function CifExplorerPage() {
                   return n
                 })
               }
+            />
+          </PhoneSection>
+        )}
+
+        {structure && macroModel && (
+          <section className="seed-box cif-analysis-launch" aria-label="Structure analysis">
+            <h2>Structure analysis</h2>
+            <p className="muted">Ramachandran, side-chain χ, nucleic-acid torsions, sugar pucker and 3DNA-style base-pair / step parameters, with plots and CSV export.</p>
+            <button type="button" className="btn" data-testid="analysis-open" aria-pressed={analysisTab != null}
+              onClick={() => setAnalysisTab((t) => (t ? null : macroModel.extras.some((e) => e.ca) ? 'rama' : 'na'))}>
+              {analysisTab ? 'Close structure analysis' : 'Open structure analysis'}
+            </button>
+          </section>
+        )}
+
+        {structure && (
+          <PhoneSection phone={phone} title="X-ray · powder (PXRD)">
+            <CifXrayPanel
+              structure={structure}
+              onLoadCodId={(id) => {
+                setCodeInput(id)
+                openTarget({ kind: 'cod', id })
+              }}
             />
           </PhoneSection>
         )}
@@ -661,7 +698,22 @@ export default function CifExplorerPage() {
         onHighlightRes={setHighlightRes}
         centerRes={centerRes}
         onCenterRes={setCenterRes}
+        analysisFocus={analysisFocus}
       />
+      {structure && macroModel && analysisTab && (
+        <Suspense fallback={<aside className="cif-analysis-drawer" role="status"><p>Loading analysis…</p></aside>}>
+          <StructureAnalysisPanel
+            model={macroModel}
+            tab={analysisTab}
+            onTab={setAnalysisTab}
+            onClose={() => { setAnalysisTab(null); setAnalysisFocus(null) }}
+            focus={analysisFocus}
+            onFocus={setAnalysisFocus}
+            pocketKeys={ligandSite ? ligandSite.pocket.filter((p) => !p.symCode).map((p) => `${p.chain}|${p.seq}|${p.comp}`) : null}
+            pocketLabel={ligandSite ? ligandSite.ligand.label : null}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }

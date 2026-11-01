@@ -103,6 +103,8 @@ export interface CifViewportProps {
   onHighlightRes?: (key: string | null) => void
   /** Residue key the 3D camera centres on. */
   centerRes?: string | null
+  /** Residue picked in the structure-analysis drawer. */
+  analysisFocus?: import('./analysis/types').AnalysisFocus | null
   onCenterRes?: (key: string | null) => void
 }
 
@@ -162,6 +164,7 @@ export default function CifViewport({
   highlightRes = null,
   onHighlightRes,
   centerRes = null,
+  analysisFocus = null,
   onCenterRes,
 }: CifViewportProps) {
   const macro = structure?.macro ?? null
@@ -965,6 +968,7 @@ export default function CifViewport({
                 interactionTypes={interactionTypes}
                 highlightRes={highlightRes}
                 centerRes={centerRes}
+                analysisFocus={analysisFocus}
               />
             </Suspense>
           ) : (

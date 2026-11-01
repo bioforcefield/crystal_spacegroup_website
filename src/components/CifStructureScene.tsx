@@ -97,6 +97,7 @@ interface Props {
   ligandSite?: LigandSite | null
   highlightRes?: string | null
   centerRes?: string | null
+  analysisFocus?: import('./cif/analysis/types').AnalysisFocus | null
   interactionTypes?: Set<InteractionType>
 }
 
@@ -606,6 +607,7 @@ function SceneBody({
   ligandSite = null,
   highlightRes = null,
   centerRes = null,
+  analysisFocus = null,
   interactionTypes,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
   const supercell = !isDefaultMultiples(multiples)
@@ -741,14 +743,15 @@ function SceneBody({
   }, [macro, visibleBonds, macroAtomIdx])
   /** ASU-frame → drawn op-1 copy translation (Nearest/In-cell placement aware). */
   const focusDelta = useMemo<Vec3 | null>(() => {
-    if (!macro || !ligandSite) return null
+    if (!macro || (!ligandSite && !analysisFocus)) return null
     const ai = structure.atoms.findIndex((a) => a.opIndex === 1)
     if (ai < 0) return null
     const si = macro.siteOf[structure.atoms[ai]!.auIndex]!
     const c = macro.model.cart[si]!
     const p = placement.positions[ai]!
     return [p[0] - c[0], p[1] - c[1], p[2] - c[2]]
-  }, [macro, ligandSite, structure.atoms, placement.positions])
+  }, [macro, ligandSite, analysisFocus, structure.atoms, placement.positions])
+  const anaCenter = useMemo<Vec3 | null>(() => (analysisFocus && focusDelta ? [analysisFocus.center[0] + focusDelta[0], analysisFocus.center[1] + focusDelta[1], analysisFocus.center[2] + focusDelta[2]] : null), [analysisFocus, focusDelta])
   const focusTarget = useMemo(() => {
     const cr = ligandSite && focusDelta && centerRes ? ligandSite.pocket.find((p) => p.key === centerRes) : null
     if (cr && focusDelta) {
@@ -756,6 +759,7 @@ function SceneBody({
       const n = cr.atoms.length || 1
       return { center: [c[0] / n + focusDelta[0], c[1] / n + focusDelta[1], c[2] / n + focusDelta[2]] as Vec3, radius: 6 }
     }
+    if (anaCenter && !cr) return { center: anaCenter, radius: 9 }
     return ligandSite && focusDelta
         ? {
             center: [
@@ -766,8 +770,8 @@ function SceneBody({
             radius: ligandSite.radius,
           }
         : null
-  }, [ligandSite, focusDelta, centerRes])
-  const fade = focusTarget ? 0.18 : 1
+  }, [ligandSite, focusDelta, centerRes, anaCenter])
+  const fade = ligandSite && focusDelta ? 0.18 : 1
 
   return (
     <>
@@ -819,6 +823,12 @@ function SceneBody({
               tintOf={colorMode === 'operator' ? (ai) => operatorColor(structure.atoms[ai]!.opIndex) : null}
               bondColorOf={(ai) => colorOf(ai)}
             />
+            {anaCenter && (
+              <mesh position={anaCenter}>
+                <sphereGeometry args={[2.2, 24, 16]} />
+                <meshBasicMaterial color="#facc15" transparent opacity={0.35} depthWrite={false} />
+              </mesh>
+            )}
             {ligandSite && focusDelta && (
               <LigandFocusOverlay site={ligandSite} delta={focusDelta} types={interactionTypes} highlight={highlightRes} />
             )}

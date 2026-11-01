@@ -72,7 +72,11 @@ export type CifViewQuery = {
   lig?: string | null
   /** 2D ligand interaction diagram open. */
   diagram?: boolean
+  /** PDB structure-analysis drawer tab (e.g. rama, chi, na, pucker, bp, step). */
+  analysis?: AnalysisTab | null
 }
+export const ANALYSIS_TABS = ['rama', 'chi', 'na', 'pucker', 'bp', 'step'] as const
+export type AnalysisTab = (typeof ANALYSIS_TABS)[number]
 export const VIEW_DEFAULTS: CifViewQuery = { op: 1, view: 'nearest', show: 'molecules', color: 'operator' }
 const REPS = ['cartoon', 'trace', 'full'] as const
 const VIEW_TOKENS: Record<string, CifViewQuery['view']> = { near: 'nearest', cell: 'wrapped', whole: 'whole' }
@@ -98,6 +102,8 @@ export function parseViewQuery(search: string | URLSearchParams): CifViewQuery {
   const lig = q.get('lig')
   if (lig && /^[A-Za-z0-9]{1,5}_[A-Za-z0-9]{1,4}_-?[0-9A-Za-z]{1,6}$/.test(lig)) out.lig = lig
   if (out.lig && q.get('diagram') === '1') out.diagram = true
+  const an = q.get('analysis') as AnalysisTab
+  if (an && (ANALYSIS_TABS as readonly string[]).includes(an)) out.analysis = an
   return out
 }
 
@@ -110,6 +116,7 @@ export function serializeViewQuery(v: CifViewQuery): string {
   if (v.rep && v.rep !== 'cartoon') q.set('rep', v.rep)
   if (v.lig) q.set('lig', v.lig)
   if (v.lig && v.diagram) q.set('diagram', '1')
+  if (v.analysis) q.set('analysis', v.analysis)
   const s = q.toString()
   return s ? `?${s}` : ''
 }

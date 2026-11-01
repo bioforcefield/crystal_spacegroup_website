@@ -505,6 +505,8 @@ button {
   .app.layout-demo .panel .seed-box { order: 2; }
   .app.layout-demo .panel .class-legend-panel { order: 3; }
   .app.layout-demo .panel .matrix-section { order: 4; }
+  .app.layout-demo .panel .cif-xray { order: 5; }
+  .app.layout-demo .panel .cif-analysis-launch { order: 3; }
 
   /* Operators as horizontal chips under the toolbar — always reachable */
   .mobile-op-strip {
@@ -5389,3 +5391,37 @@ button.linkish {
 .cif-lig2d-empty { padding: 0.5rem; margin: 0; }
 .cif-pdb-inter-table tr.is-hl td { background: rgba(250, 204, 21, 0.22); }
 @media (max-width: 640px) { .cif-lig2d { position: relative; width: auto; height: 420px; inset: auto; margin-top: 0.5rem; } }
+
+/* —— Structure analysis drawer (PDB) —— */
+.cif-analysis-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 46vw); z-index: 60; overflow: auto; background: #f8fafc; color: #0f172a; border-left: 1px solid #334155; box-shadow: -8px 0 24px rgba(0,0,0,.45); padding: 0.7rem 0.9rem 2rem; font-size: 0.85rem; }
+.cif-analysis-drawer .btn { color: #0f172a; background: #e2e8f0; border-color: #cbd5e1; }
+.cif-analysis-drawer .muted { color: #475569; }
+.ana-head { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; position: sticky; top: -0.7rem; background: #f8fafc; padding: 0.4rem 0; z-index: 2; }
+.ana-head h2 { margin: 0; font-size: 1.05rem; }
+.ana-head-actions, .ana-plot-actions { display: inline-flex; gap: 0.3rem; }
+.ana-sel { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; align-items: center; margin: 0.3rem 0 0.5rem; }
+.ana-sel select, .ana-sel input, .ana-row select { font: inherit; padding: 0.1rem 0.3rem; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #0f172a; }
+.ana-focus { background: #fef9c3; border-radius: 6px; padding: 0.1rem 0.4rem; }
+.ana-tabs { display: flex; flex-wrap: wrap; gap: 0.25rem; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.4rem; margin-bottom: 0.5rem; }
+.cif-analysis-drawer .seg { font: inherit; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; border-radius: 999px; padding: 0.2rem 0.65rem; cursor: pointer; }
+.cif-analysis-drawer .seg.is-on { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.ana-row { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin: 0.4rem 0; }
+.ana-plots { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.6rem; }
+.ana-plot { margin: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.35rem; }
+.ana-plot figcaption { display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.2rem; }
+.ana-svg { width: 100%; height: auto; display: block; }
+.ana-readout { font-size: 0.75rem; color: #334155; min-height: 1.1em; }
+.ana-info { cursor: help; color: #2563eb; }
+.ana-summary { margin: 0.3rem 0; }
+.ana-chip { font: inherit; font-size: 0.75rem; border: 1px solid #fca5a5; background: #fee2e2; border-radius: 999px; padding: 0 0.4rem; margin: 0 0.15rem; cursor: pointer; }
+.ana-table-wrap { max-height: 320px; overflow: auto; margin-top: 0.6rem; border: 1px solid #e2e8f0; border-radius: 6px; background: #fff; }
+.ana-table { border-collapse: collapse; width: 100%; font-size: 0.78rem; }
+.ana-table th { position: sticky; top: 0; background: #f1f5f9; text-align: left; padding: 0.2rem 0.4rem; }
+.ana-table td { padding: 0.12rem 0.4rem; border-top: 1px solid #f1f5f9; }
+.ana-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.ana-table tr { cursor: pointer; }
+.ana-table tr:hover, .ana-table tr:focus { background: #eff6ff; outline: none; }
+.ana-table tr.is-sel { background: #fef08a; }
+.ana-note { font-size: 0.72rem; margin-top: 0.5rem; }
+@media (max-width: 900px) { .cif-analysis-drawer { width: 100vw; top: 30vh; border-left: 0; border-top: 1px solid #334155; } }
+@media print { .cif-analysis-drawer { position: static; width: auto; box-shadow: none; } }
