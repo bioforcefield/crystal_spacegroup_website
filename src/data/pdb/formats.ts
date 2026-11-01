@@ -7,13 +7,14 @@
  *  - Schrödinger Maestro (.mae; .maegz/.mae.gz gunzipped by the caller):
  *    first f_m_ct block, m_atom table, m_bond table, optional PDB CRYST1 props.
  */
+import { WATERS } from './waters'
 import { looksLikeMmcif } from './mmcif'
 
 export type StructureFormat = 'mmcif' | 'pdb' | 'mae' | 'cif'
 
 export const AMINO3 = 'ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL MSE SEC PYL'.split(' ')
 const NUC = new Set('A C G U T DA DC DG DT DU I DI'.split(' '))
-const WATER = new Set(['HOH', 'WAT', 'DOD', 'H2O', 'SPC', 'T3P', 'TIP3'])
+const WATER = WATERS
 
 export function looksLikePdb(text: string): boolean {
   return /^(ATOM  |HETATM)[ \d]{5} /m.test(text) && /^(ATOM  |HETATM).{24}\s*-?\d+\.\d{3}/m.test(text)

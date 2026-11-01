@@ -2,9 +2,10 @@
  * Lightweight PDBx/mmCIF reader for RCSB crystal structures (teaching use).
  * Line-based and fast enough for typical entries (≤ ~100k atoms). Reads the
  * cell, space group, experiment method, fractionalization matrix and
- * _atom_site (model 1, first altloc). Produces a ParsedCif so the existing
+ * _atom_site (model 1, highest-occupancy altloc). Produces a ParsedCif so the existing
  * CIF-map pipeline can be reused, plus macromolecule extras per atom.
  */
+import { WATERS } from './waters'
 import { buildOperatorsFromTriplets } from '../groups/buildOperators'
 import { findGroup } from '../spaceGroupCatalog'
 import type { CellParams, Operator, Vec3 } from '../types'
@@ -228,10 +229,20 @@ function readSs(t: MmcifTables): SsRange[] {
   return out
 }
 
-const WATERS = new Set(['HOH', 'WAT', 'DOD', 'H2O'])
 
 export function looksLikeMmcif(text: string): boolean {
   return /^_atom_site\.cartn_x/im.test(text) || /^_atom_site\.Cartn_x/m.test(text)
+}
+
+function altResKey(r: string[], ix: { chain: number; seq: number; ins: number }): string {
+  return `${r[ix.chain] ?? 'A'}|${r[ix.seq] ?? ''}|${ix.ins >= 0 ? r[ix.ins] : ''}`
+}
+
+/** Highest summed occupancy wins; ties go to the alphabetically first label. */
+export function chooseAltloc(occ: Map<string, number>): string {
+  let best = '', bo = -Infinity
+  for (const [alt, o] of [...occ].sort((a, b) => a[0].localeCompare(b[0]))) if (o > bo + 1e-6) { best = alt; bo = o }
+  return best
 }
 
 export function parseMmcif(text: string): ParsedMmcif {
@@ -283,7 +294,20 @@ export function parseMmcif(text: string): ParsedMmcif {
   if (ix.x < 0 || ix.y < 0 || ix.z < 0) throw new Error('mmCIF _atom_site has no Cartn_x/y/z columns')
 
   const firstModel = ix.model >= 0 ? loop.rows[0]?.[ix.model] : undefined
-  const altSeen = new Map<string, string>() // residue key → chosen altloc
+  // Altlocs: per residue keep the conformer with the highest summed occupancy
+  // (ties → alphabetical, i.e. usually 'A'), as PyMOL/PLIP do. Blank-altloc atoms are always kept.
+  const altOcc = new Map<string, Map<string, number>>()
+  for (const r of loop.rows) {
+    if (ix.model >= 0 && r[ix.model] !== firstModel) continue
+    const alt = ix.alt >= 0 ? r[ix.alt]! : '.'
+    if (alt === '.' || alt === '?') continue
+    const resKey = altResKey(r, ix)
+    let m = altOcc.get(resKey)
+    if (!m) altOcc.set(resKey, (m = new Map()))
+    m.set(alt, (m.get(alt) ?? 0) + (num(r[ix.occ]) ?? 1))
+  }
+  const altChosen = new Map<string, string>()
+  for (const [k, m] of altOcc) altChosen.set(k, chooseAltloc(m))
   const cart: Vec3[] = []
   const extras: PdbAtomExtra[] = []
   const raw: { el: string; occ?: number; b?: number }[] = []
@@ -294,14 +318,7 @@ export function parseMmcif(text: string): ParsedMmcif {
     const chain = r[ix.chain] ?? 'A'
     const seq = (r[ix.seq] ?? '') + (ix.ins >= 0 && r[ix.ins] !== '?' && r[ix.ins] !== '.' ? r[ix.ins] : '')
     const atomName = r[ix.atom] ?? ''
-    if (alt !== '.' && alt !== '?') {
-      const key = `${chain}|${seq}|${atomName}`
-      const resKey = `${chain}|${seq}`
-      const chosen = altSeen.get(resKey)
-      if (chosen == null) altSeen.set(resKey, alt)
-      else if (chosen !== alt) { skippedAlt++; continue }
-      void key
-    }
+    if (alt !== '.' && alt !== '?' && altChosen.get(altResKey(r, ix)) !== alt) { skippedAlt++; continue }
     const x = num(r[ix.x]), y = num(r[ix.y]), z = num(r[ix.z])
     if (x == null || y == null || z == null) continue
     const comp = r[ix.comp] ?? 'UNK'
@@ -316,7 +333,7 @@ export function parseMmcif(text: string): ParsedMmcif {
     })
   }
   if (skippedModels) warnings.push('Multiple models deposited — showing model 1 only')
-  if (skippedAlt) warnings.push(`Alternate conformations: kept the first altloc per residue (${skippedAlt} atoms skipped)`)
+  if (skippedAlt) warnings.push(`Alternate conformations: kept the highest-occupancy altloc per residue (${skippedAlt} atoms skipped)`)
 
   // Fractionalization
   let M: number[][], v: Vec3
