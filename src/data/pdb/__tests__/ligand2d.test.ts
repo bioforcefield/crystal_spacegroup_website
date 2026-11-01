@@ -83,3 +83,15 @@ describe('2D diagram: residues stacked over a planar ligand face', () => {
       for (let j = i + 1; j < d.residues.length; j++) expect(overlaps(d.residues[i]!, d.residues[j]!)).toBe(false)
   })
 })
+
+describe('SVG injection safety', () => {
+  it('escapes hostile atom / residue names', () => {
+    const evil = '<img src=x onerror=alert(1)>'
+    const hostile = { ...site, ligand: { ...site.ligand, label: evil, comp: evil }, atoms: site.atoms.map((a, i) => (i === 0 ? { ...a, name: evil } : a)),
+      pocket: site.pocket.map((p) => ({ ...p, label: evil, comp: evil })), interactions: site.interactions.map((x) => ({ ...x, resLabel: evil, ligAtom: evil })) }
+    const svg = diagramToSvg(layoutDiagram(hostile, null))
+    expect(svg).not.toMatch(/<img/)
+    expect(svg).toMatch(/&lt;img/)
+    expect(/<[^>]*onerror/i.test(svg)).toBe(false)
+  })
+})
