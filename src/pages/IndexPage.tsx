@@ -1,3 +1,4 @@
+import { LatticeLabLogo } from '../components/brand/LatticeLabLogo'
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { KineticsLogo, MorphLogo, PubsLogo } from '../components/brand/SectionLogos'
 import { Link } from 'react-router-dom'
@@ -140,31 +141,36 @@ export default function IndexPage() {
             <div className="cif-spotlight-copy">
               <div className="cif-spotlight-badges">
                 <span className="cif-spotlight-badge">Structures</span>
+                <span className="cif-spotlight-badge soft">COD</span>
+                <span className="cif-spotlight-badge soft">PDB</span>
                 <span className="cif-spotlight-badge soft">New</span>
               </div>
-              <h2 id="cif-spotlight-title">Lattice Lab</h2>
+              <h2 id="cif-spotlight-title" className="lattice-lab-title">
+                <LatticeLabLogo size={26} className="lattice-lab-logo" />
+                Lattice Lab
+              </h2>
               <p>
-                Upload a CSD or COD CIF and see each symmetry operator colored on
-                the real unit cell — screws, glides, mirrors, and inversions over
-                the actual molecules. Load any COD id through the live proxy, or
-                try a teaching chip on the explorer.
+                See every symmetry operator colored on a real unit cell — screws,
+                glides, mirrors and inversions over the actual molecules. Load any
+                COD id, a CSD-exported CIF, or a PDB entry from RCSB search
+                (cartoon, ligands with a 2D interaction diagram, sequence alignment
+                and structure analysis). Upload CIF, mmCIF, .pdb or Maestro .mae
+                files, and download any cell view as CIF or PDB.
               </p>
               <div className="cif-spotlight-cta">
                 <Link to="/cif" className="btn btn-primary">
                   Open Lattice Lab
                 </Link>
                 <span className="cif-spotlight-hint">
-                  or try a teaching COD chip on that page
+                  or try <Link to="/cif/sample/acetic_p21c">acetic acid (P2₁/c)</Link>
+                  {' · '}
+                  <Link to="/cif/pdb/4hhb">hemoglobin 4HHB</Link>
                 </span>
               </div>
             </div>
             <div className="cif-spotlight-aside" aria-hidden>
-              <div className="cif-spotlight-orbits">
-                <span className="cif-orb cif-orb-a" />
-                <span className="cif-orb cif-orb-b" />
-                <span className="cif-orb cif-orb-c" />
-              </div>
-              <p className="cif-spotlight-aside-label">CSD · COD · operators</p>
+              <LatticeLabLogo size={96} className="lattice-lab-logo home-aside-logo" />
+              <p className="cif-spotlight-aside-label">COD · PDB · CSD</p>
             </div>
           </div>
         </section>
@@ -180,11 +186,12 @@ export default function IndexPage() {
                 </div>
                 <h2 id="pubs-spotlight-title" className="lattice-lab-title">
                   <PubsLogo size={26} className="lattice-lab-logo" />
-                  Publications by year &amp; tags</h2>
+                  Publications by year &amp; tags
+                </h2>
                 <p>
                   Stream recent ACS / IUCr / RSC / Wiley titles via Crossref
                   (metadata + DOI only), or browse the curated COD set by year and
-                  tags — then open the paper or the structure in the Lattice Lab.
+                  tags — then open the paper or the structure in Lattice Lab.
                 </p>
                 <div className="cif-spotlight-cta">
                   <Link to="/pubs" className="btn btn-primary">
@@ -204,25 +211,31 @@ export default function IndexPage() {
                 <div className="cif-spotlight-badges">
                   <span className="cif-spotlight-badge">Growth</span>
                   <span className="cif-spotlight-badge soft">Interactive</span>
+                  <span className="cif-spotlight-badge soft">Literature</span>
                 </div>
                 <h2 id="teach-spotlight-title" className="lattice-lab-title">
                   <MorphLogo size={26} className="lattice-lab-logo" />
                   <KineticsLogo size={26} className="lattice-lab-logo" />
-                  Morphology &amp; kinetics</h2>
+                  Morphology &amp; kinetics
+                </h2>
                 <p>
                   Explore how relative face growth rates set crystal habit (2D Wulff
                   schematic), and how supersaturation drives nucleation and growth
-                  mechanism curves — teaching plots with live sliders.
+                  mechanism curves — teaching plots with live sliders, plus literature
+                  reviews with ~50 DOI-checked references and plots redrawn from
+                  published data.
                 </p>
                 <div className="cif-spotlight-cta">
-                  <Link to="/morphology" className="btn btn-primary">
+                  <Link to="/morphology" className="btn btn-primary btn-logo">
+                    <MorphLogo size={16} className="nav-logo" />
                     Morphology
                   </Link>
-                  <Link to="/kinetics" className="btn btn-primary">
+                  <Link to="/kinetics" className="btn btn-primary btn-logo">
+                    <KineticsLogo size={16} className="nav-logo" />
                     Kinetics
                   </Link>
                   <span className="cif-spotlight-hint">
-                    Wulff outline · nucleation · growth regimes
+                    Wulff · BFDH · nucleation · growth · references
                   </span>
                 </div>
               </div>

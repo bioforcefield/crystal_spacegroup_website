@@ -5582,3 +5582,10 @@ button.linkish {
 .know-refs li:target { background: #1e293b; }
 .know-note { font-size: 0.85rem; color: #94a3b8; }
 @media (max-width: 640px) { .know-toc ol { columns: 1; } }
+.btn-logo { display: inline-flex; align-items: center; gap: 0.35rem; }
+.home-aside-logo { display: block; margin: 0 auto 0.4rem; filter: drop-shadow(0 0 14px rgba(56,189,248,.35)); }
+@media (max-width: 480px) {
+  .cif-spotlight-aside { display: none; }
+  .home-spotlight-card .lattice-lab-title { font-size: 1.25rem; flex-wrap: wrap; }
+  .cif-spotlight-cta { flex-wrap: wrap; gap: 0.5rem; }
+}
