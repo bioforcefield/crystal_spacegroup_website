@@ -78,6 +78,9 @@ const safeSession = () => {
   }
 }
 
+const LATTICE_LAB_BLURB =
+  'Load a PDB ID or COD id, or paste/upload a structure file (CIF, mmCIF, PDB or Maestro), and explore intact molecules coloured by the symmetry operator that generated each copy. Lattice a/b/c (and angles) label the unit-cell box.'
+
 export default function CifExplorerPage() {
   const [structure, setStructure] = useState<ExpandedStructure | null>(null)
   const [fileName, setFileName] = useState<string | null>(null)
@@ -608,15 +611,20 @@ export default function CifExplorerPage() {
 
   return (
     <div className={`app layout-demo cif-explorer${structure ? ' has-structure' : ''}`}>
+      <a href="#cif-viewer" className="skip-link cif-skip-viewer">
+        Skip to 3D viewer
+      </a>
       <aside className="panel" id="demo-sidebar">
         <header className="panel-header">
           <div className="panel-nav-row">
             <Link to="/" className="back-link">
               ← All space groups
             </Link>
-            <Link to="/sg/14" className="back-link cif-jump">
-              Try P21/c
-            </Link>
+            {!macroModel && (
+              <Link to="/sg/14" className="back-link cif-jump">
+                Try P21/c
+              </Link>
+            )}
           </div>
           {breadcrumbLabel(target) ? (
             <nav className="cif-breadcrumb" aria-label="Breadcrumb">
@@ -655,11 +663,14 @@ export default function CifExplorerPage() {
                   } operators.`
                 : 'No structure loaded yet.'}
           </p>
-          <p className="blurb">
-            Load a COD code or PDB ID, paste/upload a CSD or COD CIF (or PDB mmCIF), and explore intact
-            molecules colored by the symmetry operator that generated each
-            copy. Lattice a/b/c (and angles) label the unit-cell box.
-          </p>
+          {macroModel && structure ? (
+            <details className="cif-blurb-details">
+              <summary>About Lattice Lab</summary>
+              <p className="blurb">{LATTICE_LAB_BLURB}</p>
+            </details>
+          ) : (
+            <p className="blurb">{LATTICE_LAB_BLURB}</p>
+          )}
         </header>
 
         {structure && macroModel && !macroModel.crystal && (
@@ -778,6 +789,7 @@ export default function CifExplorerPage() {
       </aside>
 
       <CifViewport
+        onOpenExample={(ex) => openTarget(ex === 'sample' ? { kind: 'sample', name: 'acetic_p21c' } : { kind: 'pdb', id: ex.slice(4) })}
         structure={structure}
         sourceText={sourceText}
         sourceName={fileName}

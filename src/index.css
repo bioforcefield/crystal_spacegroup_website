@@ -5497,3 +5497,65 @@ button.linkish {
 .cif-lig-name { background: transparent; border: 0; color: #e2e8f0; font: inherit; font-size: 0.8rem; text-align: left; cursor: pointer; padding: 0.15rem 0; }
 .cif-lig-name:hover { color: #7dd3fc; }
 .cif-lig-2d { font-size: 0.72rem; padding: 0.1rem 0.45rem; }
+
+/* —— Lattice Lab review fixes (Nov 2026) —— */
+.cif-explorer .btn:disabled,
+.cif-explorer .seg-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.cif-welcome {
+  max-width: 34rem;
+  text-align: center;
+  line-height: 1.5;
+}
+.cif-welcome-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text, #e2e8f0);
+  margin: 0 0 0.4rem;
+}
+.cif-welcome-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.9rem;
+}
+.cif-blurb-details > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0.25rem 0;
+}
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0.5rem;
+  z-index: 100;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  background: var(--accent, #38bdf8);
+  color: #0b1220;
+  font-weight: 600;
+}
+.skip-link:focus {
+  left: 0.5rem;
+}
+.seq-res:focus-visible {
+  outline: 2px solid var(--accent, #38bdf8);
+  outline-offset: 1px;
+}
+/* Narrow screens: the toolbar wraps instead of clipping; first run puts the load card first. */
+@media (max-width: 640px) {
+  .app.layout-demo.cif-explorer .viewport-toolbar.cif-toolbar-row {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    row-gap: 0.35rem;
+  }
+  .cif-explorer .viewport-toolbar.cif-toolbar-row > * { flex: 0 0 auto; }
+  .app.layout-demo.cif-explorer:not(.has-structure) > .panel { order: -2; }
+  .app.layout-demo.cif-explorer:not(.has-structure) .viewport { min-height: 0; }
+  .app.layout-demo.cif-explorer:not(.has-structure) .cif-overlay-body,
+  .app.layout-demo.cif-explorer:not(.has-structure) .cif-overlay-body .canvas-wrap { min-height: 260px; }
+}

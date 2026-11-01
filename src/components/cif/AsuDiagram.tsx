@@ -79,7 +79,9 @@ function DiagramSvg({ model }: { model: AsuDiagramModel }) {
 
 /** ASU / formula 2D sketch card for the CIF structure panel. */
 export default function AsuDiagram({ structure }: AsuDiagramProps) {
-  const model = useMemo(() => buildAsuDiagram(structure), [structure])
+  const model = useMemo(() => (structure.macro ? null : buildAsuDiagram(structure)), [structure])
+  // Macromolecules: a 2D ASU sketch is never readable, so skip the card entirely.
+  if (!model) return null
 
   return (
     <figure className="cif-asu-diagram" aria-labelledby="cif-asu-diagram-caption">

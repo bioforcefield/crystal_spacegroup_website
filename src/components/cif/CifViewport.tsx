@@ -67,7 +67,11 @@ import {
 
 const CifStructureScene = lazy(() => import('../CifStructureScene'))
 
+export type CifExample = 'pdb:4hhb' | 'pdb:1bna' | 'sample'
+
 export interface CifViewportProps {
+  /** First-run example buttons in the empty viewport. */
+  onOpenExample?: (ex: CifExample) => void
   structure: ExpandedStructure | null
   /** Original CIF text + file name (for Download). */
   sourceText?: string | null
@@ -180,6 +184,7 @@ export default function CifViewport({
   sequenceSlot = null,
   onPinnedResidue,
   onCenterRes,
+  onOpenExample,
 }: CifViewportProps) {
   const macro = structure?.macro ?? null
   const atomCap = macro ? PDB_SUPERCELL_ATOM_CAP : CIF_ATOM_CAP
@@ -392,7 +397,7 @@ export default function CifViewport({
       }}
       disabled={!structure}
       aria-pressed={measureOn}
-      title="Measure distances, angles and torsions; pick atoms on two molecules to get the symmetry element relating them"
+      title={structure ? 'Measure distances, angles and torsions; pick atoms on two molecules to get the symmetry element relating them' : 'Load a structure first'}
     >
       Measure{measureOn ? ' · on' : ''}
     </button>
@@ -493,6 +498,7 @@ export default function CifViewport({
         className={`btn${dlOpen ? ' btn-primary' : ''}`}
         onClick={() => setDlOpen((o) => !o)}
         disabled={!structure}
+        title={structure ? undefined : 'Load a structure first'}
         aria-expanded={dlOpen}
         aria-haspopup="menu"
       >
@@ -701,7 +707,7 @@ export default function CifViewport({
       aria-checked={symOn}
       title={
         !structure
-          ? 'Load a CIF first'
+          ? 'Load a structure first'
           : !elementDemo
             ? 'Needs a resolvable space-group number (1–230)'
             : elementCount === 0
@@ -811,7 +817,7 @@ export default function CifViewport({
   }
 
   return (
-    <main className="viewport cif-vp">
+    <main className="viewport cif-vp" id="cif-viewer" tabIndex={-1}>
       <div className="viewport-toolbar cif-toolbar-row" role="toolbar" aria-label="Viewer controls">
         <div className="segmented cif-tb-view" role="group" aria-label="Motif placement">
           <span className="cif-tb-key" aria-hidden="true">View</span>
@@ -924,7 +930,7 @@ export default function CifViewport({
               )}
             </>
           ) : (
-            <span className="legend-item muted">Load a CIF to map intact molecules by symmetry operator</span>
+            <span className="legend-item muted">Load a structure to colour copies by symmetry operator</span>
           )}
           {ligandSite && (
             <span className="cif-elements-inline" aria-label="Interaction types">
@@ -1061,10 +1067,27 @@ export default function CifViewport({
                   <p>Loading structure…</p>
                 </div>
               ) : (
-                <p>
-                  Drop in a <code>.cif</code> from CSD or COD, or load the teaching sample, to see intact molecules
-                  colored by symmetry operator.
-                </p>
+                <div className="cif-welcome" data-testid="cif-welcome">
+                  <p className="cif-welcome-title">Explore a crystal structure</p>
+                  <p>
+                    Load a PDB ID, a COD id or a file (<code>.cif</code> <code>.mmcif</code> <code>.pdb</code>{' '}
+                    <code>.mae</code>) from the panel, or drop a file here. Every copy is coloured by the symmetry
+                    operator that generated it.
+                  </p>
+                  {onOpenExample && (
+                    <div className="cif-welcome-examples" role="group" aria-label="Examples">
+                      <button type="button" className="btn" onClick={() => onOpenExample('pdb:4hhb')}>
+                        4HHB · haemoglobin
+                      </button>
+                      <button type="button" className="btn" onClick={() => onOpenExample('pdb:1bna')}>
+                        1BNA · B-DNA
+                      </button>
+                      <button type="button" className="btn" onClick={() => onOpenExample('sample')}>
+                        Acetic acid · P2₁/c
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -1281,12 +1304,16 @@ export default function CifViewport({
 
       <footer className="viewport-footer">
         <span className="viewport-footer-text">
-          {structure?.operatorSource === 'cif'
-            ? 'Ops from CIF'
-            : structure?.operatorSource === 'demo'
-              ? 'Ops from ITA (no CIF symmetry loop)'
-              : 'CIF explorer'}
-          {structure?.spaceGroupNumber != null ? ` · demo /sg/${structure.spaceGroupNumber}` : ''}
+          {macro
+            ? macro.model.crystal
+              ? 'Ops from the PDB space group'
+              : 'Deposited model (no lattice)'
+            : structure?.operatorSource === 'cif'
+              ? 'Ops from CIF'
+              : structure?.operatorSource === 'demo'
+                ? 'Ops from ITA (no CIF symmetry loop)'
+                : 'Lattice Lab'}
+          {!macro && structure?.spaceGroupNumber != null ? ` · demo /sg/${structure.spaceGroupNumber}` : ''}
           {structure ? (placementMode === 'nearest' ? ' · Nearest images' : placementMode === 'whole' ? ' · Whole molecules, centres in cell' : ' · In cell [0,1)³') : ''}
           {symOn ? ` · ${elementCount} symmetry loci` : ''}
           <VisitCounter silent />
