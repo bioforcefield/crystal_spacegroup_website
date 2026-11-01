@@ -635,6 +635,7 @@ function SceneBody({
   const visibleIndices = useMemo(() => {
     const idxs: number[] = []
     structure.atoms.forEach((a, i) => {
+      if (placement.hidden?.has(i)) return
       if (visibility === 'asymmetric' && a.opIndex !== 1) return
       if (
         visibility === 'selected' &&
@@ -645,7 +646,7 @@ function SceneBody({
       idxs.push(i)
     })
     return idxs
-  }, [structure.atoms, visibility, selectedOp])
+  }, [structure.atoms, visibility, selectedOp, placement.hidden])
 
   const eq = useMemo(() => equivalenceClasses(structure.atoms), [structure.atoms])
 

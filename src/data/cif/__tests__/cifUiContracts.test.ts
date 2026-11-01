@@ -50,7 +50,8 @@ describe('CIF UI source contracts', () => {
 
   it('In-cell short label is Wrap (not Cell) to avoid HUD confusion', () => {
     const vp = readSrc('src/components/cif/CifViewport.tsx')
-    expect(vp).toMatch(/label-full">In cell</)
+    expect(vp).toMatch(/label-full">Cell \(atoms\)</)
+    expect(vp).toMatch(/label-full">Cell \(whole\)</)
     expect(vp).toMatch(/label-short">Wrap</)
     expect(vp).not.toMatch(/label-short">Cell</)
   })

@@ -19,7 +19,11 @@ import type { PlacementMode } from '../nearestImages'
 import type { SpaceGroupDemo, Vec3 } from '../types'
 import type { ExpandedStructure, SymmetryCopyAtom } from './types'
 
-export type CifPlacementMode = PlacementMode // 'nearest' | 'wrapped'
+/** 'nearest' | 'wrapped' (atoms in cell) | 'whole' (whole molecules, centroid in cell). */
+export type CifPlacementMode = PlacementMode | 'whole'
+
+/** Tolerance so centroids on a cell face land consistently in [-eps, 1-eps). */
+export const WHOLE_EPS = 1e-4
 
 function moleculeCentroidFrac(
   atoms: SymmetryCopyAtom[],
@@ -64,6 +68,8 @@ export interface CifPlacementResult {
   /** Fractional draw positions (for tests / diagnostics). */
   fractionals: Vec3[]
   mode: CifPlacementMode
+  /** Whole mode: atom indices of duplicate molecules (coincident centroids) to hide. */
+  hidden?: Set<number>
 }
 
 /**
@@ -105,6 +111,8 @@ export function placeCifStructure(
     }
     return { positions, fractionals, mode: 'wrapped' }
   }
+
+  if (mode === 'whole') return placeWhole(structure)
 
   // nearest — group by moleculeId
   const byMol = new Map<number, number[]>()
@@ -207,4 +215,71 @@ export function bondVisibleInWrapped(
     aCart[2] - bCart[2],
   )
   return d <= maxDist
+}
+
+function groupByMolecule(structure: ExpandedStructure): Map<number, number[]> {
+  const byMol = new Map<number, number[]>()
+  structure.atoms.forEach((a, i) => {
+    let l = byMol.get(a.moleculeId)
+    if (!l) byMol.set(a.moleculeId, (l = []))
+    l.push(i)
+  })
+  return byMol
+}
+
+/**
+ * Whole-molecule cell view: each connected molecule (symmetry copy) is
+ * translated by an integer lattice vector so its centroid lies in
+ * [-eps, 1-eps)³; atoms stay bonded even when they protrude past faces.
+ * Copies whose centroids coincide (special positions) are hidden as duplicates.
+ */
+export function placeWhole(structure: ExpandedStructure): CifPlacementResult {
+  const n = structure.atoms.length
+  const fractionals: Vec3[] = new Array(n)
+  const positions: Vec3[] = new Array(n)
+  const hidden = new Set<number>()
+  const seen: { c: Vec3; size: number }[] = []
+  const byMol = [...groupByMolecule(structure).entries()].sort((x, y) => {
+    const ox = structure.atoms[x[1][0]!]!.opIndex
+    const oy = structure.atoms[y[1][0]!]!.opIndex
+    return ox - oy || x[0] - y[0]
+  })
+  for (const [, idx] of byMol) {
+    const c = moleculeCentroidFrac(structure.atoms, idx, true)
+    const shift: Vec3 = [
+      -Math.floor(c[0] + WHOLE_EPS),
+      -Math.floor(c[1] + WHOLE_EPS),
+      -Math.floor(c[2] + WHOLE_EPS),
+    ]
+    const cc = addFrac(c, shift)
+    const dup = seen.some(
+      (s) =>
+        s.size === idx.length &&
+        Math.abs(s.c[0] - cc[0]) < 1e-3 &&
+        Math.abs(s.c[1] - cc[1]) < 1e-3 &&
+        Math.abs(s.c[2] - cc[2]) < 1e-3,
+    )
+    if (!dup) seen.push({ c: cc, size: idx.length })
+    for (const i of idx) {
+      const frac = addFrac(structure.atoms[i]!.displayFractional, shift)
+      fractionals[i] = frac
+      positions[i] = fracToCart(frac, structure.cell)
+      if (dup) hidden.add(i)
+    }
+  }
+  return { positions, fractionals, mode: 'whole', hidden }
+}
+
+/** Centroids (fractional) of the drawn whole molecules, for tests / diagnostics. */
+export function wholeMoleculeCentroids(structure: ExpandedStructure): Vec3[] {
+  const r = placeWhole(structure)
+  const out: Vec3[] = []
+  for (const [, idx] of groupByMolecule(structure)) {
+    if (r.hidden!.has(idx[0]!)) continue
+    const n = idx.length
+    const c: Vec3 = [0, 0, 0]
+    for (const i of idx) for (let k = 0; k < 3; k++) c[k] += r.fractionals[i]![k]! / n
+    out.push(c)
+  }
+  return out
 }

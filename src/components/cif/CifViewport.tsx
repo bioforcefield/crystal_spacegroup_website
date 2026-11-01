@@ -164,13 +164,13 @@ export default function CifViewport({
   const [hl, setHl] = useState<{ s: ExpandedStructure; el: string } | null>(null)
   const pinned = structure && pin?.s === structure ? pin.pick : null
   const highlightElement = structure && hl?.s === structure ? hl.el : null
-  const placedPositions = useMemo(
+  const placedResult = useMemo(
     () =>
-      structure
-        ? placeCifStructure(structure, placementMode, selectedOp, elementDemo ?? null).positions
-        : [],
+      structure ? placeCifStructure(structure, placementMode, selectedOp, elementDemo ?? null) : null,
     [structure, placementMode, selectedOp, elementDemo],
   )
+  const placedPositions = placedResult?.positions ?? []
+  const placedHidden = placedResult?.hidden
   const infoFor = (p: AtomPick): AtomInfo | null => {
     if (!structure) return null
     const a = structure.atoms[p.ai]
@@ -386,6 +386,7 @@ export default function CifViewport({
     const disp = structure.atoms.map((a) => a.displayCartesian as [number, number, number])
     const inView = (ai: number) => {
       const a = structure.atoms[ai]!
+      if (placedHidden?.has(ai)) return false
       if (visibility === 'asymmetric') return a.opIndex === 1
       if (visibility === 'selected') return a.opIndex === 1 || a.opIndex === selectedOp
       return true
@@ -726,12 +727,22 @@ export default function CifViewport({
           </button>
           <button
             type="button"
+            className={placementMode === 'whole' ? 'seg active' : 'seg'}
+            onClick={() => onPlacementModeChange('whole')}
+            aria-pressed={placementMode === 'whole'}
+            title="Whole molecules whose centre lies in the unit cell (atoms may protrude past faces)"
+          >
+            <span className="label-full">Cell (whole)</span>
+            <span className="label-short">Whole</span>
+          </button>
+          <button
+            type="button"
             className={placementMode === 'wrapped' ? 'seg active' : 'seg'}
             onClick={() => onPlacementModeChange('wrapped')}
             aria-pressed={placementMode === 'wrapped'}
             title="Wrap every atom into the unit cell [0,1)³"
           >
-            <span className="label-full">In cell</span>
+            <span className="label-full">Cell (atoms)</span>
             <span className="label-short">Wrap</span>
           </button>
         </div>
@@ -1153,7 +1164,7 @@ export default function CifViewport({
               ? 'Ops from ITA (no CIF symmetry loop)'
               : 'CIF explorer'}
           {structure?.spaceGroupNumber != null ? ` · demo /sg/${structure.spaceGroupNumber}` : ''}
-          {structure ? (placementMode === 'nearest' ? ' · Nearest images' : ' · In cell [0,1)³') : ''}
+          {structure ? (placementMode === 'nearest' ? ' · Nearest images' : placementMode === 'whole' ? ' · Whole molecules, centres in cell' : ' · In cell [0,1)³') : ''}
           {symOn ? ` · ${elementCount} symmetry loci` : ''}
           <VisitCounter silent />
         </span>

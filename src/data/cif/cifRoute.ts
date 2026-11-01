@@ -63,7 +63,7 @@ export function breadcrumbLabel(t: CifTarget): string | null {
 // ---- view state in the query string (defaults omitted) ----
 export type CifViewQuery = {
   op: number
-  view: 'nearest' | 'wrapped'
+  view: 'nearest' | 'wrapped' | 'whole'
   show: 'molecules' | 'all' | 'selected' | 'asymmetric'
   color: 'operator' | 'element' | 'equivalence' | 'residue' | 'chain'
   /** PDB representation (cartoon default). */
@@ -73,7 +73,7 @@ export type CifViewQuery = {
 }
 export const VIEW_DEFAULTS: CifViewQuery = { op: 1, view: 'nearest', show: 'molecules', color: 'operator' }
 const REPS = ['cartoon', 'trace', 'full'] as const
-const VIEW_TOKENS: Record<string, CifViewQuery['view']> = { near: 'nearest', cell: 'wrapped' }
+const VIEW_TOKENS: Record<string, CifViewQuery['view']> = { near: 'nearest', cell: 'wrapped', whole: 'whole' }
 const SHOW_TOKENS: Record<string, CifViewQuery['show']> = {
   molecules: 'molecules', all: 'all', pair: 'selected', asu: 'asymmetric',
 }
