@@ -5675,3 +5675,13 @@ button.linkish {
   .pxrd-modal-body { flex-direction: column; }
   .pxrd-modal-table { flex: 0 0 auto; max-height: 30vh; }
 }
+
+/* Guide: symbol table + collapsible sections */
+.guide-symbols { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0.4rem 0; }
+.guide-symbols th, .guide-symbols td { text-align: left; padding: 0.2rem 0.4rem; border-bottom: 1px solid rgba(148,163,184,0.15); }
+.guide-symbols .swatch { display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 3px; }
+.guide-more { display: grid; gap: 0.5rem; margin-top: 1rem; }
+.guide-acc { border: 1px solid rgba(148,163,184,0.2); border-radius: 10px; padding: 0.5rem 0.9rem; }
+.guide-acc > summary { cursor: pointer; font-weight: 600; }
+.guide-acc ul { margin: 0.5rem 0 0.2rem; padding-left: 1.1rem; display: grid; gap: 0.35rem; }
+.cif-disorder fieldset { border: 1px solid rgba(148,163,184,0.3); border-radius: 6px; margin: 0.3rem 0; }

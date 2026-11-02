@@ -15,6 +15,24 @@ import {
   type SpaceGroupEntry,
 } from '../data/spaceGroupCatalog'
 import { CLASS_PALETTE_ORDER as CLASS_LEGEND_ORDER, SYMMETRY_CLASSES } from '../data/symmetryPalette'
+import type { SymmetryClassId } from '../data/types'
+
+/** How each symmetry class is drawn in the 3D/2D demos (colours come from SYMMETRY_CLASSES). */
+export const GUIDE_SYMBOL: Record<SymmetryClassId, string> = {
+  identity: 'BASE motif itself (no element)',
+  twofold: 'axis line labelled 2 (rotation only)',
+  threefold: 'axis line labelled 3',
+  fourfold: 'axis line labelled 4 or −4',
+  sixfold: 'axis line labelled 6',
+  screw: 'axis line labelled 2₁, 4₁, 4₂, 6₃ … (rotate + translate)',
+  inversion: '⊙ point at the inversion centre',
+  mirror: 'translucent plane, no arrow',
+  'a-glide': 'translucent plane + dashed arrow along a',
+  'b-glide': 'translucent plane + dashed arrow along b',
+  'c-glide': 'translucent plane + dashed arrow along c',
+  'n-glide': 'plane + dashed diagonal arrow (n)',
+  'd-glide': 'plane + dashed arrow (diamond, ¼ translation)',
+}
 
 type SystemFilter = CrystalSystemId | 'all'
 
@@ -416,8 +434,9 @@ export default function IndexPage() {
           <div className="section-head">
             <h2>How to use &amp; legend</h2>
             <p>
-              Every interactive demo shares the same controls. Learn them once —
-              they apply across all 230 space groups.
+              The controls below apply to the space-group pages (/sg/…) and are
+              shared by all 230 groups. Lattice Lab, PXRD and the learning pages
+              have their own controls — see the collapsible sections further down.
             </p>
           </div>
 
@@ -441,11 +460,11 @@ export default function IndexPage() {
               <h3>Placement &amp; visibility</h3>
               <ul>
                 <li>
-                  <strong>Near</strong> — place BASE and IMAGE near the
+                  <strong>Nearest images (Near)</strong> — place BASE and IMAGE near the
                   selected element (may sit just outside the cell).
                 </li>
                 <li>
-                  <strong>Wrap</strong> (in cell) — wrap every motif into [0, 1)³.
+                  <strong>In cell (Wrap)</strong> — wrap every motif into [0, 1)³.
                 </li>
                 <li>
                   <strong>All sites</strong> vs <strong>BASE + IMAGE</strong> —
@@ -477,28 +496,37 @@ export default function IndexPage() {
 
             <article className="guide-card">
               <h3>Geometric elements</h3>
+              <table className="guide-symbols" data-testid="guide-symbol-table">
+                <thead><tr><th>Colour</th><th>Element</th><th>Drawn as</th></tr></thead>
+                <tbody>
+                  {CLASS_LEGEND_ORDER.map((id) => {
+                    const c = SYMMETRY_CLASSES[id]
+                    return (
+                      <tr key={id} data-class={id}>
+                        <td><span className="swatch" style={{ background: c.color }} /></td>
+                        <td>{c.label}</td>
+                        <td>{GUIDE_SYMBOL[id]}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
               <ul>
                 <li>
-                  <span className="chip element">⊙</span> inversion center ·{' '}
-                  <span className="chip element">‖</span> 2₁ / 2-fold ·{' '}
-                  <span className="chip element">▭</span> glide / mirror
+                  A screw axis (2₁, 4₁, 6₃ …) rotates <em>and</em> translates along
+                  the axis; a plain 2-fold only rotates — they have separate
+                  colours. Likewise a mirror reflects in place, while a glide
+                  reflects and then slides (dashed arrow shows the glide vector).
                 </li>
                 <li>
                   Select an operator (or click a 2D site) to emphasize its element;
-                  others stay faint.
+                  others stay faint. In <em>Nearest images</em> the IMAGE can
+                  straddle the cell edge — that is the nearest copy, not an error.
+                </li>
+                <li>
+                  The animated primer above shows each move step by step.
                 </li>
               </ul>
-              <div className="guide-legend class-legend">
-                {CLASS_LEGEND_ORDER.map((id) => {
-                  const c = SYMMETRY_CLASSES[id]
-                  return (
-                    <span key={id} className="legend-item">
-                      <span className="swatch" style={{ background: c.color }} />
-                      {c.label}
-                    </span>
-                  )
-                })}
-              </div>
             </article>
           </div>
 
@@ -520,8 +548,65 @@ export default function IndexPage() {
             <p className="muted">
               Diagrams follow the usual teaching conventions used in
               International Tables for Crystallography (ITA). This is an
-              independent student tool — not an official IUCr product.
+              independent educational resource — not an official IUCr product;
+              see the <a href="#site-disclaimer">disclaimer in the footer</a>.
             </p>
+          </div>
+
+          <div className="guide-more" data-testid="guide-more">
+            <details className="guide-acc">
+              <summary>Lattice Lab (/cif)</summary>
+              <ul>
+                <li><strong>Load</strong> — a COD id or PDB id, RCSB text search, upload or paste
+                  (CIF, mmCIF, PDB, Maestro .mae/.maegz, gzipped .gz), recent structures,
+                  biological assemblies and PDB-REDO re-refinements.</li>
+                <li><strong>View</strong> — the <em>Display</em> menu (style, labels, H-bonds, ellipsoids …),
+                  the cell panel (Nearest / Cell whole / Cell atoms), supercell a×b×c, and the
+                  <em>Disorder</em> / <em>Alternate conformations</em> control when the file has disorder
+                  groups or altlocs (default = highest occupancy; “show all” draws the others translucent).</li>
+                <li><strong>Export</strong> — <em>Download</em> saves exactly the current cell view (ASU,
+                  molecules or cell contents).</li>
+                <li><strong>Compare</strong> — the sequence strip, <em>+Compare</em> to add a second
+                  structure, sequence alignment, Kabsch superposition overlay, a per-structure
+                  3D tick to show/hide each, and one colour per structure.</li>
+                <li><strong>Ligands</strong> — PLIP-style protein–ligand interactions per ligand, with
+                  a <em>2D</em> interaction diagram.</li>
+                <li><strong>Analysis</strong> — PDB tabs (Ramachandran, side-chain χ, nucleic acids,
+                  sugar pucker, base pairs, steps, Bonds &amp; angles), overlay mode, the equations
+                  used, CSV and report export; small-molecule CIFs get bond/angle/torsion/H-bond analysis.</li>
+              </ul>
+            </details>
+            <details className="guide-acc">
+              <summary>PXRD (powder pattern)</summary>
+              <ul>
+                <li>A simulated powder pattern from the loaded structure: 2θ on x, relative
+                  intensity on y, the wavelength (λ) shown on the plot; the strongest peaks
+                  carry (hkl) labels and hovering gives 2θ, d, I and hkl.</li>
+                <li><em>Enlarge</em> opens a large view: drag to zoom the 2θ range,
+                  double-click to reset, Esc to close; peak list and PNG/CSV export.</li>
+              </ul>
+            </details>
+            <details className="guide-acc">
+              <summary>Learning pages</summary>
+              <ul>
+                <li><Link to="/morphology">Morph</Link> (crystal morphology), <Link to="/kinetics">Kinetics</Link>,{' '}
+                  <Link to="/process">Process</Link>, <Link to="/forms">Forms</Link> (polymorphs and solid forms)
+                  and <Link to="/pubs">Pubs</Link>.</li>
+                <li>Plots mark <em>published data</em> (cited, digitised from the source) separately
+                  from <em>model curves</em> (computed by the page from an equation) — check the
+                  caption before quoting a number.</li>
+              </ul>
+            </details>
+            <details className="guide-acc">
+              <summary>Useful URL parameters</summary>
+              <ul className="guide-params">
+                <li><code>?asm=1</code> — PDB biological assembly 1.</li>
+                <li><code>?src=redo</code> — load the PDB-REDO re-refinement.</li>
+                <li><code>?lig=…&amp;diagram=1</code> — focus a ligand and open its 2D diagram.</li>
+                <li><code>?analysis=rama|chi|na|pucker|bp|step|geom</code> — open an analysis tab.</li>
+                <li><code>?dis=A:2</code> (or <code>*</code> = show all) / <code>?alt=B</code> — disorder group or altloc.</li>
+              </ul>
+            </details>
           </div>
         </section>
 
@@ -549,7 +634,7 @@ export default function IndexPage() {
         <div>
           <strong>Crystal Space Groups</strong>
           <span className="muted"> · interactive teaching diagrams</span>
-          <p className="footer-disclaimer" data-footer="disclaimer">
+          <p className="footer-disclaimer" id="site-disclaimer" data-footer="disclaimer">
             For educational use only. Content is provided as is, without warranty of
             accuracy or completeness; please verify against primary sources before
             relying on it. Figures and data are cited to their original sources, and no
