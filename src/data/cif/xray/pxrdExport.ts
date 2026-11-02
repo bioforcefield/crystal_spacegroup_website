@@ -13,14 +13,17 @@ export interface PxrdExportOpts {
   fwhm: number
   wavelengthA: number
   /** Label (hkl) only peaks with I ≥ threshold (% of max). */
-  threshold: number
+  threshold?: number
   background: 'white' | 'dark'
   title?: string
 }
+/** Default (hkl) label threshold, % of max (inline, enlarged and export). */
+export const PXRD_LABEL_THRESHOLD_DEFAULT = 50
 export const EXPORT_SIZE = { w: 1200, h: 720 }
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
-export function pxrdExportSvg(o: PxrdExportOpts): string {
+export function pxrdExportSvg(opts: PxrdExportOpts): string {
+  const o = { ...opts, threshold: opts.threshold ?? PXRD_LABEL_THRESHOLD_DEFAULT }
   const { w, h } = EXPORT_SIZE
   const white = o.background === 'white'
   const ink = white ? '#111827' : '#e5e7eb', grid = white ? '#e5e7eb' : '#334155'

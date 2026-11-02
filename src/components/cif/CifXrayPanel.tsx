@@ -109,7 +109,7 @@ export default function CifXrayPanel({
   const [hover, setHover] = useState<{ peak: PowderPeak; form: 'A' | 'B' } | null>(
     null,
   )
-  const [showSticks, setShowSticks] = useState(true)
+  const [showSticks, setShowSticks] = useState(false)
 
   const [formB, setFormB] = useState<FormBState | null>(null)
   const [busyB, setBusyB] = useState(false)

@@ -4,7 +4,7 @@ import { envelopePolyline, lorentzEnvelope } from '../../data/cif/xray/envelope'
 import type { PowderPattern, PowderPeak } from '../../data/cif/xray/powder'
 import { rovingNext } from '../../data/cif/viewportUi'
 import { niceTicks, peaksCsv, placePeakLabels } from '../../data/cif/xray/plotUtil'
-import { EXPORT_SIZE, pxrdExportSvg } from '../../data/cif/xray/pxrdExport'
+import { EXPORT_SIZE, PXRD_LABEL_THRESHOLD_DEFAULT, pxrdExportSvg } from '../../data/cif/xray/pxrdExport'
 
 export type PxrdHover = { peak: PowderPeak; form: 'A' | 'B' } | null
 interface Props {
@@ -152,7 +152,7 @@ export default function PxrdPlot(p: Props) {
   const [zoom, setZoom] = useState<[number, number] | null>(null)
   const [showTable, setShowTable] = useState(false)
   /** (hkl) label threshold, % of the strongest peak. */
-  const [thr, setThr] = useState(20)
+  const [thr, setThr] = useState(PXRD_LABEL_THRESHOLD_DEFAULT)
   const [onlyAbove, setOnlyAbove] = useState(false)
   const [bg, setBg] = useState<'white' | 'dark'>('white')
   const [nInline, setNInline] = useState(0)
