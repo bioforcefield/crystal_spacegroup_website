@@ -297,7 +297,7 @@ function geomSection(items: GeomItem[], tbl: (t: string, c: string[], r: (string
   const out = items.filter((g) => g.z != null && Math.abs(g.z) > 4).sort((p, q) => Math.abs(q.z!) - Math.abs(p.z!))
   const hists = sum.map((t) => geomHistSvg(t, items.filter((g) => g.group === t.group && g.type === t.type).map((g) => g.value))).join('')
   return `<h2>Bonds &amp; angles</h2><p>${esc(GEOM_REPORT_NOTE)}</p>`
-    + tbl('Summary per type', ['Type', 'Kind', 'n', 'Mean', 'SD', 'Target', 'σ', 'RMS-Z', '|Z|>4'], sum.map((t) => [t.type, t.kind, String(t.n), f(t.mean, t.kind), f(t.sd, t.kind), f(t.ideal, t.kind), f(t.sigma, t.kind), t.rmsZ == null ? '—' : t.rmsZ.toFixed(2), String(t.outliers)]))
+    + tbl('Summary per type', ['Type', 'Kind', 'n', 'Mean', 'SD', 'Target', 'σ', 'RMS-Z', '|Z|>4'], sum.map((t) => [t.type, t.kind, String(t.n), t.kind === 'torsion' ? '—' : f(t.mean, t.kind), t.kind === 'torsion' ? '—' : f(t.sd, t.kind), f(t.ideal, t.kind), f(t.sigma, t.kind), t.rmsZ == null ? '—' : t.rmsZ.toFixed(2), String(t.outliers)]))
     + (out.length ? tbl(`Outliers (|Z| > 4, ${out.length})`, ['Type', 'Atoms', 'Value', 'Target', 'Z'], out.slice(0, 500).map((g) => [g.type, g.atoms, f(g.value, g.kind), f(g.ideal, g.kind), g.z!.toFixed(1)])) : '<p>No |Z| &gt; 4 outliers.</p>')
     + `<div>${hists}</div>`
 }
