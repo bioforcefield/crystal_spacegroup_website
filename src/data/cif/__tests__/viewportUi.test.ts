@@ -126,7 +126,10 @@ describe('CIF viewport UX source contracts', () => {
     expect(src('src/App.tsx')).toMatch(/href="#demo-main"[\s\S]*Skip to 3D view/)
     expect(vp).toMatch(/id="demo-main"/)
     const x = src('src/components/cif/CifXrayPanel.tsx')
-    expect(x).toMatch(/tabIndex=\{pi === 0 \? 0 : -1\}/)
+    expect(x).toMatch(/<PxrdPlot /)
+    const plot = src('src/components/cif/PxrdPlot.tsx')
+    expect(plot).toMatch(/tabIndex=\{!b && pi === 0 \? 0 : -1\}/)
+    expect(plot).toMatch(/rovingNext\(/)
     expect(x).not.toMatch(/tabIndex=\{0\}\s*role="button"/)
   })
   it('About sources disclosure wraps COD/CSD help', () => {

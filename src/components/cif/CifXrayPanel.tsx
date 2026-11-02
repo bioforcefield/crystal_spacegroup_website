@@ -19,11 +19,6 @@ import {
   WAVELENGTH_PRESETS,
   type WavelengthPresetId,
 } from '../../data/cif/xray/bragg'
-import {
-  envelopePolyline,
-  lorentzEnvelope,
-} from '../../data/cif/xray/envelope'
-import { rovingNext } from '../../data/cif/viewportUi'
 import { peakShiftTable, topPeaksByIntensity } from '../../data/cif/xray/peakCompare'
 import {
   POLYMORPH_PAIRS,
@@ -34,10 +29,8 @@ import {
   type PowderPeak,
 } from '../../data/cif/xray/powder'
 import CifPolymorphCompare from './CifPolymorphCompare'
+import PxrdPlot from './PxrdPlot'
 
-const BOX = { x0: 44, y0: 14, x1: 312, y1: 168 }
-const VB_W = 336
-const VB_H = 200
 
 /** Letter multiset for a loose chemistry compatibility check (teaching UX). */
 function formulaLetterKey(s: string): string {
@@ -156,50 +149,6 @@ export default function CifXrayPanel({
     [formB, opts],
   )
 
-  const envelopeA = useMemo(() => {
-    const lo = Math.min(tMinD, tMaxD)
-    const hi = Math.max(tMinD, tMaxD)
-    return lorentzEnvelope(
-      patternA.peaks.map((p) => ({ twoTheta: p.twoTheta, intensity: p.intensity })),
-      lo,
-      hi,
-      fwhmDebounced,
-      360,
-    )
-  }, [patternA.peaks, tMinD, tMaxD, fwhmDebounced])
-
-  const envelopeB = useMemo(() => {
-    if (!patternB) return null
-    const lo = Math.min(tMinD, tMaxD)
-    const hi = Math.max(tMinD, tMaxD)
-    return lorentzEnvelope(
-      patternB.peaks.map((p) => ({ twoTheta: p.twoTheta, intensity: p.intensity })),
-      lo,
-      hi,
-      fwhmDebounced,
-      360,
-    )
-  }, [patternB, tMinD, tMaxD, fwhmDebounced])
-
-  const polyA = useMemo(() => {
-    if (!envelopeA.x.length) return ''
-    return envelopePolyline(envelopeA.x, envelopeA.y, BOX, {
-      xmin: Math.min(tMinD, tMaxD),
-      xmax: Math.max(tMinD, tMaxD),
-      ymin: 0,
-      ymax: 105,
-    })
-  }, [envelopeA, tMinD, tMaxD])
-
-  const polyB = useMemo(() => {
-    if (!envelopeB?.x.length) return ''
-    return envelopePolyline(envelopeB.x, envelopeB.y, BOX, {
-      xmin: Math.min(tMinD, tMaxD),
-      xmax: Math.max(tMinD, tMaxD),
-      ymin: 0,
-      ymax: 105,
-    })
-  }, [envelopeB, tMinD, tMaxD])
 
   const shiftRows = useMemo(() => {
     if (!patternB) return []
@@ -380,7 +329,6 @@ export default function CifXrayPanel({
   const hiLive = Math.max(tMin, tMax)
   const lo = Math.min(tMinD, tMaxD)
   const hi = Math.max(tMinD, tMaxD)
-  const dx = hi - lo || 1
 
   const labelA = formLabel(structure, 'Form A')
   const labelB = formB?.label ?? 'Form B'
@@ -600,163 +548,8 @@ export default function CifXrayPanel({
           )}
       </div>
 
-      <div className="cif-xray-chart-wrap">
-        <svg
-          onKeyDown={(e) => {
-            const dots = Array.from(
-              e.currentTarget.querySelectorAll<SVGCircleElement>('circle[data-peak]'),
-            )
-            const i = dots.indexOf(e.target as SVGCircleElement)
-            if (i < 0) return
-            const n = rovingNext(i, e.key, dots.length)
-            if (n == null) return
-            e.preventDefault()
-            dots[i]!.setAttribute('tabindex', '-1')
-            dots[n]!.setAttribute('tabindex', '0')
-            dots[n]!.focus()
-          }}
-          className="teach-svg cif-xray-svg"
-          viewBox={`0 0 ${VB_W} ${VB_H}`}
-          role="img"
-          aria-label={
-            formB
-              ? `Simulated powder overlay, Form A ${patternA.peaks.length} peaks, Form B ${patternB?.peaks.length ?? 0} peaks, wavelength ${wavelengthA.toFixed(4)} angstrom`
-              : `Simulated powder pattern, ${patternA.peaks.length} peaks, wavelength ${wavelengthA.toFixed(4)} angstrom`
-          }
-        >
-          <title>Simulated PXRD{formB ? ' · polymorph overlay' : ''}</title>
-          <rect
-            x={BOX.x0}
-            y={BOX.y0}
-            width={BOX.x1 - BOX.x0}
-            height={BOX.y1 - BOX.y0}
-            className="teach-plot-frame"
-            rx={6}
-          />
-          <text
-            x={(BOX.x0 + BOX.x1) / 2}
-            y={VB_H - 4}
-            textAnchor="middle"
-            className="teach-axis-label"
-          >
-            2θ (°)
-          </text>
-          <text
-            x={12}
-            y={(BOX.y0 + BOX.y1) / 2}
-            textAnchor="middle"
-            className="teach-axis-label"
-            transform={`rotate(-90 12 ${(BOX.y0 + BOX.y1) / 2})`}
-          >
-            I (rel.)
-          </text>
-          {[0, 0.25, 0.5, 0.75, 1].map((f) => {
-            const t = lo + f * dx
-            const px = BOX.x0 + f * (BOX.x1 - BOX.x0)
-            return (
-              <text
-                key={f}
-                x={px}
-                y={BOX.y1 + 12}
-                textAnchor="middle"
-                className="teach-axis-label"
-              >
-                {t.toFixed(0)}
-              </text>
-            )
-          })}
-          {polyB && (
-            <polyline
-              points={polyB}
-              className="teach-curve teach-curve-b cif-xray-curve-b"
-              fill="none"
-            />
-          )}
-          {polyA && (
-            <polyline
-              points={polyA}
-              className="teach-curve teach-curve-a"
-              fill="none"
-            />
-          )}
-          {showSticks &&
-            patternB?.peaks.map((p) => {
-              const px = BOX.x0 + ((p.twoTheta - lo) / dx) * (BOX.x1 - BOX.x0)
-              const py = BOX.y1 - (p.intensity / 105) * (BOX.y1 - BOX.y0)
-              const active =
-                hover?.form === 'B' &&
-                hover.peak.hkl === p.hkl &&
-                Math.abs(hover.peak.twoTheta - p.twoTheta) < 0.05
-              return (
-                <g key={`b-${p.hkl}-${p.twoTheta.toFixed(3)}`}>
-                  <line
-                    x1={px}
-                    y1={BOX.y1}
-                    x2={px}
-                    y2={py}
-                    className={
-                      active ? 'cif-xray-stick-b active' : 'cif-xray-stick-b'
-                    }
-                  />
-                  <circle
-                    cx={px}
-                    cy={py}
-                    r={active ? 4.5 : 2.8}
-                    className={
-                      active
-                        ? 'teach-curve-dot cif-xray-dot-b active'
-                        : 'teach-curve-dot cif-xray-dot-b'
-                    }
-                    tabIndex={-1}
-                    data-peak="b"
-                    role="button"
-                    aria-label={`Form B peak ${p.hkl}, d ${p.d.toFixed(3)} Å, 2θ ${p.twoTheta.toFixed(2)}°, I ${p.intensity.toFixed(1)}`}
-                    onMouseEnter={() => setHover({ peak: p, form: 'B' })}
-                    onFocus={() => setHover({ peak: p, form: 'B' })}
-                    onMouseLeave={() => setHover(null)}
-                    onBlur={() => setHover(null)}
-                  />
-                </g>
-              )
-            })}
-          {showSticks &&
-            patternA.peaks.map((p, pi) => {
-              const px = BOX.x0 + ((p.twoTheta - lo) / dx) * (BOX.x1 - BOX.x0)
-              const py = BOX.y1 - (p.intensity / 105) * (BOX.y1 - BOX.y0)
-              const active =
-                hover?.form === 'A' &&
-                hover.peak.hkl === p.hkl &&
-                Math.abs(hover.peak.twoTheta - p.twoTheta) < 0.05
-              return (
-                <g key={`a-${p.hkl}-${p.twoTheta.toFixed(3)}`}>
-                  <line
-                    x1={px}
-                    y1={BOX.y1}
-                    x2={px}
-                    y2={py}
-                    className={active ? 'cif-xray-stick active' : 'cif-xray-stick'}
-                  />
-                  <circle
-                    cx={px}
-                    cy={py}
-                    r={active ? 4.5 : 3}
-                    className={
-                      active ? 'teach-curve-dot active' : 'teach-curve-dot'
-                    }
-                    tabIndex={pi === 0 ? 0 : -1}
-                    data-peak="a"
-                    role="button"
-                    aria-label={`Form A peak ${pi + 1} of ${patternA.peaks.length} (arrow keys move between peaks): ${p.hkl}, d ${p.d.toFixed(3)} Å, 2θ ${p.twoTheta.toFixed(2)}°, I ${p.intensity.toFixed(1)}`}
-                    onMouseEnter={() => setHover({ peak: p, form: 'A' })}
-                    onFocus={() => setHover({ peak: p, form: 'A' })}
-                    onMouseLeave={() => setHover(null)}
-                    onBlur={() => setHover(null)}
-                  />
-                </g>
-              )
-            })}
-        </svg>
-      </div>
+      <PxrdPlot patternA={patternA} patternB={patternB} lo={lo} hi={hi} fwhm={fwhmDebounced} wavelengthA={wavelengthA}
+        showSticks={showSticks} labelA={labelA} labelB={labelB} hover={hover} setHover={setHover} />
 
       <div className="cif-xray-hover" aria-live="polite">
         {hover ? (

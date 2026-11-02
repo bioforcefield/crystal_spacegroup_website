@@ -5638,3 +5638,40 @@ button.linkish {
 .sm-notes summary { cursor: pointer; font-weight: 600; }
 .sm-notes ul { padding-left: 1.1rem; margin: 0.3rem 0; }
 .sm-coord-detail { margin-top: 0.6rem; }
+
+/* PXRD plot readability + enlarged view */
+.pxrd-inline { position: relative; }
+.pxrd-enlarge { position: absolute; top: 4px; left: 50px; padding: 0.1rem 0.45rem; font-size: 0.75rem; opacity: 0.9; }
+.cif-xray-svg .pxrd-grid { stroke: rgba(148, 163, 184, 0.16); stroke-width: 0.6; }
+.cif-xray-svg .pxrd-tick { stroke: #94a3b8; stroke-width: 0.8; }
+.cif-xray-svg .pxrd-axis-text { fill: #cbd5e1; font-family: ui-sans-serif, system-ui, sans-serif; }
+.cif-xray-svg .pxrd-axis-title { fill: #e2e8f0; font-weight: 600; font-family: ui-sans-serif, system-ui, sans-serif; }
+.cif-xray-svg .pxrd-lambda { fill: #e2e8f0; font-size: 0.85em; font-family: ui-sans-serif, system-ui, sans-serif; }
+.cif-xray-svg .pxrd-curve-a { stroke: #7dd3fc; stroke-width: 1.8; }
+.cif-xray-svg-large .pxrd-curve { stroke-width: 2.2; }
+.cif-xray-svg .pxrd-hkl text { fill: #fde68a; font-size: 0.78em; font-family: ui-monospace, monospace; paint-order: stroke; stroke: #0b1220; stroke-width: 3px; }
+.cif-xray-svg .pxrd-leader { stroke: rgba(253, 230, 138, 0.45); stroke-width: 0.7; }
+.cif-xray-svg .pxrd-tip rect { fill: #0f172a; stroke: #fbbf24; stroke-width: 1; opacity: 0.96; }
+.cif-xray-svg .pxrd-tip text { fill: #e2e8f0; font-size: 0.85em; font-family: ui-sans-serif, system-ui, sans-serif; }
+.cif-xray-svg .pxrd-tip .pxrd-tip-strong { fill: #fbbf24; font-weight: 700; }
+.cif-xray-svg .pxrd-brush { fill: rgba(251, 191, 36, 0.15); stroke: #fbbf24; stroke-width: 1; pointer-events: none; }
+.pxrd-zoom-layer { cursor: crosshair; }
+.cif-xray-svg-large circle { position: relative; }
+.pxrd-modal-backdrop { position: fixed; inset: 0; z-index: 1000; background: rgba(2, 6, 23, 0.78); display: flex; align-items: center; justify-content: center; padding: 2vh 2vw; }
+.pxrd-modal { background: #0b1220; border: 1px solid #334155; border-radius: 10px; width: min(1400px, 96vw); max-height: 96vh; display: flex; flex-direction: column; padding: 0.6rem 0.8rem; overflow: hidden; }
+.pxrd-modal-bar { display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem; align-items: center; }
+.pxrd-modal-legend { display: inline-flex; gap: 0.8rem; font-size: 0.85rem; }
+.pxrd-modal-actions { margin-left: auto; display: inline-flex; gap: 0.35rem; flex-wrap: wrap; }
+.pxrd-modal-hint { margin: 0.2rem 0 0.3rem; font-size: 0.8rem; }
+.pxrd-modal-body { display: flex; gap: 0.6rem; min-height: 0; flex: 1; overflow: auto; }
+.pxrd-modal-body > svg { flex: 1 1 auto; min-width: 0; max-height: 82vh; }
+.pxrd-modal-table { flex: 0 0 300px; overflow: auto; max-height: 82vh; font-size: 0.8rem; }
+.pxrd-modal-table table { border-collapse: collapse; width: 100%; }
+.pxrd-modal-table th, .pxrd-modal-table td { padding: 0.15rem 0.35rem; border-bottom: 1px solid #1e293b; text-align: right; }
+.pxrd-modal-table tr:hover { background: #1e293b; }
+@media (max-width: 700px) {
+  .pxrd-modal { width: 100vw; max-height: 100vh; border-radius: 0; padding: 0.4rem; }
+  .pxrd-modal-backdrop { padding: 0; }
+  .pxrd-modal-body { flex-direction: column; }
+  .pxrd-modal-table { flex: 0 0 auto; max-height: 30vh; }
+}
