@@ -542,3 +542,9 @@ export function parseCif(text: string): ParsedCif {
     warnings,
   }
 }
+
+/** Raw tag/value pairs and loops of the first data block (for _geom_* and other optional tables). */
+export function parseCifTables(text: string): { pairs: Map<string, string>; loops: { headers: string[]; rows: string[][] }[] } {
+  const s = parseStructure(tokenizeCif(text))
+  return { pairs: s.pairs, loops: s.loops }
+}

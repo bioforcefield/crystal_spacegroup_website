@@ -98,6 +98,8 @@ interface Props {
   highlightRes?: string | null
   centerRes?: string | null
   analysisFocus?: import('./cif/analysis/types').AnalysisFocus | null
+  /** Small-molecule analysis row picked: atoms (anchor ASU atom + Cartesian offsets) to highlight. */
+  atomFocus?: import('../data/cif/smallmol/analysis').Focus | null
   interactionTypes?: Set<InteractionType>
   /** Superposed comparison Cα/P traces (ASU site frame of the active structure). */
   overlayTraces?: { points: Vec3[][]; color: string }[] | null
@@ -610,6 +612,7 @@ function SceneBody({
   highlightRes = null,
   centerRes = null,
   analysisFocus = null,
+  atomFocus = null,
   interactionTypes,
   overlayTraces = null,
 }: Props & { controlsRef: RefObject<OrbitControlsImpl | null> }) {
@@ -775,11 +778,29 @@ function SceneBody({
         : null
   }, [ligandSite, focusDelta, centerRes, anaCenter])
   const fade = ligandSite && focusDelta ? 0.18 : 1
+  /** Small-molecule analysis highlight: drawn op-1 copy of the anchor atom + relative offsets. */
+  const atomFocusPts = useMemo<Vec3[] | null>(() => {
+    if (macro || !atomFocus) return null
+    let ai = structure.atoms.findIndex((a) => a.auIndex === atomFocus.anchorAu && a.opIndex === 1)
+    if (ai < 0) ai = structure.atoms.findIndex((a) => a.auIndex === atomFocus.anchorAu)
+    if (ai < 0) return null
+    const p = placement.positions[ai]!
+    return atomFocus.rel.map((r) => [p[0] + r[0], p[1] + r[1], p[2] + r[2]] as Vec3)
+  }, [macro, atomFocus, structure.atoms, placement.positions])
+  const atomFocusTarget = useMemo(() => {
+    if (!atomFocusPts) return null
+    const c = atomFocusPts.reduce<Vec3>((s, q) => [s[0] + q[0], s[1] + q[1], s[2] + q[2]], [0, 0, 0]).map((v) => v / atomFocusPts.length) as Vec3
+    const r = Math.max(...atomFocusPts.map((q) => Math.hypot(q[0] - c[0], q[1] - c[1], q[2] - c[2])))
+    return { center: c, radius: Math.max(1.5, r) }
+  }, [atomFocusPts])
 
   return (
     <>
       {macro && (
         <FocusCamera target={focusTarget} controlsRef={controlsRef} groupOffset={[-center[0], -center[1], -center[2]]} />
+      )}
+      {!macro && (
+        <FocusCamera target={atomFocusTarget} controlsRef={controlsRef} groupOffset={[-center[0], -center[1], -center[2]]} />
       )}
       <FitCifCamera
         bounds={viewBounds}
@@ -793,6 +814,19 @@ function SceneBody({
 
       <group position={[-center[0], -center[1], -center[2]]}>
         <CellWire cell={structure.cell} />
+        {atomFocusPts && (
+          <group data-testid="sm-atom-focus">
+            {atomFocusPts.map((q, k) => (
+              <mesh key={`af${k}`} position={q} renderOrder={10}>
+                <sphereGeometry args={[k === 0 ? 0.62 : 0.52, 20, 14]} />
+                <meshBasicMaterial color={k === 0 ? '#f97316' : '#facc15'} transparent opacity={0.5} depthWrite={false} />
+              </mesh>
+            ))}
+            {atomFocus!.lines.map(([i, j]) => atomFocusPts[i] && atomFocusPts[j] && (
+              <Line key={`afl${i}-${j}`} points={[atomFocusPts[i]!, atomFocusPts[j]!] as [number, number, number][]} color="#facc15" lineWidth={2.5} />
+            ))}
+          </group>
+        )}
         {macro && (
           <>
             {supercell && <SupercellWire cell={structure.cell} multiples={multiples} fadeInterior={isDenseSupercell(multiples)} />}

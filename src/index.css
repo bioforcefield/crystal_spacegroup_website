@@ -5626,3 +5626,15 @@ button.linkish {
 .cif-seq-strip .seq-add input:not([type])::placeholder { color: #a8b3c4; opacity: 1; }
 .cif-seq-strip .seq-add input:not([type]):focus-visible { outline: 2px solid #38bdf8; outline-offset: 1px; border-color: #38bdf8; }
 .cif-seq-strip .seq-add input:not([type]):disabled { opacity: 0.6; }
+
+/* —— Structure analysis drawer (small molecule / inorganic) —— */
+.sm-analysis h3 { font-size: 0.88rem; margin: 0.8rem 0 0.3rem; }
+.sm-analysis sup { font-size: 0.7em; font-style: italic; }
+.sm-symcodes { font-size: 0.74rem; color: #334155; margin: 0.35rem 0 0; }
+.sm-symcodes i { font-weight: 600; }
+.sm-kv th { position: static; width: 42%; font-weight: 600; }
+.sm-kv tr { cursor: default; }
+.sm-notes { margin-top: 1rem; font-size: 0.76rem; }
+.sm-notes summary { cursor: pointer; font-weight: 600; }
+.sm-notes ul { padding-left: 1.1rem; margin: 0.3rem 0; }
+.sm-coord-detail { margin-top: 0.6rem; }

@@ -116,6 +116,8 @@ export interface CifViewportProps {
   centerRes?: string | null
   /** Residue picked in the structure-analysis drawer. */
   analysisFocus?: import('./analysis/types').AnalysisFocus | null
+  /** Small-molecule structure-analysis highlight (non-PDB entries). */
+  atomFocus?: import('../../data/cif/smallmol/analysis').Focus | null
   overlayTraces?: { points: import('../../data/types').Vec3[][]; color: string }[] | null
   /** Rendered under the 3D canvas (PDB sequence strip). */
   sequenceSlot?: import('react').ReactNode
@@ -181,6 +183,7 @@ export default function CifViewport({
   onHighlightRes,
   centerRes = null,
   analysisFocus = null,
+  atomFocus = null,
   overlayTraces = null,
   sequenceSlot = null,
   onPinnedResidue,
@@ -1057,6 +1060,7 @@ export default function CifViewport({
                 highlightRes={highlightRes}
                 centerRes={centerRes}
                 analysisFocus={analysisFocus}
+                atomFocus={atomFocus}
                 overlayTraces={overlayTraces}
               />
             </Suspense>

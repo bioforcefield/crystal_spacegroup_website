@@ -68,6 +68,7 @@ import CifXrayPanel from '../components/cif/CifXrayPanel'
 import type { AnalysisTab } from '../data/cif/cifRoute'
 import type { AnalysisFocus } from '../components/cif/analysis/types'
 const StructureAnalysisPanel = lazy(() => import('../components/cif/analysis/StructureAnalysisPanel'))
+const SmallMolAnalysisPanel = lazy(() => import('../components/cif/analysis/SmallMolAnalysisPanel'))
 
 const SAMPLE_BASE = `${import.meta.env.BASE_URL}samples/`
 const safeSession = () => {
@@ -111,6 +112,9 @@ export default function CifExplorerPage() {
   const [centerRes, setCenterRes] = useState<string | null>(null)
   const [analysisTab, setAnalysisTab] = useState<AnalysisTab | null>(null)
   const [analysisFocus, setAnalysisFocus] = useState<AnalysisFocus | null>(null)
+  /** Small-molecule / inorganic (non-PDB) structure analysis drawer. Closed by default. */
+  const [smOpen, setSmOpen] = useState(false)
+  const [smFocus, setSmFocus] = useState<import('../data/cif/smallmol/analysis').Focus | null>(null)
   const setFocusLig = useCallback((id: string | null) => {
     setFocusLigRaw(id)
     setCenterRes(null)
@@ -214,6 +218,8 @@ export default function CifExplorerPage() {
         setAnalysisFocus(null)
       }
       setStructure(expanded)
+      setSmOpen(false)
+      setSmFocus(null)
       setFileName(name)
       setSourceText(text)
       const view = route?.view ?? VIEW_DEFAULTS
@@ -736,6 +742,17 @@ export default function CifExplorerPage() {
           </section>
         )}
 
+        {structure && !macroModel && (
+          <section className="seed-box cif-analysis-launch" aria-label="Structure analysis">
+            <h2>Structure analysis</h2>
+            <p className="muted">Bonds, angles, torsions, H-bonds and short contacts with symmetry codes; coordination polyhedra and bond-valence sums; density, packing and connectivity. Click any row to highlight it in 3D; CSV and printable report.</p>
+            <button type="button" className="btn" data-testid="sm-analysis-open" aria-pressed={smOpen}
+              onClick={() => { setSmOpen((o) => !o); setSmFocus(null) }}>
+              {smOpen ? 'Close structure analysis' : 'Open structure analysis'}
+            </button>
+          </section>
+        )}
+
         {structure && (
           <PhoneSection phone={phone} title="X-ray · powder (PXRD)">
             <CifXrayPanel
@@ -827,6 +844,7 @@ export default function CifExplorerPage() {
         centerRes={centerRes}
         onCenterRes={setCenterRes}
         analysisFocus={analysisFocus}
+        atomFocus={!macroModel && smOpen ? smFocus : null}
         overlayTraces={macroModel ? overlayTraces : null}
         onPinnedResidue={setPinnedRes}
         sequenceSlot={structure && macroModel ? (
@@ -855,6 +873,18 @@ export default function CifExplorerPage() {
             pocketKeys={ligandSite ? ligandSite.pocket.filter((p) => !p.symCode).map((p) => `${p.chain}|${p.seq}|${p.comp}`) : null}
             pocketLabel={ligandSite ? ligandSite.ligand.label : null}
             compare={compareSet.length ? compareSet : undefined}
+          />
+        </Suspense>
+      )}
+      {structure && !macroModel && smOpen && (
+        <Suspense fallback={<aside className="cif-analysis-drawer" role="status"><p>Loading analysis…</p></aside>}>
+          <SmallMolAnalysisPanel
+            structure={structure}
+            cifText={sourceText ?? ''}
+            title={fileName ?? 'structure'}
+            onClose={() => { setSmOpen(false); setSmFocus(null) }}
+            focus={smFocus}
+            onFocus={setSmFocus}
           />
         </Suspense>
       )}
