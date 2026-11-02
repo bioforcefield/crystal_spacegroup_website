@@ -182,6 +182,8 @@ export interface ParsedMmcif {
   seqres: Map<string, SeqresEntry[]>
   /** Disulfides from _struct_conn (conn_type_id = disulf), auth chain / seq; undefined when the file has no struct_conn. */
   disulfides?: DisulfideRecord[]
+  /** Alternate locations present (model 1): ids, number of residues with altlocs, current choice. */
+  altlocs?: { ids: string[]; residues: number; selected: string }
 }
 export interface DisulfideRecord { chain1: string; seq1: string; chain2: string; seq2: string; sym1: string; sym2: string; dist?: number }
 function readDisulfides(t: MmcifTables): DisulfideRecord[] | undefined {
@@ -266,7 +268,8 @@ export function chooseAltloc(occ: Map<string, number>): string {
   return best
 }
 
-export function parseMmcif(text: string): ParsedMmcif {
+/** altSel: undefined/'auto' = highest-occupancy altloc per residue (default); a letter = that altloc wherever the residue has it, else the residue default. */
+export function parseMmcif(text: string, altSel?: string): ParsedMmcif {
   const t = readMmcif(text)
   const warnings: string[] = []
   const pdbId = mmcifValue(t, '_entry.id')
@@ -328,7 +331,9 @@ export function parseMmcif(text: string): ParsedMmcif {
     m.set(alt, (m.get(alt) ?? 0) + (num(r[ix.occ]) ?? 1))
   }
   const altChosen = new Map<string, string>()
-  for (const [k, m] of altOcc) altChosen.set(k, chooseAltloc(m))
+  for (const [k, m] of altOcc) altChosen.set(k, altSel && altSel !== 'auto' && m.has(altSel) ? altSel : chooseAltloc(m))
+  const altIds = [...new Set([...altOcc.values()].flatMap((m) => [...m.keys()]))].sort()
+  const altResidues = altOcc.size
   const cart: Vec3[] = []
   const extras: PdbAtomExtra[] = []
   const raw: { el: string; occ?: number; b?: number }[] = []
@@ -354,7 +359,9 @@ export function parseMmcif(text: string): ParsedMmcif {
     })
   }
   if (skippedModels) warnings.push('Multiple models deposited — showing model 1 only')
-  if (skippedAlt) warnings.push(`Alternate conformations: kept the highest-occupancy altloc per residue (${skippedAlt} atoms skipped)`)
+  if (skippedAlt) warnings.push(altSel && altSel !== 'auto'
+    ? `Alternate conformations: altloc ${altSel} where present, otherwise the highest-occupancy altloc per residue (${skippedAlt} atoms skipped)`
+    : `Alternate conformations: kept the highest-occupancy altloc per residue (${skippedAlt} atoms skipped)`)
 
   // Fractionalization
   let M: number[][], v: Vec3
@@ -401,5 +408,5 @@ export function parseMmcif(text: string): ParsedMmcif {
     metadata: { name: title ?? undefined, resolutionA, resolutionSource: resolutionA != null ? 'refine' : undefined },
     warnings,
   }
-  return { parsed, extras, method, crystal, nonCrystalReason, pdbId, title, chains, resolutionA, ss: readSs(t), seqres: readSeqres(t), disulfides: readDisulfides(t) }
+  return { parsed, extras, method, crystal, nonCrystalReason, pdbId, title, chains, resolutionA, ss: readSs(t), seqres: readSeqres(t), disulfides: readDisulfides(t), altlocs: altIds.length ? { ids: altIds, residues: altResidues, selected: altSel && altIds.includes(altSel) ? altSel : 'auto' } : undefined }
 }

@@ -323,7 +323,7 @@ function elementFromLabel(label: string, typeSymbol?: string): string {
   return el[0]!.toUpperCase() + el.slice(1).toLowerCase()
 }
 
-function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
+function atomsFromLoops(loops: LoopTable[], warnings: string[], sel?: DisorderSelection): CifAtomSite[] {
   for (const loop of loops) {
     const h = loop.headers
     const iLabel = h.findIndex(
@@ -343,12 +343,12 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
         x === '_atom_site_entity_id',
     )
     const iOcc = h.findIndex((x) => x === '_atom_site_occupancy')
-    const iAlt = h.findIndex(
-      (x) =>
-        x === '_atom_site_disorder_group' ||
-        x === '_atom_site_label_alt_id' ||
-        x === '_atom_site_disorder_assembly',
-    )
+    // Disorder: group (PART) column first, else label_alt_id; the assembly column is a separate key.
+    // (Fix: the first matching header used to win, so assembly letters could be read as altlocs.)
+    let iAlt = h.findIndex((x) => x === '_atom_site_disorder_group')
+    if (iAlt < 0) iAlt = h.findIndex((x) => x === '_atom_site_label_alt_id')
+    let iAsm = h.findIndex((x) => x === '_atom_site_disorder_assembly')
+    if (iAlt < 0 && iAsm >= 0) { iAlt = iAsm; iAsm = -1 } // assembly-only files: letters act as groups (legacy)
     const iUiso = h.findIndex((x) => x === '_atom_site_u_iso_or_equiv')
     // Biso → Uiso = B/(8π²) when only B present
     const iBiso = h.findIndex((x) => x === '_atom_site_b_iso_or_equiv')
@@ -382,10 +382,13 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
       }
 
       const altRaw = iAlt >= 0 ? (row[iAlt] ?? '').trim() : ''
-      const altloc =
+      const grp =
         altRaw && altRaw !== '.' && altRaw !== '?' && altRaw !== '0'
           ? altRaw
           : undefined
+      const asmRaw = iAsm >= 0 ? (row[iAsm] ?? '').trim() : ''
+      const asm = asmRaw && asmRaw !== '.' && asmRaw !== '?' ? asmRaw : ''
+      const altloc = grp ? (asm ? `${asm}:${grp}` : grp) : undefined
 
       const label =
         (iLabel >= 0 ? row[iLabel] : null) ||
@@ -408,6 +411,8 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
         residue,
         occupancy,
         altloc,
+        disAsm: grp ? asm : undefined,
+        disGrp: grp,
         uIso,
         _alt: altloc,
       })
@@ -417,28 +422,9 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
       warnings.push(`Skipped ${skippedOcc} atom site(s) with occupancy ≈ 0`)
     }
 
-    // Prefer the disorder group with the highest total occupancy (else lexicographic).
-    const alts = [
-      ...new Set(raw.map((a) => a._alt).filter((x): x is string => !!x)),
-    ]
-    let atoms: CifAtomSite[] = raw
-    if (alts.length > 1) {
-      let best = alts[0]!
-      let bestScore = -1
-      for (const alt of alts) {
-        const group = raw.filter((a) => a._alt === alt)
-        const score = group.reduce((s, a) => s + (a.occupancy ?? 1), 0)
-        if (score > bestScore + 1e-9 || (Math.abs(score - bestScore) < 1e-9 && alt < best)) {
-          best = alt
-          bestScore = score
-        }
-      }
-      // Keep unmarked atoms + preferred altloc
-      atoms = raw.filter((a) => !a._alt || a._alt === best)
-      warnings.push(
-        `Disorder altlocs ${alts.join(', ')}; keeping highest-occupancy group "${best}" (Σocc≈${bestScore.toFixed(2)})`,
-      )
-    }
+    const dis = chooseDisorder(raw, sel, warnings)
+    const atoms: (CifAtomSite & { _alt?: string })[] = dis.atoms
+    if (dis.info) lastDisorder = dis.info
 
     const cleaned: CifAtomSite[] = atoms.map((a) => ({
       label: a.label,
@@ -447,6 +433,8 @@ function atomsFromLoops(loops: LoopTable[], warnings: string[]): CifAtomSite[] {
       residue: a.residue,
       occupancy: a.occupancy,
       altloc: a.altloc,
+      ...(a.disGrp ? { disAsm: a.disAsm, disGrp: a.disGrp } : {}),
+      ...(a.ghost ? { ghost: true } : {}),
       uIso: a.uIso,
     }))
     if (cleaned.length) return cleaned
@@ -495,9 +483,56 @@ function attachAnisoU(
 }
 
 /** Parse a CIF string into cell / SG / operators / asymmetric atoms. */
-import { extractMetadata } from './metadata'
+let lastDisorder: DisorderInfo | undefined
 
-export function parseCif(text: string): ParsedCif {
+/** Order groups: positive numeric ascending, then negative, then others (letters). */
+function groupOrder(a: string, b: string) {
+  const na = Number(a), nb = Number(b)
+  if (Number.isFinite(na) && Number.isFinite(nb)) return (na < 0 ? 1e6 - na : na) - (nb < 0 ? 1e6 - nb : nb)
+  return a < b ? -1 : a > b ? 1 : 0
+}
+/**
+ * Per-assembly disorder choice. Default = highest summed occupancy per assembly (ties → first group in
+ * groupOrder); single-group assemblies are kept whole. With showAll the non-selected groups are appended
+ * (after every kept site, so ASU indices of kept sites do not move) and flagged ghost.
+ */
+export function chooseDisorder<T extends CifAtomSite>(raw: T[], sel: DisorderSelection | undefined, warnings: string[]): { atoms: T[]; info?: DisorderInfo } {
+  const byAsm = new Map<string, Map<string, { n: number; sum: number }>>()
+  for (const a of raw) {
+    if (!a.disGrp) continue
+    const asm = a.disAsm ?? ''
+    let m = byAsm.get(asm)
+    if (!m) byAsm.set(asm, (m = new Map()))
+    const g = m.get(a.disGrp) ?? { n: 0, sum: 0 }
+    g.n++; g.sum += a.occupancy ?? 1
+    m.set(a.disGrp, g)
+  }
+  if (!byAsm.size) return { atoms: raw }
+  const hasNegative = raw.some((a) => a.disGrp && Number(a.disGrp) < 0)
+  const assemblies: DisorderAssembly[] = [...byAsm.keys()].sort().map((id) => {
+    const m = byAsm.get(id)!
+    const groups = [...m.keys()].sort(groupOrder).map((g) => ({ id: g, n: m.get(g)!.n, sumOcc: m.get(g)!.sum, occ: m.get(g)!.sum / m.get(g)!.n }))
+    let best = groups[0]!
+    for (const g of groups) if (g.sumOcc > best.sumOcc + 1e-9) best = g
+    const want = sel?.pick?.[id]
+    const selected = want && groups.some((g) => g.id === want) ? want : best.id
+    return { id, groups, defaultGroup: best.id, selected }
+  })
+  const multi = assemblies.some((a) => a.groups.length > 1)
+  if (!multi && !hasNegative) return { atoms: raw }
+  const chosen = new Map(assemblies.map((a) => [a.id, a.groups.length > 1 ? a.selected : null]))
+  const keep = (a: T) => { if (!a.disGrp) return true; const c = chosen.get(a.disAsm ?? ''); return c == null || c === a.disGrp }
+  const kept = raw.filter(keep)
+  const ghosts = sel?.showAll ? raw.filter((a) => !keep(a)).map((a) => ({ ...a, ghost: true })) : []
+  const desc = assemblies.filter((a) => a.groups.length > 1).map((a) => `${a.id ? `assembly ${a.id}` : 'disorder'}: ${a.selected === a.defaultGroup ? 'keeping highest-occupancy' : 'selected'} group "${a.selected}" of ${a.groups.map((g) => g.id).join('/')}`)
+  if (desc.length) warnings.push(`Disorder — ${desc.join('; ')}${sel?.showAll ? '; other groups drawn translucent' : ''}`)
+  return { atoms: [...kept, ...ghosts], info: { assemblies, showAll: !!sel?.showAll, hasNegative } }
+}
+import { extractMetadata } from './metadata'
+import type { DisorderAssembly, DisorderInfo, DisorderSelection } from './types'
+
+export function parseCif(text: string, sel?: DisorderSelection): ParsedCif {
+  lastDisorder = undefined
   const warnings: string[] = []
   if (!text || !text.trim()) {
     return {
@@ -517,7 +552,8 @@ export function parseCif(text: string): ParsedCif {
   const cell = cellFromPairs(pairs, warnings)
   const { number, name } = resolveSpaceGroup(pairs, warnings)
   const cifOperators = operatorsFromLoops(loops, warnings)
-  const atoms = atomsFromLoops(loops, warnings)
+  const atoms = atomsFromLoops(loops, warnings, sel)
+  const disorder = lastDisorder
   attachAnisoU(atoms, loops, warnings)
 
   if (!atoms.length) {
@@ -540,6 +576,7 @@ export function parseCif(text: string): ParsedCif {
     atoms,
     metadata: extractMetadata(pairs, loops),
     warnings,
+    ...(disorder ? { disorder } : {}),
   }
 }
 

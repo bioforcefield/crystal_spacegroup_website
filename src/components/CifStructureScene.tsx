@@ -936,6 +936,9 @@ function SceneBody({
           )
           const pa = placement.positions[b.a]!
           const pb = placement.positions[b.b]!
+          if (structure.atoms[b.a]!.ghost || structure.atoms[b.b]!.ghost) {
+            return <Line key={`bond-${i}`} points={[pa, pb]} color="#94a3b8" lineWidth={1.2} transparent opacity={0.3} dashed dashSize={0.1} gapSize={0.06} />
+          }
           if (colorMode === 'element' || colorMode === 'equivalence') {
             const ca =
               colorMode === 'element'
@@ -1072,7 +1075,7 @@ function SceneBody({
                   metalness={0.1}
                   roughness={0.55}
                   transparent
-                  opacity={strong ? 0.88 : emphasized ? 0.72 : 0.4}
+                  opacity={a.ghost ? 0.28 : strong ? 0.88 : emphasized ? 0.72 : 0.4}
                 />
               </mesh>
             )
@@ -1115,8 +1118,9 @@ function SceneBody({
                 }
                 metalness={0.15}
                 roughness={0.45}
-                transparent={!strong && visibility === 'all'}
-                opacity={strong ? 1 : emphasized ? 0.95 : 0.5}
+                transparent={a.ghost || (!strong && visibility === 'all')}
+                depthWrite={!a.ghost}
+                opacity={a.ghost ? 0.3 : strong ? 1 : emphasized ? 0.95 : 0.5}
               />
               </mesh>
             </group>

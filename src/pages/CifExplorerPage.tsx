@@ -54,7 +54,7 @@ import {
   csdAccessStructuresUrl,
   parseStructureCode,
 } from '../data/cif/structureCode'
-import type { ExpandedStructure } from '../data/cif/types'
+import type { DisorderSelection, ExpandedStructure } from '../data/cif/types'
 import { looksLikeMmcif, parseMmcif } from '../data/pdb/mmcif'
 import { pastedName, readStructureFile, toMmcifIfNeeded } from '../data/pdb/formats'
 import SequenceStrip, { type StripEntry } from '../components/cif/SequenceStrip'
@@ -66,6 +66,8 @@ import { entrySummary, entryWarnings, fmtBytes, loadPdbMmcif, parsePdbInput, pus
 import PdbLigandPanel from '../components/cif/PdbLigandPanel'
 import CifXrayPanel from '../components/cif/CifXrayPanel'
 import type { AnalysisTab } from '../data/cif/cifRoute'
+import { disParam, parseDisParam } from '../data/cif/cifRoute'
+import { AltlocControl, SmallMolDisorderControl } from '../components/cif/DisorderControl'
 import type { AnalysisFocus } from '../components/cif/analysis/types'
 const StructureAnalysisPanel = lazy(() => import('../components/cif/analysis/StructureAnalysisPanel'))
 const SmallMolAnalysisPanel = lazy(() => import('../components/cif/analysis/SmallMolAnalysisPanel'))
@@ -114,6 +116,9 @@ export default function CifExplorerPage() {
   const [analysisFocus, setAnalysisFocus] = useState<AnalysisFocus | null>(null)
   /** Small-molecule / inorganic (non-PDB) structure analysis drawer. Closed by default. */
   const [smOpen, setSmOpen] = useState(false)
+  // Disorder state (small-molecule assemblies / PDB altlocs). undefined = default (highest occupancy).
+  const [disSel, setDisSel] = useState<DisorderSelection | undefined>(undefined)
+  const [altSel, setAltSel] = useState<string>('auto')
   const [smFocus, setSmFocus] = useState<import('../data/cif/smallmol/analysis').Focus | null>(null)
   const setFocusLig = useCallback((id: string | null) => {
     setFocusLigRaw(id)
@@ -197,7 +202,10 @@ export default function CifExplorerPage() {
       let expanded: ExpandedStructure
       const conv = toMmcifIfNeeded(text, name)
       if (looksLikeMmcif(conv.text)) {
-        const model = buildMacroModel(parseMmcif(conv.text))
+        const alt0 = view0.alt ?? 'auto'
+        const model = buildMacroModel(parseMmcif(conv.text, alt0))
+        setAltSel(model.altlocs?.selected ?? 'auto')
+        setDisSel(undefined)
         if (conv.note) model.warnings.push(conv.note)
         const r = view0.rep ?? 'cartoon'
         expanded = expandMacro(model, r, false)
@@ -211,7 +219,10 @@ export default function CifExplorerPage() {
         setAnalysisTab(view0.analysis ?? null)
         setAnalysisFocus(null)
       } else {
-        expanded = expandStructure(parseCif(text))
+        const d0 = parseDisParam(view0.dis)
+        expanded = expandStructure(parseCif(text, d0))
+        setDisSel(d0)
+        setAltSel('auto')
         setMacroModel(null)
         setFocusLig(null)
         setAnalysisTab(null)
@@ -245,6 +256,31 @@ export default function CifExplorerPage() {
       setBusy(false)
     }
   }, [])
+
+  /** Re-parse the loaded text with a new disorder / altloc choice, keeping the current view. */
+  const applyDisorder = useCallback((sel: DisorderSelection | undefined) => {
+    if (!sourceText || macroModel) return
+    setDisSel(sel)
+    setStructure(expandStructure(parseCif(sourceText, sel)))
+    setSmFocus(null)
+  }, [sourceText, macroModel])
+  const applyAltloc = useCallback((alt: string) => {
+    if (!sourceText || !macroModel) return
+    const conv = toMmcifIfNeeded(sourceText, fileName ?? 'structure.cif')
+    const model = buildMacroModel(parseMmcif(conv.text, alt))
+    if (conv.note) model.warnings.push(conv.note)
+    setAltSel(alt)
+    expandKeyRef.current = `${pdbRep}|${showWaters}`
+    setMacroModel(model)
+    setStructure(expandMacro(model, pdbRep, showWaters))
+    setAnalysisFocus(null)
+  }, [sourceText, macroModel, fileName, pdbRep, showWaters])
+  const structureDisorder = structure?.disorder
+  /** Analysis / exports use the selected state only (no translucent "show all" ghosts). */
+  const analysisStructure = useMemo(() => {
+    if (!structure || macroModel || !disSel?.showAll || !sourceText) return structure
+    return expandStructure(parseCif(sourceText, { pick: disSel.pick }))
+  }, [structure, macroModel, disSel, sourceText])
 
   // PDB: representation / waters → re-expand the same model.
   useEffect(() => {
@@ -542,11 +578,13 @@ export default function CifExplorerPage() {
       analysis: macroModel ? analysisTab : null,
       asm: macroModel && target.kind === 'pdb' ? loadedPdbOpts.asm : null,
       src: macroModel && target.kind === 'pdb' && loadedPdbOpts.src === 'redo' ? 'redo' : null,
+      dis: macroModel ? null : disParam(structureDisorder),
+      alt: macroModel && altSel !== 'auto' ? altSel : null,
     })
     if (search !== location.search) {
       navigate({ pathname: location.pathname, search }, { replace: true, state: location.state })
     }
-  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, diagramOpen, analysisTab, loadedPdbOpts, location.search, location.pathname, location.state, navigate])
+  }, [structure, loadedKey, tKey, target.kind, selectedOp, placementMode, visibility, colorMode, macroModel, pdbRep, focusLig, diagramOpen, analysisTab, loadedPdbOpts, location.search, location.pathname, location.state, navigate, structureDisorder, altSel])
 
   const loadPaste = useCallback(() => {
     if (!pasteText.trim()) {
@@ -687,6 +725,20 @@ export default function CifExplorerPage() {
           </div>
         )}
 
+        {structure && !macroModel && structureDisorder && structureDisorder.assemblies.some((a) => a.groups.length > 1) && (
+          <PhoneSection phone={phone} title="Disorder">
+            <SmallMolDisorderControl
+              info={structureDisorder}
+              onPick={(asm, grp) => applyDisorder({ pick: { ...Object.fromEntries(structureDisorder.assemblies.map((a) => [a.id, a.selected])), [asm]: grp }, showAll: structureDisorder.showAll })}
+              onShowAll={(v) => applyDisorder({ pick: Object.fromEntries(structureDisorder.assemblies.map((a) => [a.id, a.selected])), showAll: v })}
+            />
+          </PhoneSection>
+        )}
+        {structure && macroModel?.altlocs && (
+          <PhoneSection phone={phone} title="Alternate conformations">
+            <AltlocControl ids={macroModel.altlocs.ids} residues={macroModel.altlocs.residues} selected={altSel} onPick={applyAltloc} />
+          </PhoneSection>
+        )}
         {structure && (
           <PhoneSection phone={phone} title="Structure & operators">
           <CifStructurePanel
@@ -879,7 +931,7 @@ export default function CifExplorerPage() {
       {structure && !macroModel && smOpen && (
         <Suspense fallback={<aside className="cif-analysis-drawer" role="status"><p>Loading analysis…</p></aside>}>
           <SmallMolAnalysisPanel
-            structure={structure}
+            structure={analysisStructure!}
             cifText={sourceText ?? ''}
             title={fileName ?? 'structure'}
             onClose={() => { setSmOpen(false); setSmFocus(null) }}

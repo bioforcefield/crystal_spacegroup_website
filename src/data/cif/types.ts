@@ -24,8 +24,13 @@ export interface CifAtomSite {
   residue?: string
   /** Occupancy 0–1 when present in CIF. */
   occupancy?: number
-  /** Disorder altloc / group id when present. */
+  /** Disorder altloc / group id when present (assembly-qualified "asm:group" when an assembly column exists). */
   altloc?: string
+  /** _atom_site_disorder_assembly ('' = implicit single assembly) and _atom_site_disorder_group (may be negative). */
+  disAsm?: string
+  disGrp?: string
+  /** Minor disorder state included only for "show all" (drawn translucent; excluded from analysis/exports). Always after all non-ghost sites. */
+  ghost?: boolean
   /** Isotropic U (Å²) when present. */
   uIso?: number
   /** Anisotropic Uij when present. */
@@ -44,7 +49,14 @@ export interface ParsedCif {
   atoms: CifAtomSite[]
   metadata: CifMetadata
   warnings: string[]
+  /** Disorder assemblies/groups when the file has ≥2 groups in some assembly or a negative PART. */
+  disorder?: DisorderInfo
 }
+export interface DisorderGroup { id: string; n: number; occ: number; sumOcc: number }
+export interface DisorderAssembly { id: string; groups: DisorderGroup[]; defaultGroup: string; selected: string }
+export interface DisorderInfo { assemblies: DisorderAssembly[]; showAll: boolean; hasNegative: boolean }
+/** Per-assembly group choice (assembly id → group id); showAll adds the other groups as ghosts. */
+export interface DisorderSelection { pick?: Record<string, string>; showAll?: boolean }
 
 export interface SymmetryCopyAtom {
   /** Index into asymmetric-unit atoms. */
@@ -65,6 +77,9 @@ export interface SymmetryCopyAtom {
   moleculeId: number
   residue?: string
   occupancy?: number
+  /** Disorder part ("asm:group" or group) and ghost flag copied from the ASU site. */
+  part?: string
+  ghost?: boolean
   uIso?: number
   aniso?: CifAnisoU
   /** Macromolecule extras (PDB entries only). */
@@ -94,6 +109,8 @@ export interface HBondContact {
 }
 
 export interface ExpandedStructure {
+  /** Small-molecule disorder groups (from parseCif) when present. */
+  disorder?: DisorderInfo
   cell: CellParams
   operators: Operator[]
   /** Where operators came from — CIF list must win when present (matches AU setting). */

@@ -17,6 +17,11 @@ export interface SmallMolAnalysisPanelProps {
 }
 
 /** Superscript symmetry code after an atom label: O1^i → O1ⁱ rendered as <sup>. */
+/** Text with any number of "label^code" tokens, codes rendered as superscript. */
+function SupText({ text }: { text: string }) {
+  const parts = text.split(/(\^[ivxlcdm]+)/)
+  return <>{parts.map((p, i) => (p.startsWith('^') ? <sup key={i}>{p.slice(1)}</sup> : p))}</>
+}
 function Lbl({ r }: { r: Ref }) {
   const [base, code] = r.label.split('^')
   return <>{base}{code && <sup>{code}</sup>}</>
@@ -145,7 +150,7 @@ export default function SmallMolAnalysisPanel({ structure, cifText, title, onClo
       <div className="ana-sel" role="group" aria-label="Filter">
         <label>Atom{' '}<input size={8} value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="e.g. O1" data-testid="sm-filter" /></label>
         <span className="muted">{s.nAsu} ASU atoms · {s.ops} operators · computed in {ms.toFixed(0)} ms</span>
-        {focus && <button type="button" className="btn btn-small" onClick={() => onFocus(null)}>Clear 3D highlight ({focus.label})</button>}
+        {focus && <button type="button" className="btn btn-small" onClick={() => onFocus(null)}>Clear 3D highlight (<SupText text={focus.label} />)</button>}
       </div>
       <nav className="ana-tabs" role="tablist" aria-label="Analysis sections">
         {tabs.map((t) => (

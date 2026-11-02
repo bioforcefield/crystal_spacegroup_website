@@ -66,7 +66,8 @@ export function macroAsuSet(m: MacroModel): ExportSet {
 
 /** Asymmetric unit of a small-molecule CIF structure. */
 export function smallAsuSet(s: ExpandedStructure, title: string): ExportSet {
-  const atoms: XAtom[] = s.asymmetric.map((a, i) => {
+  // Translucent "show all" disorder states are display-only: exports follow the selected state.
+  const atoms: XAtom[] = s.asymmetric.filter((a) => !a.ghost).map((a, i) => {
     const p = fracToCart(a.fractional, s.cell)
     return {
       group: 'HETATM', serial: i + 1, name: a.label.slice(0, 4), alt: '', comp: compOf(a.residue), chain: 'A', seq: 1, ins: '',
@@ -90,7 +91,7 @@ export function viewSet(
   const multiples = opts.multiples ?? [1, 1, 1]
   const placed = placeCifStructure(s, mode, opts.selectedOp ?? 1, null)
   const ts = supercellTranslations(multiples)
-  const include = (ai: number) => !placed.hidden?.has(ai) && (opts.include?.(ai) ?? true)
+  const include = (ai: number) => !placed.hidden?.has(ai) && !s.atoms[ai]!.ghost && (opts.include?.(ai) ?? true)
   const atoms: XAtom[] = []
   const chainMap = new Map<string, string>()
   let poolI = 0, wrapped = false

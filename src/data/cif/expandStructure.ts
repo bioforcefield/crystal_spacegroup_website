@@ -85,6 +85,8 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
         moleculeId: -1,
         residue: site.residue,
         occupancy: site.occupancy,
+        ...(site.altloc ? { part: site.altloc } : {}),
+        ...(site.ghost ? { ghost: true } : {}),
         uIso: site.uIso,
         aniso: site.aniso,
       })
@@ -114,6 +116,7 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
   }
 
   const draft = {
+    ...(parsed.disorder ? { disorder: parsed.disorder } : {}),
     cell: parsed.cell,
     operators,
     operatorSource: source,
@@ -132,7 +135,7 @@ export function expandStructure(parsed: ParsedCif): ExpandedStructure {
     }),
     warnings,
   }
-  draft.hbonds = findHBonds(draft)
+  draft.hbonds = findHBonds(draft).filter((h) => !atoms[h.hydrogen]?.ghost && !atoms[h.acceptor]?.ghost)
   if (draft.hbonds.length) {
     const cross = draft.hbonds.filter((h) => h.crossOp).length
     warnings.push(

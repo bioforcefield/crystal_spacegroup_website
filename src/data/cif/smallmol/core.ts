@@ -175,4 +175,9 @@ export function image(ctx: Context, j: number, g: Sym): Img {
   return { j, g, frac: f, cart: fracToCart(f, ctx.cell) }
 }
 /** Disorder: atoms of different PART / altloc groups are never bonded or compared. */
-export const sameAssembly = (a: SmAtom, b: SmAtom) => !a.part || !b.part || a.part === b.part
+export const sameAssembly = (a: SmAtom, b: SmAtom) => {
+  if (!a.part || !b.part || a.part === b.part) return true
+  const [aa, ag] = a.part.includes(':') ? a.part.split(':') : ['', a.part]
+  const [ba, bg] = b.part.includes(':') ? b.part.split(':') : ['', b.part]
+  return aa !== ba || ag === bg // different assemblies coexist
+}

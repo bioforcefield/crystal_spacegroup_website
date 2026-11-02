@@ -78,6 +78,7 @@ export interface MacroModel {
   seqres?: Map<string, import('./mmcif').SeqresEntry[]>
   /** _struct_conn disulfides (undefined when the file has no struct_conn, e.g. PDB format). */
   disulfides?: import('./mmcif').DisulfideRecord[]
+  altlocs?: import('./mmcif').ParsedMmcif['altlocs']
 }
 
 export interface MacroInfo {
@@ -138,6 +139,7 @@ export function buildMacroModel(pm: ParsedMmcif): MacroModel {
     hasWater: extras.some((e) => e.water),
     seqres: pm.seqres,
     disulfides: pm.disulfides,
+    altlocs: pm.altlocs,
   }
 }
 

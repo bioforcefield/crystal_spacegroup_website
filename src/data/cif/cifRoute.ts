@@ -93,6 +93,10 @@ export type CifViewQuery = {
   asm?: number | null
   /** PDB coordinate source (absent = RCSB). */
   src?: 'redo' | null
+  /** Small-molecule disorder choice, e.g. "A:1,B:2" or "*" / "*,A:2" (show all). Absent = default. */
+  dis?: string | null
+  /** PDB altloc: a letter, or absent = highest occupancy per residue. */
+  alt?: string | null
 }
 export const ANALYSIS_TABS = ['rama', 'chi', 'na', 'pucker', 'bp', 'step', 'geom'] as const
 export type AnalysisTab = (typeof ANALYSIS_TABS)[number]
@@ -126,6 +130,10 @@ export function parseViewQuery(search: string | URLSearchParams): CifViewQuery {
   const asm = Number(q.get('asm'))
   if (Number.isInteger(asm) && asm >= 1 && asm <= 99) out.asm = asm
   if (q.get('src') === 'redo') out.src = 'redo'
+  const dis = q.get('dis')
+  if (dis && /^[*A-Za-z0-9:,.-]{1,200}$/.test(dis)) out.dis = dis
+  const alt = q.get('alt')
+  if (alt && /^[A-Za-z0-9]{1,4}$/.test(alt)) out.alt = alt
   return out
 }
 
@@ -141,6 +149,8 @@ export function serializeViewQuery(v: CifViewQuery): string {
   if (v.analysis) q.set('analysis', v.analysis)
   if (v.asm) q.set('asm', String(v.asm))
   if (v.src === 'redo') q.set('src', 'redo')
+  if (v.dis) q.set('dis', v.dis)
+  if (v.alt) q.set('alt', v.alt)
   const s = q.toString()
   return s ? `?${s}` : ''
 }
@@ -172,4 +182,23 @@ export function loadStoredFile(store: Storage | undefined, name: string): string
   } catch {
     return null
   }
+}
+
+/** "A:1,B:2" / "*" ↔ DisorderSelection (assembly '' is written as "_"). */
+export function parseDisParam(v: string | null | undefined): import('./types').DisorderSelection | undefined {
+  if (!v) return undefined
+  const out: { pick: Record<string, string>; showAll?: boolean } = { pick: {} }
+  for (const tok of v.split(',')) {
+    if (tok === '*') { out.showAll = true; continue }
+    const i = tok.lastIndexOf(':')
+    if (i < 0) out.pick[''] = tok
+    else out.pick[tok.slice(0, i) === '_' ? '' : tok.slice(0, i)] = tok.slice(i + 1)
+  }
+  return out
+}
+export function disParam(info: import('./types').DisorderInfo | undefined): string | null {
+  if (!info) return null
+  const toks = info.assemblies.filter((a) => a.groups.length > 1 && a.selected !== a.defaultGroup).map((a) => `${a.id || '_'}:${a.selected}`)
+  if (info.showAll) toks.unshift('*')
+  return toks.length ? toks.join(',') : null
 }

@@ -83,6 +83,11 @@ export function bondsMinImage(
       const j = indices[jj]!
       const A = atoms[i]!
       const B = atoms[j]!
+      if (A.part && B.part && A.part !== B.part) {
+        const [aa, ag] = A.part.includes(':') ? A.part.split(':') : ['', A.part]
+        const [ba, bg] = B.part.includes(':') ? B.part.split(':') : ['', B.part]
+        if (aa === ba && ag !== bg) continue // alternative disorder states are never bonded
+      }
       const max = (covalentRadius(A.element) + covalentRadius(B.element)) * scale
       const near = nearestImageFrac(A.fractional, B.fractional, cell)
       if (near.dist <= max) {
