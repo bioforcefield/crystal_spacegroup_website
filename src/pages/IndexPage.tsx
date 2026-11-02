@@ -561,7 +561,7 @@ export default function IndexPage() {
                   (CIF, mmCIF, PDB, Maestro .mae/.maegz, gzipped .gz), recent structures,
                   biological assemblies and PDB-REDO re-refinements.</li>
                 <li><strong>View</strong> — the <em>Display</em> menu (style, labels, H-bonds, ellipsoids …),
-                  the cell panel (Nearest / Cell whole / Cell atoms), supercell a×b×c, and the
+                  the cell panel (Nearest / Cell whole / Cell atoms), supercell a×b×c, and the{' '}
                   <em>Disorder</em> / <em>Alternate conformations</em> control when the file has disorder
                   groups or altlocs (default = highest occupancy; “show all” draws the others translucent).</li>
                 <li><strong>Export</strong> — <em>Download</em> saves exactly the current cell view (ASU,
@@ -581,9 +581,9 @@ export default function IndexPage() {
               <ul>
                 <li>A simulated powder pattern from the loaded structure: 2θ on x, relative
                   intensity on y, the wavelength (λ) shown on the plot; the strongest peaks
-                  carry (hkl) labels and hovering gives 2θ, d, I and hkl.</li>
+                  carry (hkl) labels — the <em>Label peaks ≥</em> slider (dashed line) sets which — and hovering gives 2θ, d, I and hkl.</li>
                 <li><em>Enlarge</em> opens a large view: drag to zoom the 2θ range,
-                  double-click to reset, Esc to close; peak list and PNG/CSV export.</li>
+                  double-click to reset, Esc to close; peak list (optionally only peaks above the threshold), CSV, and PNG/SVG export with a white publication background by default.</li>
               </ul>
             </details>
             <details className="guide-acc">
