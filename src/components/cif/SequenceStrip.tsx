@@ -160,7 +160,7 @@ export default function SequenceStrip({ entries, focusKey, onFocus, onAddPdb, on
         <span className="seq-legend muted"><i className="ss-H" />helix <i className="ss-E" />strand <i className="seq-unobs-k">x</i> not modelled</span>
         <span className="seq-hover mono" aria-live="polite">{hoverText ?? (focusKey ? `Selected: ${focusKey.split('|').reverse().join(' ')}` : 'Click a residue (or Tab + arrows, Enter) to centre it')}</span>
         <form className="seq-add" onSubmit={(e) => { e.preventDefault(); if (addId.trim()) onAddPdb(addId.trim()); setAddId('') }}>
-          <input value={addId} onChange={(e) => setAddId(e.target.value)} placeholder="Compare PDB id" aria-label="Add PDB id to compare" size={10} disabled={busy} />
+          <input value={addId} onChange={(e) => setAddId(e.target.value)} placeholder="PDB ID" aria-label="Add PDB id to compare" size={10} maxLength={12} spellCheck={false} autoCapitalize="characters" title="PDB ID to compare (e.g. 1HSG)" disabled={busy} />
           <button type="submit" className="btn btn-small" disabled={busy || !addId.trim()}>+ Compare</button>
           <label className="btn btn-small seq-file">
             + File

@@ -5612,3 +5612,17 @@ button.linkish {
 .ana-eq-math { overflow-x: auto; overflow-y: hidden; padding: 0.15rem 0; }
 .ana-eq-refs { font-size: 0.76rem; padding-left: 1.2rem; }
 .ana-eq code { font-size: 0.75rem; }
+.ana-h3 { font-size: 0.95rem; margin: 0.9rem 0 0.3rem; }
+.ana-defs { margin: 0.8rem 0; font-size: 0.85rem; }
+.ana-defs summary { cursor: pointer; font-weight: 600; }
+.ana-defs ul { padding-left: 1.2rem; }
+/* Compare-PDB input: readable on dark theme, never truncated, same height as "+ Compare". */
+.cif-seq-strip .seq-add { flex-wrap: wrap; row-gap: 0.3rem; max-width: 100%; }
+.cif-seq-strip .seq-add input:not([type]) {
+  min-width: 10ch; width: 10ch; flex: 0 0 auto; box-sizing: content-box;
+  font-size: 0.8rem; line-height: 1.2; padding: 0.22rem 0.45rem; height: auto; align-self: stretch;
+  background: #0f172a; color: #f1f5f9; border: 1px solid #64748b; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.02em;
+}
+.cif-seq-strip .seq-add input:not([type])::placeholder { color: #a8b3c4; opacity: 1; }
+.cif-seq-strip .seq-add input:not([type]):focus-visible { outline: 2px solid #38bdf8; outline-offset: 1px; border-color: #38bdf8; }
+.cif-seq-strip .seq-add input:not([type]):disabled { opacity: 0.6; }

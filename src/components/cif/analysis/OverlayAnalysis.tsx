@@ -12,6 +12,7 @@ import { alignChains, superposeRow, type OverlayResult } from '../../../data/pdb
 import { applySuperposition } from '../../../data/pdb/kabsch'
 import { OverlayHistogram, OverlayLegend, OverlayScatter, OverlaySeries, PuckerWheel, downloadCsv, type OvPt, type OvSeries } from './plots'
 import type { AnalysisFocus } from './types'
+import { GeometryView } from './GeometryView'
 import NaEquations from './NaEquationsLazy'
 
 export const REF_COLOR = '#2563eb'
@@ -90,9 +91,11 @@ export interface OverlayBodyProps {
   meta: { pdbId: string | null; filter: string }
   /** Set to a builder for the multi-structure full-report CSV (used by the drawer header button). */
   fullCsvRef?: MutableRefObject<(() => string) | null>
+  showLig?: boolean
+  onShowLig?: (b: boolean) => void
 }
 
-export default function OverlayBody({ entries, tab, inSel, focus, onFocus, meta, fullCsvRef }: OverlayBodyProps) {
+export default function OverlayBody({ entries, tab, inSel, focus, onFocus, meta, fullCsvRef, showLig = false, onShowLig = () => {} }: OverlayBodyProps) {
   const base = useMemo(() => buildOverlay(entries), [entries])
   const structs: OverlayStruct[] = useMemo(() => base.structs.map((s) => ({
     ...s,
@@ -102,8 +105,9 @@ export default function OverlayBody({ entries, tab, inSel, focus, onFocus, meta,
       pairs: s.full.pairs.filter((p) => inSel(p.r1) || inSel(p.r2)),
       steps: s.full.steps.filter((x) => inSel(x.bp1.r1) && inSel(x.bp2.r1)),
       form: s.full.form,
+      geom: [...s.full.geom, ...(showLig ? s.full.ligGeom : [])].filter((g) => inSel(g.res)),
     },
-  })), [base, inSel])
+  })), [base, inSel, showLig])
   if (fullCsvRef) fullCsvRef.current = () => overlayFullReportCsv(structs.map((s) => ({ label: s.label, a: s.a })), meta)
   const [normalize, setNormalize] = useState(true)
   const [cat, setCat] = useState<RamaCategory>('general')
@@ -264,6 +268,10 @@ export default function OverlayBody({ entries, tab, inSel, focus, onFocus, meta,
         <p className="muted ana-note">{NOTES.bp}</p>
       </>
     )
+  }
+  if (tab === 'geom') {
+    body = <GeometryView series={structs.map((s) => ({ key: s.key, label: s.label, color: s.color, items: s.a.geom ?? [], idOf: (k: string) => ovId(s, k) }))}
+      pick={pick} sel={sel} csv={csv('geom', 'Bonds & angles')} showLig={showLig} onShowLig={onShowLig} normalize={normalize} normBox={normBox} />
   }
   return (
     <div className="ana-overlay" data-testid="ana-overlay">

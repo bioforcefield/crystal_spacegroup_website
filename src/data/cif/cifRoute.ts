@@ -94,7 +94,7 @@ export type CifViewQuery = {
   /** PDB coordinate source (absent = RCSB). */
   src?: 'redo' | null
 }
-export const ANALYSIS_TABS = ['rama', 'chi', 'na', 'pucker', 'bp', 'step'] as const
+export const ANALYSIS_TABS = ['rama', 'chi', 'na', 'pucker', 'bp', 'step', 'geom'] as const
 export type AnalysisTab = (typeof ANALYSIS_TABS)[number]
 export const VIEW_DEFAULTS: CifViewQuery = { op: 1, view: 'nearest', show: 'molecules', color: 'operator' }
 const REPS = ['cartoon', 'trace', 'full'] as const

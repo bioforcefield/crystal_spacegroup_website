@@ -9,6 +9,7 @@ import {
 } from '../../../data/pdb/analysis'
 import { AngleScatter, Histogram, PuckerWheel, SeriesPlot, downloadCsv, type Pt } from './plots'
 import type { AnalysisFocus } from './types'
+import { GeometryView } from './GeometryView'
 import NaEquations from './NaEquationsLazy'
 
 export interface StructureAnalysisPanelProps {
@@ -26,7 +27,7 @@ export interface StructureAnalysisPanelProps {
 }
 
 const f1 = (v: number | null | undefined, d = 1) => (v == null ? '—' : v.toFixed(d))
-const TAB_LABEL: Record<AnalysisTab, string> = { rama: 'Backbone φ/ψ/ω', chi: 'Side chains χ', na: 'NA torsions', pucker: 'Sugar pucker', bp: 'Base pairs', step: 'Steps' }
+const TAB_LABEL: Record<AnalysisTab, string> = { rama: 'Backbone φ/ψ/ω', chi: 'Side chains χ', na: 'NA torsions', pucker: 'Sugar pucker', bp: 'Base pairs', step: 'Steps', geom: 'Bonds & angles' }
 
 export default function StructureAnalysisPanel({ model, tab, onTab, onClose, focus, onFocus, pocketKeys, pocketLabel, compare }: StructureAnalysisPanelProps) {
   const [overlayPref, setOverlayPref] = useState(true)
@@ -44,6 +45,7 @@ export default function StructureAnalysisPanel({ model, tab, onTab, onClose, foc
   const [to, setTo] = useState('')
   const [ramaCat, setRamaCat] = useState<RamaCategory>('general')
   const [chiRes, setChiRes] = useState<string>('all')
+  const [showLig, setShowLig] = useState(false)
 
   const inSel = useMemo(() => {
     const pocket = scope === 'pocket' && pocketKeys ? new Set(pocketKeys) : null
@@ -61,7 +63,8 @@ export default function StructureAnalysisPanel({ model, tab, onTab, onClose, foc
   const selText = scope === 'pocket' ? `ligand pocket ${pocketLabel ?? ''}` : `${scope === 'all' ? 'all chains' : `chain ${scope.slice(6)}`}${from || to ? `, residues ${from || '…'}–${to || '…'}` : ''}`
   const meta = { pdbId: model.pdbId, filter: selText }
   const id = (model.pdbId ?? 'structure').toUpperCase()
-  const a = { protein, nucleic, pairs, steps, form: full.form }
+  const geom = useMemo(() => [...full.geom, ...(showLig ? full.ligGeom : [])].filter((g) => inSel(g.res)), [full, inSel, showLig])
+  const a = { protein, nucleic, pairs, steps, form: full.form, geom }
 
   const resById = useMemo(() => new Map(full.residues.map((r) => [r.key, r])), [full])
   const pick = (key: string) => {
@@ -71,7 +74,7 @@ export default function StructureAnalysisPanel({ model, tab, onTab, onClose, foc
     onFocus({ key, label: resLabel(r), center: r.atoms.get('CA') ?? r.atoms.get("C1'") ?? r.centroid })
   }
   const hasProt = full.protein.length > 0, hasNa = full.nucleic.length > 0
-  const tabs = (['rama', 'chi', 'na', 'pucker', 'bp', 'step'] as AnalysisTab[]).filter((t) => (t === 'rama' || t === 'chi' ? hasProt : hasNa))
+  const tabs = (['rama', 'chi', 'na', 'pucker', 'bp', 'step', 'geom'] as AnalysisTab[]).filter((t) => (t === 'geom' ? hasProt || hasNa : t === 'rama' || t === 'chi' ? hasProt : hasNa))
   const cur = tabs.includes(tab) ? tab : tabs[0]
 
   const csvBtn = (section: Parameters<typeof sectionCsv>[0], label: string) => (
@@ -112,13 +115,14 @@ export default function StructureAnalysisPanel({ model, tab, onTab, onClose, foc
         ))}
       </nav>
       {!tabs.length && <p className="muted">No standard protein or nucleic-acid residues in this entry.</p>}
-      {overlayOn && cur && <div className="ana-body"><OverlayBody entries={ovEntries} tab={cur} inSel={inSel} focus={focus} onFocus={onFocus} meta={{ pdbId: ovEntries.map((e) => e.label).join(' vs '), filter: selText }} fullCsvRef={fullCsvRef} /></div>}
+      {overlayOn && cur && <div className="ana-body"><OverlayBody entries={ovEntries} tab={cur} inSel={inSel} focus={focus} onFocus={onFocus} meta={{ pdbId: ovEntries.map((e) => e.label).join(' vs '), filter: selText }} fullCsvRef={fullCsvRef} showLig={showLig} onShowLig={setShowLig} /></div>}
       {!overlayOn && <div className="ana-body">
         {cur === 'rama' && <RamaSection rows={protein} cat={ramaCat} onCat={setRamaCat} pick={pick} sel={focus?.key ?? null} csv={csvBtn('backbone', 'Backbone')} />}
         {cur === 'chi' && <ChiSection rows={protein} resType={chiRes} onResType={setChiRes} pick={pick} sel={focus?.key ?? null} csv={csvBtn('chi', 'χ')} />}
         {cur === 'na' && <NaSection rows={nucleic} pick={pick} sel={focus?.key ?? null} csv={csvBtn('na', 'NA torsion')} />}
         {cur === 'pucker' && <PuckerSection rows={nucleic} pick={pick} sel={focus?.key ?? null} csv={csvBtn('na', 'Pucker + torsion')} />}
         {cur === 'bp' && <BpSection pairs={pairs} pick={pick} sel={focus?.key ?? null} csv={csvBtn('bp', 'Base-pair')} />}
+        {cur === 'geom' && <GeometryView series={[{ key: 'active', label: id, color: REF_COLOR, items: geom, idOf: (k) => k }]} pick={pick} sel={focus?.key ?? null} csv={csvBtn('geom', 'Bonds & angles')} showLig={showLig} onShowLig={setShowLig} />}
         {cur === 'step' && <StepSection steps={steps} form={full.form} pick={pick} sel={focus?.key ?? null} csv={csvBtn('step', 'Step')} />}
       </div>}
     </aside>

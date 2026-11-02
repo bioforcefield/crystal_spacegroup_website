@@ -137,8 +137,10 @@ export function AngleScatter({ title, name, pts, rama, xl, yl, onPick, selected 
 }
 
 /** Histogram of angles (−180..180) or arbitrary range. */
-export function Histogram({ title, name, values, range = [-180, 180], bin = 10, xl, info }: {
+export function Histogram({ title, name, values, range = [-180, 180], bin = 10, xl, info, ideal }: {
   title: string; name: string; values: number[]; range?: [number, number]; bin?: number; xl: string; info?: string
+  /** Optional literature target: line at mu, shaded band mu ± sd. */
+  ideal?: { mu: number; sd: number | null }
 }) {
   const [hov, setHov] = useState<string | null>(null)
   const w = 360, h = 220
@@ -152,17 +154,19 @@ export function Histogram({ title, name, values, range = [-180, 180], bin = 10, 
   const X = (v: number) => M.l + ((v - range[0]) / (range[1] - range[0])) * (w - M.l - M.r)
   const Y = (c: number) => h - M.b - (c / max) * (h - M.t - M.b)
   const span = range[1] - range[0]
-  const step = span >= 300 ? 90 : span >= 60 ? 20 : span >= 10 ? 2 : 0.5
+  const step = span >= 300 ? 90 : span >= 60 ? 20 : span >= 10 ? 2 : span >= 2 ? 0.5 : span >= 0.5 ? 0.1 : 0.05
+  const dp = bin < 0.1 ? 3 : 1
   const xt: number[] = []
   for (let v = Math.ceil(range[0] / step) * step; v <= range[1] + 1e-9; v += step) xt.push(+v.toFixed(2))
   const yt = [0, Math.round(max / 2), max].filter((v, i, a) => a.indexOf(v) === i)
   return (
     <PlotCard title={title} name={name} width={w} height={h} info={info} readout={hov ?? `n = ${values.length}`}>
       <Axes w={w} h={h} xr={range} yr={[0, max]} xt={xt} yt={yt} xl={xl} yl="count" />
+      {ideal && <g className="ana-ideal" data-testid="ana-ideal">{ideal.sd != null && <rect x={X(Math.max(range[0], ideal.mu - ideal.sd))} width={Math.max(0, X(Math.min(range[1], ideal.mu + ideal.sd)) - X(Math.max(range[0], ideal.mu - ideal.sd)))} y={M.t} height={h - M.t - M.b} fill="#f59e0b" fillOpacity={0.15} />}<line x1={X(ideal.mu)} x2={X(ideal.mu)} y1={M.t} y2={h - M.b} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 3" /></g>}
       {counts.map((c, k) => c > 0 && (
         <rect key={k} x={X(range[0] + k * bin) + 0.5} width={Math.max(1, X(range[0] + bin) - X(range[0]) - 1)} y={Y(c)} height={h - M.b - Y(c)} fill="#3b82f6"
-          onMouseEnter={() => setHov(`${(range[0] + k * bin).toFixed(1)} to ${(range[0] + (k + 1) * bin).toFixed(1)}: ${c}`)} onMouseLeave={() => setHov(null)}>
-          <title>{`${(range[0] + k * bin).toFixed(1)}–${(range[0] + (k + 1) * bin).toFixed(1)}: ${c}`}</title>
+          onMouseEnter={() => setHov(`${(range[0] + k * bin).toFixed(dp)} to ${(range[0] + (k + 1) * bin).toFixed(dp)}: ${c}`)} onMouseLeave={() => setHov(null)}>
+          <title>{`${(range[0] + k * bin).toFixed(dp)}–${(range[0] + (k + 1) * bin).toFixed(dp)}: ${c}`}</title>
         </rect>
       ))}
     </PlotCard>
@@ -285,8 +289,9 @@ export function OverlayScatter({ title, name, pts, series, rama, xl, yl, onPick,
 }
 
 /** Histogram per structure: semi-transparent step outlines; counts or fraction. */
-export function OverlayHistogram({ title, name, groups, range = [-180, 180], bin = 10, xl, info, normalize }: {
+export function OverlayHistogram({ title, name, groups, range = [-180, 180], bin = 10, xl, info, normalize, ideal }: {
   title: string; name: string; groups: (OvSeries & { values: number[] })[]; range?: [number, number]; bin?: number; xl: string; info?: string; normalize: boolean
+  ideal?: { mu: number; sd: number | null }
 }) {
   const [hov, setHov] = useState<string | null>(null)
   const w = 360, h = 220
@@ -301,7 +306,8 @@ export function OverlayHistogram({ title, name, groups, range = [-180, 180], bin
   const X = (v: number) => M.l + ((v - range[0]) / (range[1] - range[0])) * (w - M.l - M.r)
   const Y = (c: number) => h - M.b - (c / max) * (h - M.t - M.b)
   const span = range[1] - range[0]
-  const step = span >= 300 ? 90 : span >= 60 ? 20 : span >= 10 ? 2 : 0.5
+  const step = span >= 300 ? 90 : span >= 60 ? 20 : span >= 10 ? 2 : span >= 2 ? 0.5 : span >= 0.5 ? 0.1 : 0.05
+  const dp = bin < 0.1 ? 3 : 1
   const xt: number[] = []
   for (let v = Math.ceil(range[0] / step) * step; v <= range[1] + 1e-9; v += step) xt.push(+v.toFixed(2))
   const yt = (normalize ? [0, +(max / 2).toFixed(3), max] : [0, Math.round(max / 2), max]).filter((v, i, a) => a.indexOf(v) === i)
@@ -310,6 +316,7 @@ export function OverlayHistogram({ title, name, groups, range = [-180, 180], bin
     <PlotCard title={title} name={name} width={w} height={h} info={info}
       readout={hov ?? groups.map((g) => `${g.label} n=${g.values.length}`).join(' · ')}>
       <Axes w={w} h={h} xr={range} yr={[0, max]} xt={xt} yt={yt} xl={xl} yl={normalize ? 'fraction' : 'count'} />
+      {ideal && <g className="ana-ideal" data-testid="ana-ideal">{ideal.sd != null && <rect x={X(Math.max(range[0], ideal.mu - ideal.sd))} width={Math.max(0, X(Math.min(range[1], ideal.mu + ideal.sd)) - X(Math.max(range[0], ideal.mu - ideal.sd)))} y={M.t} height={h - M.t - M.b} fill="#f59e0b" fillOpacity={0.15} />}<line x1={X(ideal.mu)} x2={X(ideal.mu)} y1={M.t} y2={h - M.b} stroke="#f59e0b" strokeWidth={1.5} strokeDasharray="4 3" /></g>}
       {hist.map((c, gi) => {
         const g = groups[gi]!
         let d = `M${X(range[0])},${Y(0)}`
@@ -320,8 +327,8 @@ export function OverlayHistogram({ title, name, groups, range = [-180, 180], bin
             <path d={d} fill={g.color} fillOpacity={0.18} stroke={g.color} strokeWidth={1.6} />
             {c.map((v, k) => v > 0 && (
               <rect key={k} x={X(range[0] + k * bin)} width={X(range[0] + bin) - X(range[0])} y={Y(v)} height={2} fill="transparent"
-                onMouseEnter={() => setHov(`${g.label} · ${(range[0] + k * bin).toFixed(1)} to ${(range[0] + (k + 1) * bin).toFixed(1)}: ${fmt(v)}`)} onMouseLeave={() => setHov(null)}>
-                <title>{`${g.label} ${(range[0] + k * bin).toFixed(1)}–${(range[0] + (k + 1) * bin).toFixed(1)}: ${fmt(v)}`}</title>
+                onMouseEnter={() => setHov(`${g.label} · ${(range[0] + k * bin).toFixed(dp)} to ${(range[0] + (k + 1) * bin).toFixed(dp)}: ${fmt(v)}`)} onMouseLeave={() => setHov(null)}>
+                <title>{`${g.label} ${(range[0] + k * bin).toFixed(dp)}–${(range[0] + (k + 1) * bin).toFixed(dp)}: ${fmt(v)}`}</title>
               </rect>
             ))}
           </g>
