@@ -180,6 +180,27 @@ export interface ParsedMmcif {
   ss: SsRange[]
   /** Deposited polymer sequence per auth chain (SEQRES / _pdbx_poly_seq_scheme); num = auth numbering. */
   seqres: Map<string, SeqresEntry[]>
+  /** Disulfides from _struct_conn (conn_type_id = disulf), auth chain / seq; undefined when the file has no struct_conn. */
+  disulfides?: DisulfideRecord[]
+}
+export interface DisulfideRecord { chain1: string; seq1: string; chain2: string; seq2: string; sym1: string; sym2: string; dist?: number }
+function readDisulfides(t: MmcifTables): DisulfideRecord[] | undefined {
+  const L = t.loops.get('_struct_conn')
+  if (!L) {
+    const ty = mmcifValue(t, '_struct_conn.conn_type_id')
+    if (!ty) return undefined
+    if (ty.toLowerCase() !== 'disulf') return []
+    const v = (k: string) => mmcifValue(t, `_struct_conn.${k}`) ?? ''
+    return [{ chain1: v('ptnr1_auth_asym_id') || v('ptnr1_label_asym_id'), seq1: v('ptnr1_auth_seq_id') || v('ptnr1_label_seq_id'), chain2: v('ptnr2_auth_asym_id') || v('ptnr2_label_asym_id'), seq2: v('ptnr2_auth_seq_id') || v('ptnr2_label_seq_id'), sym1: v('ptnr1_symmetry') || '1_555', sym2: v('ptnr2_symmetry') || '1_555', dist: num(v('pdbx_dist_value')) ?? undefined }]
+  }
+  const H = (k: string) => L.headers.indexOf(`_struct_conn.${k}`)
+  const g = (r: string[], k: string, alt: string) => { const i = H(k) >= 0 ? H(k) : H(alt); return i >= 0 ? r[i] ?? '' : '' }
+  return L.rows.filter((r) => (r[H('conn_type_id')] ?? '').toLowerCase() === 'disulf').map((r) => ({
+    chain1: g(r, 'ptnr1_auth_asym_id', 'ptnr1_label_asym_id'), seq1: g(r, 'ptnr1_auth_seq_id', 'ptnr1_label_seq_id'),
+    chain2: g(r, 'ptnr2_auth_asym_id', 'ptnr2_label_asym_id'), seq2: g(r, 'ptnr2_auth_seq_id', 'ptnr2_label_seq_id'),
+    sym1: g(r, 'ptnr1_symmetry', 'ptnr1_symmetry') || '1_555', sym2: g(r, 'ptnr2_symmetry', 'ptnr2_symmetry') || '1_555',
+    dist: num(g(r, 'pdbx_dist_value', 'pdbx_dist_value')) ?? undefined,
+  }))
 }
 
 export interface SeqresEntry { comp: string; num: string | null }
@@ -380,5 +401,5 @@ export function parseMmcif(text: string): ParsedMmcif {
     metadata: { name: title ?? undefined, resolutionA, resolutionSource: resolutionA != null ? 'refine' : undefined },
     warnings,
   }
-  return { parsed, extras, method, crystal, nonCrystalReason, pdbId, title, chains, resolutionA, ss: readSs(t), seqres: readSeqres(t) }
+  return { parsed, extras, method, crystal, nonCrystalReason, pdbId, title, chains, resolutionA, ss: readSs(t), seqres: readSeqres(t), disulfides: readDisulfides(t) }
 }

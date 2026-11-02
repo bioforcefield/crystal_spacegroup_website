@@ -6,7 +6,8 @@ import { Histogram, OverlayHistogram } from './plots'
 export interface GeomSeries { key: string; label: string; color: string; items: GeomItem[]; idOf: (resKey: string) => string }
 
 const RANGE: Record<string, [number, number]> = { 'C–C': [1.2, 1.65], 'C–N': [1.2, 1.6], 'C–O': [1.15, 1.55], 'C–S': [1.65, 1.95], 'S–S (disulfide)': [1.9, 2.2] }
-function rangeOf(items: GeomItem[], kind: 'bond' | 'angle', ideal: number | null, type: string): { range: [number, number]; bin: number } {
+function rangeOf(items: GeomItem[], kind: GeomItem['kind'], ideal: number | null, type: string): { range: [number, number]; bin: number } {
+  if (kind === 'torsion') return { range: [-180, 180], bin: 10 }
   if (kind === 'angle') {
     const c = ideal ?? items.reduce((s, x) => s + x.value, 0) / Math.max(1, items.length)
     return { range: [Math.floor(c - 15), Math.ceil(c + 15)], bin: 1 }
@@ -31,8 +32,8 @@ export function GeometryView({ series, pick, sel, csv, showLig, onShowLig, norma
   const types = [...new Set(sums.flatMap((l) => l.map((x) => x.type)))]
   const outliers = series.flatMap((s) => s.items.filter((x) => x.z != null && Math.abs(x.z) > 4).map((x) => ({ s, x })))
     .sort((a, b) => Math.abs(b.x.z!) - Math.abs(a.x.z!))
-  const unit = (k: 'bond' | 'angle') => (k === 'bond' ? 'Å' : '°')
-  const fmtV = (v: number | null, k: 'bond' | 'angle') => (v == null ? '—' : v.toFixed(k === 'bond' ? 3 : 1))
+  const unit = (k: GeomItem['kind']) => (k === 'bond' ? 'Å' : '°')
+  const fmtV = (v: number | null, k: GeomItem['kind']) => (v == null ? '—' : v.toFixed(k === 'bond' ? 3 : 1))
   return (
     <>
       <div className="ana-row" role="group" aria-label="Bond / angle type group">

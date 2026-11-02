@@ -76,6 +76,8 @@ export interface MacroModel {
   hasWater: boolean
   /** Deposited sequence per chain (may be empty when the file has none). */
   seqres?: Map<string, import('./mmcif').SeqresEntry[]>
+  /** _struct_conn disulfides (undefined when the file has no struct_conn, e.g. PDB format). */
+  disulfides?: import('./mmcif').DisulfideRecord[]
 }
 
 export interface MacroInfo {
@@ -135,6 +137,7 @@ export function buildMacroModel(pm: ParsedMmcif): MacroModel {
     sites: parsed.atoms, extras, cart, ss, ligands, centroid, metadata: parsed.metadata, warnings,
     hasWater: extras.some((e) => e.water),
     seqres: pm.seqres,
+    disulfides: pm.disulfides,
   }
 }
 

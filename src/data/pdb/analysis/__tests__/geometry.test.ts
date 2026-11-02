@@ -19,11 +19,11 @@ describe('bond/angle geometry', () => {
     const s = summarizeGeom(a.geom)
     const get = (t: string) => s.find((x) => x.type === t)!
     expect(get('N–CA').n).toBe(46)
-    expect(get('C–N (peptide)').n).toBe(45)
+    expect(get('C–N (peptide)').n + (s.find((x) => x.type === 'C–N (peptide, →Pro)')?.n ?? 0)).toBe(45)
     expect(Math.abs(get('C–N (peptide)').mean - 1.336)).toBeLessThan(0.03)
     expect(get('N–CA–C').rmsZ!).toBeLessThan(2)
     expect(get('S–S (disulfide)').n).toBe(3)
-    expect(get('S–S (disulfide)').rmsZ).toBeNull()
+    expect(get('S–S (disulfide)').ideal).toBe(2.031)
     expect(s.some((x) => x.group === 'psc-bond' && x.type === 'C–S')).toBe(true)
   })
   it('B-DNA: phosphodiester + glycosidic bonds with deoxyribose targets', () => {

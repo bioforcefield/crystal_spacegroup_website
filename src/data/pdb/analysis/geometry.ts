@@ -4,8 +4,8 @@
  * Covalent connectivity is taken from residue topology (the Engh & Huber per-residue bond list,
  * standard nucleotide connectivity, and peptide / phosphodiester links between consecutive residues
  * of a chain) — not inferred from distances. The only distance tests are (1) chain-break detection
- * for the inter-residue link (C–N or O3'–P > 2.0 Å ⇒ no link), (2) disulfides (SG–SG < 2.5 Å; the
- * mmCIF struct_conn records are not parsed), and (3) the optional, clearly labelled ligand
+ * for the inter-residue link (C–N or O3'–P > 2.0 Å ⇒ no link), (2) disulfides (mmCIF _struct_conn
+ * conn_type disulf when present — same-ASU pairs only; otherwise SG–SG < 2.5 Å), and (3) the optional, clearly labelled ligand
  * element-pair distribution. Coordinates come from residuesOf(): model 1, first altloc per atom name,
  * so altlocs are never mixed within one residue.
  *
@@ -16,11 +16,12 @@ import type { MacroModel } from '../macro'
 import type { Residue } from './residues'
 import { EH2001_ANGLES, EH2001_BONDS } from './eh2001'
 
-export type GeomGroup = 'pbb-bond' | 'pbb-angle' | 'psc-bond' | 'nbb-bond' | 'nbb-angle' | 'lig-bond'
+export type GeomGroup = 'pbb-bond' | 'pbb-angle' | 'psc-bond' | 'psc-angle' | 'nbb-bond' | 'nbb-angle' | 'lig-bond'
 export const GEOM_GROUPS: { id: GeomGroup; label: string }[] = [
   { id: 'pbb-bond', label: 'Protein backbone bonds' },
   { id: 'pbb-angle', label: 'Protein backbone angles' },
   { id: 'psc-bond', label: 'Side-chain bonds' },
+  { id: 'psc-angle', label: 'Disulfide angles & χSS' },
   { id: 'nbb-bond', label: 'Nucleic backbone bonds' },
   { id: 'nbb-angle', label: 'Nucleic backbone angles' },
   { id: 'lig-bond', label: 'Ligand bonds (distance-based)' },
@@ -28,7 +29,7 @@ export const GEOM_GROUPS: { id: GeomGroup; label: string }[] = [
 
 export interface GeomItem {
   group: GeomGroup
-  kind: 'bond' | 'angle'
+  kind: 'bond' | 'angle' | 'torsion'
   /** Display type, e.g. "N–CA", "C–N (peptide)", "C–S", "N–CA–C". */
   type: string
   /** Atoms measured, e.g. "A12 C – A13 N". */
@@ -43,6 +44,12 @@ export interface GeomItem {
 const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 export const dist = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+export function dihedral(p0: Vec3, p1: Vec3, p2: Vec3, p3: Vec3) {
+  const b1 = sub(p1, p0), b2 = sub(p2, p1), b3 = sub(p3, p2)
+  const cr = (u: Vec3, v: Vec3): Vec3 => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]
+  const n1 = cr(b1, b2), n2 = cr(b2, b3)
+  return (Math.atan2(Math.hypot(...b2) * dot(b1, n2), dot(n1, n2)) * 180) / Math.PI
+}
 export function angle(a: Vec3, b: Vec3, c: Vec3) {
   const u = sub(a, b), v = sub(c, b)
   const cs = dot(u, v) / (Math.hypot(...u) * Math.hypot(...v))
@@ -81,6 +88,22 @@ export const PEPTIDE = {
   OCN: { mu: 122.7, sd: 1.6 },
 }
 
+/**
+ * Pro-acceptor (trans) peptide link and disulfide targets from the CCP4 Monomer Library,
+ * list/mon_lib_list.cif (github.com/MonomerLibrary/monomers), link entries data_link_PTRANS and
+ * data_link_disulf, transcribed verbatim. No Gly-specific peptide link exists in that library and no
+ * other fetchable machine-readable source was found, so Gly acceptors keep the general targets above.
+ */
+export const PEPTIDE_PRO = {
+  CN: { mu: 1.352, sd: 0.010 },
+  CACN: { mu: 118.415, sd: 1.50 },
+  OCN: { mu: 121.016, sd: 1.53 },
+  CNCA: { mu: 120.469, sd: 1.50 },
+  CNCD: { mu: 124.005, sd: 1.50 },
+}
+export const DISULF = { SS: { mu: 2.031, sd: 0.020 }, CBSGSG: { mu: 103.8, sd: 1.8 } }
+export const LINK_SOURCE = 'CCP4 Monomer Library mon_lib_list.cif, links PTRANS and disulf (github.com/MonomerLibrary/monomers)'
+
 /** Nucleic targets: Gelbin et al. 1996 / Parkinson et al. 1996 (ribose, deoxyribose). */
 type RD = [number, number, number, number] // ribo mu, sd, deoxy mu, sd
 export const NA_BONDS: Record<string, RD> = {
@@ -117,10 +140,10 @@ function linked(a: Residue, b: Residue, atA: string, atB: string) {
   return !!p && !!q && dist(p, q) < 2.0
 }
 
-export function geometryAnalysis(residues: Residue[]): GeomItem[] {
+export function geometryAnalysis(residues: Residue[], disulfides?: import('../mmcif').DisulfideRecord[]): GeomItem[] {
   const out: GeomItem[] = []
   const { B, A } = eh()
-  const push = (group: GeomGroup, kind: 'bond' | 'angle', type: string, atoms: string, res: Residue, value: number, mu: number | null, sd: number | null) => {
+  const push = (group: GeomGroup, kind: GeomItem['kind'], type: string, atoms: string, res: Residue, value: number, mu: number | null, sd: number | null) => {
     out.push({ group, kind, type, atoms, res, value, ideal: mu, sigma: sd, z: zOf(value, mu, sd) })
   }
   const BB = new Set(['N-CA', 'CA-C', 'C-O'])
@@ -148,15 +171,17 @@ export function geometryAnalysis(residues: Residue[]): GeomItem[] {
         if (p && q && s) push('pbb-angle', 'angle', key.replace(/-/g, '–'), `${lab(r, a)}–${b}–${c}`, r, angle(p, q, s), t.mu, t.sd)
       }
       if (nx && nx.kind === 'protein' && linked(r, nx, 'C', 'N')) {
-        const C = r.atoms.get('C')!, N = nx.atoms.get('N')!, CA = r.atoms.get('CA'), O = r.atoms.get('O'), CA2 = nx.atoms.get('CA')
+        const C = r.atoms.get('C')!, N = nx.atoms.get('N')!, CA = r.atoms.get('CA'), O = r.atoms.get('O'), CA2 = nx.atoms.get('CA'), CD2 = nx.atoms.get('CD')
         const at = `${lab(r, 'C')} – ${lab(nx, 'N')}`
-        push('pbb-bond', 'bond', 'C–N (peptide)', at, r, dist(C, N), PEPTIDE.CN.mu, PEPTIDE.CN.sd)
-        if (CA) push('pbb-angle', 'angle', 'CA–C–N', `${lab(r, 'CA')}–C–${lab(nx, 'N')}`, r, angle(CA, C, N), PEPTIDE.CACN.mu, PEPTIDE.CACN.sd)
-        if (O) push('pbb-angle', 'angle', 'O–C–N', `${lab(r, 'O')}–C–${lab(nx, 'N')}`, r, angle(O, C, N), PEPTIDE.OCN.mu, PEPTIDE.OCN.sd)
-        if (CA2) {
-          const pro = nx.comp === 'PRO'
-          push('pbb-angle', 'angle', 'C–N–CA', `${lab(r, 'C')}–${lab(nx, 'N')}–CA`, nx, angle(C, N, CA2), pro ? null : PEPTIDE.CNCA.mu, pro ? null : PEPTIDE.CNCA.sd)
-        }
+        // Pro acceptor: CCP4 PTRANS targets, reported as separate "→Pro" types so their histograms keep one target.
+        const pro = nx.comp === 'PRO'
+        const T = pro ? PEPTIDE_PRO : PEPTIDE
+        const sfx = pro ? ' →Pro' : ''
+        push('pbb-bond', 'bond', `C–N (peptide${pro ? ', →Pro' : ''})`, at, r, dist(C, N), T.CN.mu, T.CN.sd)
+        if (CA) push('pbb-angle', 'angle', `CA–C–N${sfx}`, `${lab(r, 'CA')}–C–${lab(nx, 'N')}`, r, angle(CA, C, N), T.CACN.mu, T.CACN.sd)
+        if (O) push('pbb-angle', 'angle', `O–C–N${sfx}`, `${lab(r, 'O')}–C–${lab(nx, 'N')}`, r, angle(O, C, N), T.OCN.mu, T.OCN.sd)
+        if (CA2) push('pbb-angle', 'angle', `C–N–CA${sfx}`, `${lab(r, 'C')}–${lab(nx, 'N')}–CA`, nx, angle(C, N, CA2), T.CNCA.mu, T.CNCA.sd)
+        if (pro && CD2) push('pbb-angle', 'angle', 'C–N–CD →Pro', `${lab(r, 'C')}–${lab(nx, 'N')}–CD`, nx, angle(C, N, CD2), PEPTIDE_PRO.CNCD.mu, PEPTIDE_PRO.CNCD.sd)
       }
     } else if (r.kind === 'nucleic') {
       const d = isDeoxy(r.comp) ? 2 : 0
@@ -195,11 +220,26 @@ export function geometryAnalysis(residues: Residue[]): GeomItem[] {
       else ang([r, "C1'"], [r, 'N1'], [r, 'C2'], "C1'-N1-C2")
     }
   }
-  // Disulfides (no literature target used: distribution only).
-  for (let i = 0; i < cys.length; i++) for (let j = i + 1; j < cys.length; j++) {
-    const a = cys[i]!, b = cys[j]!
-    const dd = dist(a.atoms.get('SG')!, b.atoms.get('SG')!)
-    if (dd < 2.5) push('psc-bond', 'bond', 'S–S (disulfide)', `${lab(a, 'SG')} – ${lab(b, 'SG')}`, a, dd, null, null)
+  // Disulfides: _struct_conn (disulf) when the file has it, else SG–SG < 2.5 Å. CCP4 'disulf' link targets.
+  const pairs: [Residue, Residue][] = []
+  if (disulfides) {
+    const byKey = new Map(cys.map((c) => [`${c.chain}|${c.seq}`, c]))
+    for (const d of disulfides) {
+      if (d.sym1 !== d.sym2 && !(d.sym1 === '1_555' && d.sym2 === '1_555')) continue // crystal-symmetry partner: not measured in the ASU
+      const a = byKey.get(`${d.chain1}|${d.seq1}`), b = byKey.get(`${d.chain2}|${d.seq2}`)
+      if (a && b && a !== b) pairs.push([a, b])
+    }
+  } else {
+    for (let i = 0; i < cys.length; i++) for (let j = i + 1; j < cys.length; j++) {
+      if (dist(cys[i]!.atoms.get('SG')!, cys[j]!.atoms.get('SG')!) < 2.5) pairs.push([cys[i]!, cys[j]!])
+    }
+  }
+  for (const [a, b] of pairs) {
+    const sa = a.atoms.get('SG')!, sb = b.atoms.get('SG')!, ca = a.atoms.get('CB'), cb = b.atoms.get('CB')
+    push('psc-bond', 'bond', 'S–S (disulfide)', `${lab(a, 'SG')} – ${lab(b, 'SG')}`, a, dist(sa, sb), DISULF.SS.mu, DISULF.SS.sd)
+    if (ca) push('psc-angle', 'angle', 'CB–SG–SG (disulfide)', `${lab(a, 'CB')}–SG–${lab(b, 'SG')}`, a, angle(ca, sa, sb), DISULF.CBSGSG.mu, DISULF.CBSGSG.sd)
+    if (cb) push('psc-angle', 'angle', 'CB–SG–SG (disulfide)', `${lab(b, 'CB')}–SG–${lab(a, 'SG')}`, b, angle(cb, sb, sa), DISULF.CBSGSG.mu, DISULF.CBSGSG.sd)
+    if (ca && cb) push('psc-angle', 'torsion', 'χSS CB–SG–SG–CB', `${lab(a, 'CB')}–SG–SG–${lab(b, 'CB')}`, a, dihedral(ca, sa, sb, cb), null, null)
   }
   return out
 }
@@ -237,7 +277,7 @@ export function ligandBonds(model: MacroModel, residues: Residue[]): GeomItem[] 
   return out
 }
 
-export interface GeomTypeSummary { group: GeomGroup; type: string; kind: 'bond' | 'angle'; n: number; mean: number; sd: number; ideal: number | null; sigma: number | null; rmsZ: number | null; nZ: number; outliers: number }
+export interface GeomTypeSummary { group: GeomGroup; type: string; kind: GeomItem['kind']; n: number; mean: number; sd: number; ideal: number | null; sigma: number | null; rmsZ: number | null; nZ: number; outliers: number }
 export function summarizeGeom(items: GeomItem[]): GeomTypeSummary[] {
   const m = new Map<string, GeomItem[]>()
   for (const it of items) { const k = `${it.group}\u0000${it.type}`; const l = m.get(k) ?? []; l.push(it); m.set(k, l) }

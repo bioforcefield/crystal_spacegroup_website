@@ -5,7 +5,7 @@ import type { MacroModel } from '../../../data/pdb/macro'
 import type { AnalysisTab } from '../../../data/cif/cifRoute'
 import {
   analyzeStructure, fullReportCsv, resLabel, sectionCsv, CHI_DEFS, RAMA_SOURCE, NOTES,
-  type ProteinRow, type NucleicRow, type BasePair, type Step, type RamaCategory, type Residue,
+  type ProteinRow, type NucleicRow, type BasePair, type Step, type RamaCategory, type Residue, summarizeGeom, type GeomItem, type GeomTypeSummary,
 } from '../../../data/pdb/analysis'
 import { AngleScatter, Histogram, PuckerWheel, SeriesPlot, downloadCsv, type Pt } from './plots'
 import type { AnalysisFocus } from './types'
@@ -290,7 +290,34 @@ function StepSection({ steps, form, pick, sel, csv }: { steps: Step[]; form: str
 }
 
 function esc(s: string) { return s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!) }
-function printReport(id: string, a: { protein: ProteinRow[]; nucleic: NucleicRow[]; pairs: BasePair[]; steps: Step[] }, sel: string, form: string | null) {
+function geomSection(items: GeomItem[], tbl: (t: string, c: string[], r: (string | number | null | undefined)[][]) => string): string {
+  if (!items.length) return ''
+  const sum = summarizeGeom(items)
+  const f = (v: number | null, k: string) => (v == null ? '—' : v.toFixed(k === 'bond' ? 3 : 1))
+  const out = items.filter((g) => g.z != null && Math.abs(g.z) > 4).sort((p, q) => Math.abs(q.z!) - Math.abs(p.z!))
+  const hists = sum.map((t) => geomHistSvg(t, items.filter((g) => g.group === t.group && g.type === t.type).map((g) => g.value))).join('')
+  return `<h2>Bonds &amp; angles</h2><p>${esc(GEOM_REPORT_NOTE)}</p>`
+    + tbl('Summary per type', ['Type', 'Kind', 'n', 'Mean', 'SD', 'Target', 'σ', 'RMS-Z', '|Z|>4'], sum.map((t) => [t.type, t.kind, String(t.n), f(t.mean, t.kind), f(t.sd, t.kind), f(t.ideal, t.kind), f(t.sigma, t.kind), t.rmsZ == null ? '—' : t.rmsZ.toFixed(2), String(t.outliers)]))
+    + (out.length ? tbl(`Outliers (|Z| > 4, ${out.length})`, ['Type', 'Atoms', 'Value', 'Target', 'Z'], out.slice(0, 500).map((g) => [g.type, g.atoms, f(g.value, g.kind), f(g.ideal, g.kind), g.z!.toFixed(1)])) : '<p>No |Z| &gt; 4 outliers.</p>')
+    + `<div>${hists}</div>`
+}
+const GEOM_REPORT_NOTE = 'Targets: Engh & Huber (2001) via Berkholz et al. (2009) for general peptide/backbone; peptide links to Pro and disulfides from the CCP4 Monomer Library (mon_lib_list.cif, links PTRANS and disulf). Gly acceptors use the general targets. χSS (CB–SG–SG–CB) is shown as a distribution only (CCP4 target ±90°).'
+/** Minimal static histogram SVG for the printable report (one per geometry type). */
+function geomHistSvg(t: GeomTypeSummary, vals: number[]): string {
+  const W = 300, H = 140, L = 34, B = 26
+  let lo: number, hi: number, bin: number
+  if (t.kind === 'torsion') { lo = -180; hi = 180; bin = 10 }
+  else if (t.kind === 'angle') { const c = t.ideal ?? t.mean; lo = Math.floor(c - 15); hi = Math.ceil(c + 15); bin = 1 }
+  else { const c = t.ideal ?? t.mean; lo = +(c - 0.15).toFixed(2); hi = +(c + 0.15).toFixed(2); bin = 0.01 }
+  const nb = Math.max(1, Math.round((hi - lo) / bin)), cnt = new Array(nb).fill(0)
+  for (const v of vals) { const i = Math.min(nb - 1, Math.max(0, Math.floor((v - lo) / bin))); cnt[i]++ }
+  const mx = Math.max(1, ...cnt), x = (v: number) => L + ((v - lo) / (hi - lo)) * (W - L - 6), bw = (W - L - 6) / nb
+  const bars = cnt.map((c, i) => `<rect x="${(L + i * bw).toFixed(1)}" y="${(H - B - (c / mx) * (H - B - 18)).toFixed(1)}" width="${Math.max(0.5, bw - 0.5).toFixed(1)}" height="${((c / mx) * (H - B - 18)).toFixed(1)}" fill="#2563eb"/>`).join('')
+  const ideal = t.ideal != null ? `<line x1="${x(t.ideal)}" x2="${x(t.ideal)}" y1="16" y2="${H - B}" stroke="#dc2626" stroke-dasharray="3 2"/>` : ''
+  const u = t.kind === 'bond' ? 'Å' : '°'
+  return `<svg class="ana-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><text x="${W / 2}" y="11" font-size="10" text-anchor="middle">${esc(t.type)} (n=${vals.length})</text>${bars}${ideal}<line x1="${L}" x2="${W - 6}" y1="${H - B}" y2="${H - B}" stroke="#333"/><text x="${L}" y="${H - B + 12}" font-size="9">${lo}</text><text x="${W - 6}" y="${H - B + 12}" font-size="9" text-anchor="end">${hi}</text><text x="${W / 2}" y="${H - 4}" font-size="9" text-anchor="middle">${u}${t.ideal != null ? ' · red = target' : ''}</text></svg>`
+}
+function printReport(id: string, a: { protein: ProteinRow[]; nucleic: NucleicRow[]; pairs: BasePair[]; steps: Step[]; geom?: GeomItem[] }, sel: string, form: string | null) {
   const svgs = [...document.querySelectorAll<SVGSVGElement>('.cif-analysis-drawer svg.ana-svg')].map((s) => s.outerHTML).join('')
   const tbl = (title: string, cols: string[], rows: (string | number | null | undefined)[][]) => rows.length
     ? `<h2>${esc(title)}</h2><table><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((v) => `<td>${v == null ? '' : typeof v === 'number' ? v.toFixed(2) : esc(String(v))}</td>`).join('')}</tr>`).join('')}</tbody></table>` : ''
@@ -303,6 +330,7 @@ ${tbl('Side chains', ['Residue', 'χ1', 'χ2', 'χ3', 'χ4', 'Rotamer'], a.prote
 ${tbl('Nucleic-acid torsions & pucker', ['Residue', 'α', 'β', 'γ', 'δ', 'ε', 'ζ', 'χ', 'anti/syn', 'P', 'τm', 'Pucker'], a.nucleic.map((r) => [resLabel(r.res), r.alpha, r.beta, r.gamma, r.delta, r.epsilon, r.zeta, r.chi, r.glyco, r.P, r.tm, r.pucker]))}
 ${tbl('Base pairs', ['Pair', 'Shear', 'Stretch', 'Stagger', 'Buckle', 'Propeller', 'Opening'], a.pairs.map((p) => [p.label, p.shear, p.stretch, p.stagger, p.buckle, p.propeller, p.opening]))}
 ${tbl('Steps', ['Step', 'Shift', 'Slide', 'Rise', 'Tilt', 'Roll', 'Twist'], a.steps.map((s) => [s.label, s.shift, s.slide, s.rise, s.tilt, s.roll, s.twist]))}
+${geomSection(a.geom ?? [], tbl)}
 <script>setTimeout(()=>print(),300)</script></body></html>`
   const w = window.open('', '_blank')
   if (!w) return

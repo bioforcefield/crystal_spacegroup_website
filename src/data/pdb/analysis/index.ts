@@ -22,7 +22,7 @@ export function analyzeStructure(model: MacroModel): StructureAnalysis {
   const residues = residuesOf(model)
   const protein = proteinAnalysis(residues)
   const na = nucleicAnalysis(residues)
-  const geom = geometryAnalysis(residues)
+  const geom = geometryAnalysis(residues, model.disulfides)
   const ligGeom = ligandBonds(model, residues)
   const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now()
   return { residues, protein, nucleic: na.rows, pairs: na.pairs, steps: na.steps, form: na.form, geom, ligGeom, ms: t1 - t0 }
