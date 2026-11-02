@@ -69,8 +69,9 @@ function Chart({ p, size, view, setView, large, thr, onLabels }: { p: Props; siz
     const b = form === 'B'
     return (
       <g key={`${form}-${q.hkl}-${q.twoTheta.toFixed(3)}`}>
-        <line x1={px} y1={B.y1} x2={px} y2={py} className={`${b ? 'cif-xray-stick-b' : 'cif-xray-stick'}${active ? ' active' : ''}`} />
-        <circle cx={px} cy={py} r={(active ? 4.5 : b ? 2.8 : 3) * (large ? 1.4 : 1)}
+        {showSticks && <line x1={px} y1={B.y1} x2={px} y2={py} className={`${b ? 'cif-xray-stick-b' : 'cif-xray-stick'}${active ? ' active' : ''}`} />}
+        <circle cx={px} cy={py} r={(active ? 4.5 : showSticks ? (b ? 2.8 : 3) : 6) * (large ? 1.4 : 1)}
+          style={showSticks || active ? undefined : { opacity: 0 }} data-hit={showSticks ? undefined : 'hidden'}
           className={`teach-curve-dot${b ? ' cif-xray-dot-b' : ''}${active ? ' active' : ''}`}
           tabIndex={!b && pi === 0 ? 0 : -1} data-peak={b ? 'b' : 'a'} role="button"
           aria-label={b ? `Form B peak ${q.hkl}, d ${q.d.toFixed(3)} Å, 2θ ${q.twoTheta.toFixed(2)}°, I ${q.intensity.toFixed(1)}`
@@ -125,8 +126,8 @@ function Chart({ p, size, view, setView, large, thr, onLabels }: { p: Props; siz
       <line x1={B.x0} x2={B.x1} y1={Y(thr)} y2={Y(thr)} className="pxrd-threshold" data-testid="pxrd-threshold-line" pointerEvents="none" />
       {polyB && <polyline points={polyB} className="teach-curve teach-curve-b cif-xray-curve-b pxrd-curve" fill="none" pointerEvents="none" />}
       {polyA && <polyline points={polyA} className="teach-curve teach-curve-a pxrd-curve pxrd-curve-a" fill="none" pointerEvents="none" />}
-      {showSticks && patternB && sticks(patternB, 'B')}
-      {showSticks && sticks(patternA, 'A')}
+      {patternB && sticks(patternB, 'B')}
+      {sticks(patternA, 'A')}
       {labels.map((l) => (
         <g key={`lab-${l.peak.hkl}-${l.peak.twoTheta}`} className="pxrd-hkl" data-testid="pxrd-hkl" pointerEvents="none">
           {l.anchorY - l.y > 8 && <line x1={l.x} x2={l.x} y1={l.y + 2} y2={l.anchorY - 3} className="pxrd-leader" />}
