@@ -4,6 +4,7 @@ import { envelopePolyline, lorentzEnvelope } from '../../data/cif/xray/envelope'
 import type { PowderPattern, PowderPeak } from '../../data/cif/xray/powder'
 import { rovingNext } from '../../data/cif/viewportUi'
 import { niceTicks, peaksCsv, placePeakLabels } from '../../data/cif/xray/plotUtil'
+import { EXPORT_SIZE, pxrdExportSvg } from '../../data/cif/xray/pxrdExport'
 
 export type PxrdHover = { peak: PowderPeak; form: 'A' | 'B' } | null
 interface Props {
@@ -19,8 +20,8 @@ interface Props {
   hover: PxrdHover
   setHover: Dispatch<SetStateAction<PxrdHover>>
 }
-const INLINE = { w: 336, h: 200, box: { x0: 44, y0: 14, x1: 312, y1: 168 }, font: 11, labels: 5 }
-const LARGE = { w: 1000, h: 560, box: { x0: 70, y0: 24, x1: 980, y1: 500 }, font: 15, labels: 16 }
+const INLINE = { w: 336, h: 200, box: { x0: 44, y0: 14, x1: 312, y1: 168 }, font: 11, labels: 10 }
+const LARGE = { w: 1000, h: 560, box: { x0: 70, y0: 24, x1: 980, y1: 500 }, font: 15, labels: 40 }
 
 function download(name: string, blob: Blob) {
   const a = document.createElement('a')
@@ -32,7 +33,7 @@ function download(name: string, blob: Blob) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
-function Chart({ p, size, view, setView, large }: { p: Props; size: typeof INLINE; view: [number, number]; setView?: (v: [number, number] | null) => void; large: boolean }) {
+function Chart({ p, size, view, setView, large, thr, onLabels }: { p: Props; size: typeof INLINE; view: [number, number]; setView?: (v: [number, number] | null) => void; large: boolean; thr: number; onLabels?: (n: number) => void }) {
   const { patternA, patternB, fwhm, wavelengthA, showSticks, hover, setHover } = p
   const [lo, hi] = view
   const dx = hi - lo || 1
@@ -48,7 +49,8 @@ function Chart({ p, size, view, setView, large }: { p: Props; size: typeof INLIN
   const polyB = useMemo(() => (patternB ? env(patternB) : ''), [env, patternB])
   const xt = niceTicks(lo, hi, large ? 12 : 6)
   const yt = [0, 25, 50, 75, 100]
-  const labels = placePeakLabels(patternA.peaks, lo, hi, size.labels, X, Y, size.font * 0.55, size.font + 1)
+  const labels = placePeakLabels(patternA.peaks, lo, hi, size.labels, X, Y, size.font * 0.55, size.font + 1, thr)
+  useEffect(() => { onLabels?.(labels.length) }, [labels.length, onLabels])
   const [drag, setDrag] = useState<[number, number] | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const toT = (clientX: number) => {
@@ -120,6 +122,7 @@ function Chart({ p, size, view, setView, large }: { p: Props; size: typeof INLIN
           onDoubleClick={() => setView(null)}
           style={{ pointerEvents: drag ? 'all' : undefined }} />
       )}
+      <line x1={B.x0} x2={B.x1} y1={Y(thr)} y2={Y(thr)} className="pxrd-threshold" data-testid="pxrd-threshold-line" pointerEvents="none" />
       {polyB && <polyline points={polyB} className="teach-curve teach-curve-b cif-xray-curve-b pxrd-curve" fill="none" pointerEvents="none" />}
       {polyA && <polyline points={polyA} className="teach-curve teach-curve-a pxrd-curve pxrd-curve-a" fill="none" pointerEvents="none" />}
       {showSticks && patternB && sticks(patternB, 'B')}
@@ -148,6 +151,12 @@ export default function PxrdPlot(p: Props) {
   const [open, setOpen] = useState(false)
   const [zoom, setZoom] = useState<[number, number] | null>(null)
   const [showTable, setShowTable] = useState(false)
+  /** (hkl) label threshold, % of the strongest peak. */
+  const [thr, setThr] = useState(20)
+  const [onlyAbove, setOnlyAbove] = useState(false)
+  const [bg, setBg] = useState<'white' | 'dark'>('white')
+  const [nInline, setNInline] = useState(0)
+  const [nLarge, setNLarge] = useState(0)
   const wrap = useRef<HTMLDivElement>(null)
   const btn = useRef<HTMLButtonElement>(null)
   useEffect(() => { setZoom(null) }, [p.lo, p.hi])
@@ -161,32 +170,31 @@ export default function PxrdPlot(p: Props) {
     return () => { window.removeEventListener('keydown', k); document.body.style.overflow = prev; btn.current?.focus() }
   }, [open])
   const view: [number, number] = zoom ?? [p.lo, p.hi]
-  const visPeaks = (pat: PowderPattern) => pat.peaks.filter((q) => q.twoTheta >= view[0] && q.twoTheta <= view[1])
+  const visPeaks = (pat: PowderPattern) => pat.peaks.filter((q) => q.twoTheta >= view[0] && q.twoTheta <= view[1] && (!onlyAbove || q.intensity >= thr))
   const exportCsv = () => download('pxrd-peaks.csv', new Blob([peaksCsv([{ form: 'A', peaks: p.patternA.peaks }, ...(p.patternB ? [{ form: 'B', peaks: p.patternB.peaks }] : [])], p.wavelengthA)], { type: 'text/csv' }))
+  const exportSvgText = () => pxrdExportSvg({ patternA: p.patternA, patternB: p.patternB, labelA: p.labelA, labelB: p.labelB, lo: view[0], hi: view[1], fwhm: p.fwhm, wavelengthA: p.wavelengthA, threshold: thr, background: bg })
+  const exportSvg = () => download('pxrd.svg', new Blob([exportSvgText()], { type: 'image/svg+xml' }))
   const exportPng = () => {
-    const svg = wrap.current?.querySelector<SVGSVGElement>('svg[data-testid="pxrd-large-svg"]')
-    if (!svg) return
-    const clone = svg.cloneNode(true) as SVGSVGElement
-    // Inline computed styles so the PNG matches the dark theme.
-    const src = svg.querySelectorAll('*'), dst = clone.querySelectorAll('*')
-    src.forEach((el, i) => {
-      const cs = getComputedStyle(el), d = dst[i] as SVGElement
-      for (const k of ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'font-size', 'font-family', 'font-weight', 'opacity', 'fill-opacity']) d.style.setProperty(k, cs.getPropertyValue(k))
-    })
-    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-    clone.setAttribute('width', String(LARGE.w * 2)); clone.setAttribute('height', String(LARGE.h * 2))
+    const scale = 3
     const img = new Image()
     img.onload = () => {
-      const c = document.createElement('canvas'); c.width = LARGE.w * 2; c.height = LARGE.h * 2
-      const g = c.getContext('2d')!; g.fillStyle = '#0b1220'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0)
+      const c = document.createElement('canvas'); c.width = EXPORT_SIZE.w * scale; c.height = EXPORT_SIZE.h * scale
+      const g = c.getContext('2d')!; g.scale(scale, scale); g.drawImage(img, 0, 0, EXPORT_SIZE.w, EXPORT_SIZE.h)
       c.toBlob((b) => b && download('pxrd.png', b), 'image/png')
     }
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(clone))
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(exportSvgText())
   }
+  const thrCtl = (id: string, n: number) => (
+    <label className="pxrd-thr" data-testid={`pxrd-thr-${id}`}>
+      Label peaks ≥ <input type="range" min={1} max={100} step={1} value={thr} onChange={(e) => setThr(Number(e.target.value))} aria-label="Label threshold, percent of max intensity" />
+      <span className="mono">{thr}%</span> <span className="muted" data-testid={`pxrd-nlab-${id}`}>· {n} peak{n === 1 ? '' : 's'} labelled</span>
+    </label>
+  )
   return (
     <>
       <div className="cif-xray-chart-wrap pxrd-inline">
-        <Chart p={p} size={INLINE} view={[p.lo, p.hi]} large={false} />
+        <Chart p={p} size={INLINE} view={[p.lo, p.hi]} large={false} thr={thr} onLabels={setNInline} />
+        {thrCtl('inline', nInline)}
         <button ref={btn} type="button" className="btn btn-small pxrd-enlarge" data-testid="pxrd-enlarge" onClick={() => setOpen(true)} aria-label="Enlarge PXRD plot" title="Enlarge">⤢ Enlarge</button>
       </div>
       {open && createPortal(
@@ -199,14 +207,21 @@ export default function PxrdPlot(p: Props) {
               <span className="pxrd-modal-actions">
                 <button type="button" className="btn btn-small" onClick={() => setZoom(null)} disabled={!zoom} data-testid="pxrd-reset">Reset zoom</button>
                 <button type="button" className="btn btn-small" aria-pressed={showTable} onClick={() => setShowTable((v) => !v)} data-testid="pxrd-table-toggle">Peak list</button>
+                <select value={bg} onChange={(e) => setBg(e.target.value as 'white' | 'dark')} aria-label="Export background" data-testid="pxrd-bg">
+                  <option value="white">White (publication)</option><option value="dark">Dark</option>
+                </select>
                 <button type="button" className="btn btn-small" onClick={exportPng} data-testid="pxrd-png">PNG</button>
+                <button type="button" className="btn btn-small" onClick={exportSvg} data-testid="pxrd-svg">SVG</button>
                 <button type="button" className="btn btn-small" onClick={exportCsv} data-testid="pxrd-csv">CSV</button>
                 <button type="button" className="btn btn-small pxrd-close" onClick={() => setOpen(false)} aria-label="Close (Esc)">✕</button>
               </span>
             </div>
             <p className="muted pxrd-modal-hint">Drag across the plot to zoom 2θ · double-click to reset · Esc to close</p>
+            <div className="pxrd-modal-thr">{thrCtl('large', nLarge)}
+              {showTable && <label className="cif-xray-check"><input type="checkbox" checked={onlyAbove} onChange={(e) => setOnlyAbove(e.target.checked)} data-testid="pxrd-table-filter" /> Peak list: only ≥ {thr}%</label>}
+            </div>
             <div className="pxrd-modal-body">
-              <Chart p={p} size={LARGE} view={view} setView={setZoom} large />
+              <Chart p={p} size={LARGE} view={view} setView={setZoom} large thr={thr} onLabels={setNLarge} />
               {showTable && (
                 <div className="pxrd-modal-table" data-testid="pxrd-table">
                   <table>

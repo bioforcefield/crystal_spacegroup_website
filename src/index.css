@@ -5685,3 +5685,7 @@ button.linkish {
 .guide-acc > summary { cursor: pointer; font-weight: 600; }
 .guide-acc ul { margin: 0.5rem 0 0.2rem; padding-left: 1.1rem; display: grid; gap: 0.35rem; }
 .cif-disorder fieldset { border: 1px solid rgba(148,163,184,0.3); border-radius: 6px; margin: 0.3rem 0; }
+.pxrd-threshold { stroke: currentColor; stroke-opacity: 0.3; stroke-dasharray: 5 4; stroke-width: 1; }
+.pxrd-thr { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; flex-wrap: wrap; }
+.pxrd-thr input[type="range"] { width: 7rem; }
+.pxrd-modal-thr { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 0 0 0.4rem; }
