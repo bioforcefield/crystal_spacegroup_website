@@ -112,16 +112,6 @@ function Chart({ p, size, view, setView, large }: { p: Props; size: typeof INLIN
       <text x={(B.x0 + B.x1) / 2} y={size.h - 3} textAnchor="middle" className="pxrd-axis-title">2θ (°)</text>
       <text x={size.font} y={(B.y0 + B.y1) / 2} textAnchor="middle" className="pxrd-axis-title" transform={`rotate(-90 ${size.font} ${(B.y0 + B.y1) / 2})`}>I (rel.)</text>
       <text x={B.x1 - 6} y={B.y0 + size.font + 2} textAnchor="end" className="pxrd-lambda" data-testid="pxrd-lambda">λ = {wavelengthA.toFixed(4)} Å</text>
-      {polyB && <polyline points={polyB} className="teach-curve teach-curve-b cif-xray-curve-b pxrd-curve" fill="none" />}
-      {polyA && <polyline points={polyA} className="teach-curve teach-curve-a pxrd-curve pxrd-curve-a" fill="none" />}
-      {showSticks && patternB && sticks(patternB, 'B')}
-      {showSticks && sticks(patternA, 'A')}
-      {labels.map((l) => (
-        <g key={`lab-${l.peak.hkl}-${l.peak.twoTheta}`} className="pxrd-hkl" data-testid="pxrd-hkl">
-          {l.anchorY - l.y > 8 && <line x1={l.x} x2={l.x} y1={l.y + 2} y2={l.anchorY - 3} className="pxrd-leader" />}
-          <text x={l.x} y={l.y} textAnchor="middle">({l.peak.hkl})</text>
-        </g>
-      ))}
       {large && setView && (
         <rect x={B.x0} y={B.y0} width={B.x1 - B.x0} height={B.y1 - B.y0} fill="transparent" className="pxrd-zoom-layer"
           onPointerDown={(e) => { (e.target as Element).setPointerCapture?.(e.pointerId); const t = toT(e.clientX); setDrag([t, t]) }}
@@ -130,6 +120,16 @@ function Chart({ p, size, view, setView, large }: { p: Props; size: typeof INLIN
           onDoubleClick={() => setView(null)}
           style={{ pointerEvents: drag ? 'all' : undefined }} />
       )}
+      {polyB && <polyline points={polyB} className="teach-curve teach-curve-b cif-xray-curve-b pxrd-curve" fill="none" pointerEvents="none" />}
+      {polyA && <polyline points={polyA} className="teach-curve teach-curve-a pxrd-curve pxrd-curve-a" fill="none" pointerEvents="none" />}
+      {showSticks && patternB && sticks(patternB, 'B')}
+      {showSticks && sticks(patternA, 'A')}
+      {labels.map((l) => (
+        <g key={`lab-${l.peak.hkl}-${l.peak.twoTheta}`} className="pxrd-hkl" data-testid="pxrd-hkl" pointerEvents="none">
+          {l.anchorY - l.y > 8 && <line x1={l.x} x2={l.x} y1={l.y + 2} y2={l.anchorY - 3} className="pxrd-leader" />}
+          <text x={l.x} y={l.y} textAnchor="middle">({l.peak.hkl})</text>
+        </g>
+      ))}
       {drag && <rect x={X(Math.min(...drag))} y={B.y0} width={Math.abs(X(drag[1]) - X(drag[0]))} height={B.y1 - B.y0} className="pxrd-brush" />}
       {hover && vis(hover.peak) && (
         <g className="pxrd-tip" pointerEvents="none" data-testid="pxrd-tip"
