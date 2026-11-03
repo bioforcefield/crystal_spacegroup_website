@@ -1247,54 +1247,30 @@ button {
 }
 
 .hero-cell-orbit {
+  /* Static scale about the true cell centre (no 3D tilt: it warped the flat isometric drawing). */
+  transform-box: view-box;
   transform-origin: 110px 105px;
-  transform-box: fill-box;
-  animation: hero-cell-tilt 14s ease-in-out infinite;
+  transform: scale(1.14);
 }
 
+/* One 8 s timeline for the whole motif. */
 .hero-face-outer {
-  animation: hero-face-pulse 5.5s ease-in-out infinite;
+  animation: hero-face-pulse 8s ease-in-out infinite;
 }
 
 .hero-face-right {
-  animation: hero-face-glow 5.5s ease-in-out infinite;
+  animation: hero-face-glow 8s ease-in-out infinite;
 }
 
-.hero-bond-dash,
-.hero-screw-path {
-  animation: hero-dash-crawl 3.2s linear infinite;
-}
-
-.hero-atom-b,
-.hero-atom-i,
-.hero-atom-label-b,
-.hero-atom-label-i {
+.hero-atom-b { animation: hero-b 8s ease-in-out infinite; }
+.hero-inv-path { animation: hero-fade-path 8s linear infinite; }
+.hero-inv-draw { animation: hero-draw 8s ease-in-out infinite; }
+.hero-inv-pulse {
   transform-box: fill-box;
   transform-origin: center;
+  animation: hero-center-pulse 8s ease-out infinite;
 }
-
-.hero-atom-b,
-.hero-atom-label-b {
-  animation: hero-atom-b 6s ease-in-out infinite;
-}
-
-.hero-atom-i,
-.hero-atom-label-i {
-  animation: hero-atom-i 6s ease-in-out infinite;
-}
-
-@keyframes hero-cell-tilt {
-  0%,
-  100% {
-    transform: scale(1.14) rotateX(4deg) rotateY(-8deg) rotateZ(0deg);
-  }
-  35% {
-    transform: scale(1.14) rotateX(-3deg) rotateY(10deg) rotateZ(1.5deg);
-  }
-  70% {
-    transform: scale(1.14) rotateX(6deg) rotateY(-4deg) rotateZ(-1deg);
-  }
-}
+.hero-atom-i { animation: hero-i 8s ease-out infinite; }
 
 @keyframes hero-face-pulse {
   0%,
@@ -1318,48 +1294,41 @@ button {
   }
 }
 
-@keyframes hero-dash-crawl {
-  to {
-    stroke-dashoffset: -28;
-  }
+/* 0–8% B appears · 12–38% path draws through ⊙ · 30–44% centre pulse · 38–50% I lands · hold · 86–96% fade. */
+@keyframes hero-b {
+  0% { opacity: 0; }
+  8%, 86% { opacity: 1; }
+  96%, 100% { opacity: 0; }
 }
-
-@keyframes hero-atom-b {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(10px, -6px);
-  }
+@keyframes hero-draw {
+  0%, 12% { stroke-dashoffset: 100; }
+  38%, 100% { stroke-dashoffset: 0; }
 }
-
-@keyframes hero-atom-i {
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-  50% {
-    transform: translate(-10px, 6px);
-  }
+@keyframes hero-fade-path {
+  0%, 86% { opacity: 1; }
+  96%, 100% { opacity: 0; }
+}
+@keyframes hero-center-pulse {
+  0%, 30% { transform: scale(1); stroke-width: 1.2; }
+  36% { transform: scale(1.9); stroke-width: 1.6; }
+  44%, 100% { transform: scale(1); stroke-width: 1.2; }
+}
+@keyframes hero-i {
+  0%, 38% { opacity: 0; }
+  50%, 86% { opacity: 1; }
+  96%, 100% { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-cell-orbit,
   .hero-face-outer,
   .hero-face-right,
-  .hero-bond-dash,
-  .hero-screw-path,
   .hero-atom-b,
   .hero-atom-i,
-  .hero-atom-label-b,
-  .hero-atom-label-i,
+  .hero-inv-path,
+  .hero-inv-draw,
+  .hero-inv-pulse,
   .cif-orb {
     animation: none !important;
-  }
-
-  .hero-cell-orbit {
-    transform: scale(1.14);
   }
 }
 
