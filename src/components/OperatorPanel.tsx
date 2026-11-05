@@ -1,5 +1,6 @@
 import type { CSSProperties, KeyboardEvent } from 'react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { isImproper, operatorClass } from '../data/math'
 import type { Operator, SpaceGroupDemo } from '../data/types'
@@ -86,6 +87,31 @@ export default function OperatorPanel({
   const beta = demo.cell.betaDeg
   const gamma = demo.cell.gammaDeg
   const listRef = useRef<HTMLUListElement>(null)
+  const [itaOpen, setItaOpen] = useState(false)
+  const itaBtnRef = useRef<HTMLButtonElement>(null)
+  const itaModalRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!itaOpen) return
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setItaOpen(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    // Focus the close control so Esc / screen readers land inside the dialog.
+    itaModalRef.current
+      ?.querySelector<HTMLButtonElement>('.ita-close')
+      ?.focus()
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+      itaBtnRef.current?.focus()
+    }
+  }, [itaOpen])
 
   const onListKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
@@ -171,6 +197,65 @@ export default function OperatorPanel({
                 © IUCr · Vol. A
               </span>
             </figcaption>
+            <button
+              ref={itaBtnRef}
+              type="button"
+              className="btn btn-small ita-enlarge"
+              data-testid="ita-enlarge"
+              onClick={() => setItaOpen(true)}
+              aria-label={`Enlarge ITA Vol. A diagram for space group ${meta.number}`}
+              title="Enlarge"
+            >
+              ⤢ Enlarge
+            </button>
+            {itaOpen &&
+              createPortal(
+                <div
+                  className="ita-modal-backdrop"
+                  data-testid="ita-modal-backdrop"
+                  onMouseDown={(e) => {
+                    if (e.target === e.currentTarget) setItaOpen(false)
+                  }}
+                >
+                  <div
+                    ref={itaModalRef}
+                    className="ita-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Enlarged ITA Vol. A diagram for space group ${meta.number} (${meta.hm})`}
+                    data-testid="ita-modal"
+                  >
+                    <div className="ita-modal-bar">
+                      <strong>
+                        ITA Vol. A · {meta.number} · {meta.hm}
+                      </strong>
+                      <span className="ita-modal-actions">
+                        <button
+                          type="button"
+                          className="btn btn-small ita-close"
+                          data-testid="ita-close"
+                          onClick={() => setItaOpen(false)}
+                          aria-label="Close (Esc)"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    </div>
+                    <div className="ita-modal-plate">
+                      <img
+                        src={itaUrl}
+                        alt={`International Tables Vol. A diagram for space group ${meta.number} (${meta.hm}), enlarged`}
+                        decoding="async"
+                      />
+                    </div>
+                    <p className="ita-modal-credit" title={ITA_DIAGRAM_CREDIT}>
+                      {ITA_DIAGRAM_CAPTION} · © IUCr · Vol. A · Esc or backdrop to
+                      close
+                    </p>
+                  </div>
+                </div>,
+                document.body,
+              )}
           </figure>
         )}
         <dl className="meta-grid">
