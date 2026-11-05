@@ -1,15 +1,15 @@
 /**
  * Citations and verified facts for the “How to read ITA diagrams” guide.
  *
- * Conventions checked against:
- * - Dauter & Jaskolski, J. Appl. Cryst. (2010) 43, 1150–1171 (HTML + PDF)
- * - ITA online explanationAc.pdf (diagram types; points to Tables 2.1.2.2–2.1.2.7)
- * - ITA Chapter 1.4 graphical symbols (Ab edition contents / Hahn tables),
- *   especially §1.4.1–1.4.2 plane symbols and the parallel-plane height footnote
- * - The actual plate public/ita-diagrams/014.png (2×2 quadrants inspected)
+ * Conventions checked against sources fetched this session:
+ * - Dauter & Jaskolski, J. Appl. Cryst. (2010) 43, 1150–1171, §2.3–2.4
+ *   (HTML https://journals.iucr.org/j/issues/2010/05/02/kk5061/ and PDF)
+ * - ITA online Ac explanationAc.pdf (diagram types; Tables 2.1.2.2–2.1.2.7;
+ *   diagram axes §2.1.3.6)
+ * - public/ita-diagrams/014.png quadrants (independently read)
  *
- * P21C_PLATE_VIEWS is an independently derived reading of that PNG; the
- * walk-through text must stay consistent with it (tests enforce that).
+ * Do not cite Ab §1.4.x footnotes here unless that edition text is re-fetched
+ * and verified (Ac §1.4.4 is Wyckoff, not graphical symbols).
  */
 
 export type ItaGuideCitation = {
@@ -24,7 +24,7 @@ export const ITA_GUIDE_CITATIONS: readonly ItaGuideCitation[] = [
     id: 'dauter-2010',
     label: 'Dauter & Jaskolski (2010), J. Appl. Cryst. 43, 1150–1171',
     url: 'https://journals.iucr.org/j/issues/2010/05/02/kk5061/',
-    note: 'IUCr teaching article on reading ITA pages: element vs general-position diagrams; lens/arrow/circle marks; plane line styles; ± and height labels on general-position diagrams.',
+    note: '§2.3 Fig. 12 graphical marks; §2.4 element vs general-position diagrams, in-page height fractions, and the half-cell companion convention for those in-page elements.',
   },
   {
     id: 'dauter-2010-pdf',
@@ -34,25 +34,28 @@ export const ITA_GUIDE_CITATIONS: readonly ItaGuideCitation[] = [
   },
   {
     id: 'ita-explanation-ac',
-    label: 'ITA (Ac) — Explanation of the space-group data',
+    label: 'ITA (Ac, 2016 online) — Explanation of the space-group data',
     url: 'https://it.iucr.org/Ac/explanationAc.pdf',
-    note: 'Ac accompaniment: each entry has symmetry-element projection(s) plus one general-position illustration; refers to graphical-symbol Tables 2.1.2.2–2.1.2.7 and diagram axes in §2.1.3.6.',
-  },
-  {
-    id: 'ita-ch1o4-ab',
-    label: 'ITA (Ab) Chapter 1.4 — Graphical symbols for symmetry elements',
-    url: 'https://it.iucr.org/Ab/ch1o4v0001/contents/',
-    note: 'Ab HTML edition chapter index for §1.4.1 planes ⊥ projection, §1.4.2 planes ∥ projection (angular corners; fraction h means planes at h and h+½), §1.4.5–1.4.6 axes.',
+    note: 'Ac accompaniment: symmetry-element projection(s) plus one general-position illustration; graphical symbols in Tables 2.1.2.2–2.1.2.7; diagram axes in §2.1.3.6. (Ac §1.4.4 is Wyckoff positions — not the symbol tables.)',
   },
   {
     id: 'ita-home',
     label: 'International Tables for Crystallography (online)',
     url: 'https://it.iucr.org/',
-    note: 'Publisher hub. Note: Ab §1.4 and Ac Tables 2.1.2.x are the same symbol set under different edition section numbers.',
+    note: 'Publisher hub for Volume A.',
   },
 ] as const
 
-/** Planes perpendicular to the page (ITA §1.4.1 / Dauter Fig. 12 summary). */
+/**
+ * Half-cell companion rule — wording tracked to Dauter & Jaskolski (2010) §2.4:
+ * in-page axes with a printed fraction, “as well as mirror or glide planes, and a
+ * center of symmetry, if present,” are accompanied by the same kind of element
+ * half a cell higher (their P4₃2₁2 example: 2₁ at ⅛ ⇒ mate at ⅝).
+ */
+export const ITA_HALF_CELL_HEIGHT_NOTE =
+  'For the in-page symmetry elements in these ITA projections—2/2₁ axes, mirror/glide planes and inversion centres—a printed fraction h also represents a corresponding element at h+½ (Dauter & Jaskolski, 2010, §2.4). Their example: 2₁ axes printed at height ⅛ are accompanied by mates at ⅝. This applies to those in-page element marks in the projections, not to every annotation on the plate.'
+
+/** Planes perpendicular to the page (line styles as in Dauter & Jaskolski, 2010, §2.3 / Fig. 12). */
 export const ITA_PLANE_NORMAL_STYLES = [
   {
     id: 'mirror',
@@ -65,7 +68,7 @@ export const ITA_PLANE_NORMAL_STYLES = [
     label: 'Axial glide (component in the page)',
     style: 'dashed line',
     meaning:
-      'Glide plane normal to the page whose glide vector lies in the plane of the diagram (½ of a lattice translation in that line).',
+      'Glide plane normal to the page whose glide vector lies in the plane of the diagram.',
   },
   {
     id: 'glide-perp',
@@ -79,25 +82,25 @@ export const ITA_PLANE_NORMAL_STYLES = [
     label: 'n-glide',
     style: 'dash–dot line',
     meaning:
-      'Diagonal glide: one vector with two equal components — ½ along the line in the page and ½ normal to the page (ITA §1.4.1). Dauter’s “45° out of plane” is a shorthand for that geometry, not a separate rule.',
+      'Diagonal glide: one glide vector with equal in-page and out-of-page halves (Dauter’s “45° out of plane” shorthand for that geometry).',
   },
   {
     id: 'glide-e',
     label: 'e-glide (double glide)',
     style: 'dash–double-dot line',
     meaning:
-      'Centered double glide: two glide vectors, one parallel to the projection line and one normal to the page (ITA §1.4.1; e symbol).',
+      'Double glide with translations both in and out of the plane of the diagram (Dauter & Jaskolski, 2010).',
   },
   {
     id: 'glide-d',
     label: 'd-glide (diamond)',
     style: 'dash–dot line with arrow(s)',
     meaning:
-      'Diamond glide with ¼-type components; the arrow(s) show the in-page component of the glide (ITA §1.4.1).',
+      'Diamond glide (¼-type components); arrows show the in-page component of the glide (Dauter & Jaskolski, 2010).',
   },
 ] as const
 
-/** Planes parallel to the page (ITA §1.4.2). */
+/** Planes parallel to the page (angular corners — Dauter & Jaskolski, 2010, §2.3). */
 export const ITA_PLANE_PARALLEL_STYLES = [
   {
     id: 'mirror-parallel',
@@ -110,16 +113,16 @@ export const ITA_PLANE_PARALLEL_STYLES = [
     label: 'Axial glide ∥ page',
     style: 'angular corner + arrow',
     meaning:
-      'Glide plane parallel to the page; the arrow gives the glide direction in the page (½ lattice vector along the arrow).',
+      'Glide plane parallel to the page; the arrow gives the glide direction in the page.',
   },
 ] as const
 
 export const ITA_GUIDE_CAVEATS = [
-  'The same physical glide can look dashed in one projection and dotted in another, because the line style encodes the glide component relative to that projection — never memorize a single line pattern as “always c-glide” (ITA §1.4.4 note on projection-independent graphics vs printed a/b/c/n labels).',
+  'The same physical glide can look dashed in one projection and dotted in another, because the line style encodes the glide component relative to that projection — never memorize a single line pattern as “always c-glide”.',
   'Axis and plane marks change with orientation: a 2₁ ‖ b is a filled lens with screw tails when you look along b, but a single-barb half-arrow when b lies in the page.',
   'Low-symmetry systems (triclinic, monoclinic, orthorhombic) show several symmetry-element projections; higher systems often use one principal view. Always read the axis letters printed on the plate.',
-  'For planes drawn parallel to the page, ITA §1.4.2 states that a fraction h on the symbol denotes planes at heights h and h+½ (no fraction ⇒ 0 and ½). That paired-height rule is for those parallel-plane marks — do not assume every fractional label on every symbol implies a mate half a cell away without checking the element type.',
-  'Site SVGs here are schematic teaching marks, not reproductions of IUCr artwork. Exhaustive official sets: ITA Ab §1.4 / Ac Tables 2.1.2.2–2.1.2.7.',
+  ITA_HALF_CELL_HEIGHT_NOTE,
+  'Site SVGs here are schematic teaching marks, not reproductions of IUCr artwork. Exhaustive official sets: ITA Ac Tables 2.1.2.2–2.1.2.7 (see explanationAc.pdf).',
 ] as const
 
 /**
@@ -156,7 +159,7 @@ export const P21C_PLATE_VIEWS = [
     axes: { up: 'b', right: 'a_p' },
     marks: [
       'horizontal dotted lines = c-glide (glide translation along c, out of the page)',
-      'vertical single-barb half-arrows = 2₁ ‖ b, labelled 1/4 for height along c (z = 1/4), not along a',
+      'vertical single-barb half-arrows = 2₁ ‖ b, labelled 1/4 for height along c (z = 1/4); the §2.4 half-cell companion places mates at z = 3/4, consistent with the 2₁ operator plus lattice translation',
       'open circles = inversion centres',
     ],
   },
@@ -173,9 +176,6 @@ export const P21C_PLATE_VIEWS = [
   },
 ] as const
 
-/**
- * Narrative walk-through kept in lockstep with P21C_PLATE_VIEWS (same ids/order).
- */
 export const P21C_ITA_WALKTHROUGH = {
   number: 14,
   hm: 'P21/c',
@@ -199,7 +199,7 @@ export const P21C_ITA_WALKTHROUGH = {
       id: 'along-c',
       title: 'Bottom-left · symmetry elements · along c (b up, a_p right)',
       whatToSee:
-        'Horizontal dotted lines are the same c-glide family with the glide translation out of the page. Vertical single-barb half-arrows are 2₁ ‖ b; the printed 1/4 is the height of those axes along c (z = 1/4), not a height along a.',
+        'Horizontal dotted lines are the same c-glide family with the glide translation out of the page. Vertical single-barb half-arrows are 2₁ ‖ b; the printed 1/4 is the height of those axes along c (z = 1/4). By the in-page half-cell convention (Dauter & Jaskolski, 2010, §2.4), corresponding 2₁ axes also sit at z = 3/4 — consistent with the 2₁ operator (−x, y+½, −z+½) combined with a lattice translation along c.',
     },
     {
       id: 'general',
@@ -222,5 +222,5 @@ export const ITA_GUIDE_TITLE = 'How to read ITA diagrams'
 export const ITA_GUIDE_BLURB =
   'A short guide to International Tables Vol. A space-group plates: the two diagram types, projection axes, common graphical marks, height labels, and a worked walk-through of P21/c (No. 14) as printed on this site.'
 
-/** Back-compat alias used by older tests / imports. */
+/** Back-compat alias. */
 export const ITA_PLANE_LINE_STYLES = ITA_PLANE_NORMAL_STYLES

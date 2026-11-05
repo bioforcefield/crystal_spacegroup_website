@@ -5,6 +5,7 @@ import {
   ITA_GUIDE_CAVEATS,
   ITA_GUIDE_CITATIONS,
   ITA_GUIDE_TITLE,
+  ITA_HALF_CELL_HEIGHT_NOTE,
   ITA_PLANE_NORMAL_STYLES,
   ITA_PLANE_PARALLEL_STYLES,
   P21C_ITA_WALKTHROUGH,
@@ -279,8 +280,9 @@ export default function ItaDiagramGuide({ spaceGroupNumber, hm }: Props) {
                     </tbody>
                   </table>
                   <p>
-                    Planes <em>parallel</em> to the page use angular corners (ITA
-                    §1.4.2), with an arrow when the plane is a glide:
+                    Planes <em>parallel</em> to the page use angular corners
+                    (Dauter &amp; Jaskolski, 2010, §2.3), with an arrow when the
+                    plane is a glide:
                   </p>
                   <table className="ita-guide-table" data-testid="ita-guide-parallel-planes">
                     <thead>
@@ -306,13 +308,9 @@ export default function ItaDiagramGuide({ spaceGroupNumber, hm }: Props) {
                   <h3>Heights, + / − and commas</h3>
                   <ul className="ita-guide-list">
                     <li>
-                      A fraction next to a mark is a height along the projection
-                      direction (fraction of that cell edge). For{' '}
-                      <em>planes parallel to the page</em>, ITA §1.4.2 states that
-                      a printed fraction <em>h</em> denotes planes at <em>h</em> and{' '}
-                      <em>h</em>+½ (no fraction ⇒ 0 and ½). That paired-height rule
-                      is for those parallel-plane symbols — do not universalize it
-                      to every fractional label.
+                      A fraction next to an in-page mark is its height along the
+                      projection direction (fraction of that cell edge).{' '}
+                      {ITA_HALF_CELL_HEIGHT_NOTE}
                     </li>
                     <li>
                       On general-position diagrams the height labels sit{' '}
@@ -320,7 +318,8 @@ export default function ItaDiagramGuide({ spaceGroupNumber, hm }: Props) {
                       <strong>−</strong> mean +height / −height of the representative
                       coordinate (e.g. +y / −y when projecting along <em>b</em>), and{' '}
                       <strong>½+</strong> / <strong>½−</strong> mean ½+height /
-                      ½−height — not a fixed numeric elevation of the point.
+                      ½−height — not a fixed numeric elevation of the point
+                      (Dauter &amp; Jaskolski, 2010, §2.4).
                     </li>
                     <li>
                       A comma <em>inside</em> a circle marks the opposite
