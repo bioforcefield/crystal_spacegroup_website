@@ -5,7 +5,8 @@ import {
   ITA_GUIDE_CAVEATS,
   ITA_GUIDE_CITATIONS,
   ITA_GUIDE_TITLE,
-  ITA_PLANE_LINE_STYLES,
+  ITA_PLANE_NORMAL_STYLES,
+  ITA_PLANE_PARALLEL_STYLES,
   P21C_ITA_WALKTHROUGH,
 } from '../data/itaGuide'
 
@@ -39,27 +40,42 @@ function SvgFrame({
   )
 }
 
-/** Schematic marks only — not IUCr artwork. */
+/** Schematic marks only — not IUCr artwork. Shapes follow ITA/Dauter descriptions. */
 function SymbolSamples() {
   return (
     <div className="ita-sym-grid" data-testid="ita-guide-symbols">
       <SvgFrame label="2-fold ⊥ page (lens)">
-        <ellipse cx="32" cy="20" rx="10" ry="5" fill="#0f172a" />
-        <ellipse cx="32" cy="20" rx="5" ry="10" fill="#0f172a" />
+        {/* Single pointed filled lens (vesica), not crossed ellipses */}
+        <path
+          data-testid="glyph-twofold-perp"
+          d="M32 7 C41 12 41 28 32 33 C23 28 23 12 32 7 Z"
+          fill="#0f172a"
+        />
       </SvgFrame>
-      <SvgFrame label="2₁ ⊥ page (lens + arms)">
-        <ellipse cx="32" cy="20" rx="9" ry="4.5" fill="#0f172a" />
-        <ellipse cx="32" cy="20" rx="4.5" ry="9" fill="#0f172a" />
-        <path d="M22 12 L14 6 M42 28 L50 34" stroke="#0f172a" strokeWidth="2" fill="none" />
+      <SvgFrame label="2₁ ⊥ page (lens + S-tails)">
+        <path
+          data-testid="glyph-screw21-perp"
+          d="M32 10 C39 14 39 26 32 30 C25 26 25 14 32 10 Z"
+          fill="#0f172a"
+        />
+        {/* Curved S-tails characteristic of 2₁ ⊥ page */}
+        <path
+          d="M32 10 C38 6 44 5 48 8 M32 30 C26 34 20 35 16 32"
+          stroke="#0f172a"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+        />
       </SvgFrame>
       <SvgFrame label="2 ‖ page (full arrow)">
-        <path d="M10 20 H50" stroke="#0f172a" strokeWidth="2" />
-        <path d="M46 16 L54 20 L46 24 Z" fill="#0f172a" />
-        <path d="M18 16 L10 20 L18 24 Z" fill="#0f172a" />
+        <path d="M12 20 H52" stroke="#0f172a" strokeWidth="2" />
+        <path d="M48 15 L56 20 L48 25 Z" fill="#0f172a" />
+        <path d="M16 15 L8 20 L16 25 Z" fill="#0f172a" />
       </SvgFrame>
-      <SvgFrame label="2₁ ‖ page (half arrow)">
-        <path d="M12 20 H48" stroke="#0f172a" strokeWidth="2" />
-        <path d="M44 16 L52 20 L44 24 Z" fill="#0f172a" />
+      <SvgFrame label="2₁ ‖ page (single-barb)">
+        {/* Single-barb half-arrow (upper barb only), not a full triangular head */}
+        <path data-testid="glyph-screw21-parallel" d="M10 20 H50" stroke="#0f172a" strokeWidth="2" />
+        <path d="M50 20 L42 13" stroke="#0f172a" strokeWidth="2" strokeLinecap="round" />
       </SvgFrame>
       <SvgFrame label="Inversion centre">
         <circle cx="32" cy="20" r="5" fill="none" stroke="#0f172a" strokeWidth="2" />
@@ -68,12 +84,7 @@ function SymbolSamples() {
         <path d="M32 6 V34" stroke="#0f172a" strokeWidth="3" />
       </SvgFrame>
       <SvgFrame label="Glide, in-page (dashed)">
-        <path
-          d="M32 6 V34"
-          stroke="#0f172a"
-          strokeWidth="3"
-          strokeDasharray="5 4"
-        />
+        <path d="M32 6 V34" stroke="#0f172a" strokeWidth="3" strokeDasharray="5 4" />
       </SvgFrame>
       <SvgFrame label="Glide, ⊥ page (dotted)">
         <path
@@ -84,15 +95,24 @@ function SymbolSamples() {
           strokeLinecap="round"
         />
       </SvgFrame>
-      <SvgFrame label="General site (same hand)">
-        <circle cx="32" cy="20" r="9" fill="none" stroke="#0f172a" strokeWidth="2" />
-        <text x="32" y="24" textAnchor="middle" fontSize="12" fill="#0f172a">
+      <SvgFrame label="Glide ∥ page (corner + arrow)">
+        {/* Angular corner with in-page glide arrow; fraction = plane height */}
+        <path d="M18 10 H40 V30" stroke="#0f172a" strokeWidth="2.5" fill="none" />
+        <path d="M40 18 V32" stroke="#0f172a" strokeWidth="2" />
+        <path d="M40 32 L36 26 M40 32 L44 26" stroke="#0f172a" strokeWidth="2" fill="none" />
+        <text x="46" y="14" fontSize="10" fill="#0f172a">
+          1/4
+        </text>
+      </SvgFrame>
+      <SvgFrame label="General site +y (label beside)">
+        <circle cx="26" cy="20" r="9" fill="none" stroke="#0f172a" strokeWidth="2" />
+        <text x="42" y="24" fontSize="14" fill="#0f172a">
           +
         </text>
       </SvgFrame>
-      <SvgFrame label="General site (opposite hand)">
+      <SvgFrame label="General site opposite hand">
         <circle cx="32" cy="20" r="9" fill="none" stroke="#0f172a" strokeWidth="2" />
-        <text x="32" y="25" textAnchor="middle" fontSize="14" fill="#0f172a">
+        <text x="28" y="26" fontSize="16" fill="#0f172a">
           ,
         </text>
       </SvgFrame>
@@ -224,18 +244,20 @@ export default function ItaDiagramGuide({ spaceGroupNumber, hm }: Props) {
                   <SymbolSamples />
                   <ul className="ita-guide-list">
                     <li>
-                      Filled lenses / triangles / squares / hexagons: 2-, 3-, 4-
-                      or 6-fold axes <em>perpendicular</em> to the page; extra
-                      arms mark screws (Dauter &amp; Jaskolski, 2010).
+                      A single pointed filled lens (not a four-pointed star) marks a
+                      2-fold axis perpendicular to the page; triangles / squares /
+                      hexagons mark 3-, 4- and 6-fold axes. Curved screw tails on a
+                      lens mark 2₁ ⊥ page (Dauter &amp; Jaskolski, 2010; plate
+                      014.png).
                     </li>
                     <li>
-                      Full arrow = 2-fold <em>in</em> the page; half-arrow = 2₁ in
-                      the page.
+                      Full double-headed arrow = 2-fold <em>in</em> the page;
+                      single-barb half-arrow = 2₁ in the page.
                     </li>
                     <li>Small open circle = inversion centre (−1).</li>
                     <li>
-                      Planes perpendicular to the page use line style to encode the
-                      glide component relative to <em>that</em> projection:
+                      Planes <em>perpendicular</em> to the page use line style to
+                      encode the glide component relative to that projection:
                     </li>
                   </ul>
                   <table className="ita-guide-table">
@@ -247,7 +269,29 @@ export default function ItaDiagramGuide({ spaceGroupNumber, hm }: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      {ITA_PLANE_LINE_STYLES.map((row) => (
+                      {ITA_PLANE_NORMAL_STYLES.map((row) => (
+                        <tr key={row.id}>
+                          <td>{row.label}</td>
+                          <td>{row.style}</td>
+                          <td>{row.meaning}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p>
+                    Planes <em>parallel</em> to the page use angular corners (ITA
+                    §1.4.2), with an arrow when the plane is a glide:
+                  </p>
+                  <table className="ita-guide-table" data-testid="ita-guide-parallel-planes">
+                    <thead>
+                      <tr>
+                        <th>Element</th>
+                        <th>Symbol</th>
+                        <th>Meaning</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ITA_PLANE_PARALLEL_STYLES.map((row) => (
                         <tr key={row.id}>
                           <td>{row.label}</td>
                           <td>{row.style}</td>
@@ -262,20 +306,26 @@ export default function ItaDiagramGuide({ spaceGroupNumber, hm }: Props) {
                   <h3>Heights, + / − and commas</h3>
                   <ul className="ita-guide-list">
                     <li>
-                      A fraction beside an element parallel to the page is its
-                      height as a fraction of the cell edge along the projection
-                      direction. Matching elements half a cell higher are often
-                      implied (Dauter &amp; Jaskolski, 2010).
+                      A fraction next to a mark is a height along the projection
+                      direction (fraction of that cell edge). For{' '}
+                      <em>planes parallel to the page</em>, ITA §1.4.2 states that
+                      a printed fraction <em>h</em> denotes planes at <em>h</em> and{' '}
+                      <em>h</em>+½ (no fraction ⇒ 0 and ½). That paired-height rule
+                      is for those parallel-plane symbols — do not universalize it
+                      to every fractional label.
                     </li>
                     <li>
-                      On general-position diagrams, <strong>+</strong> /{' '}
-                      <strong>−</strong> mark the sign of the height coordinate;{' '}
-                      <strong>½+</strong> means ½ plus that height,{' '}
-                      <strong>½−</strong> means ½ minus that height.
+                      On general-position diagrams the height labels sit{' '}
+                      <em>beside</em> the circles: <strong>+</strong> /{' '}
+                      <strong>−</strong> mean +height / −height of the representative
+                      coordinate (e.g. +y / −y when projecting along <em>b</em>), and{' '}
+                      <strong>½+</strong> / <strong>½−</strong> mean ½+height /
+                      ½−height — not a fixed numeric elevation of the point.
                     </li>
                     <li>
-                      A comma inside a circle marks the opposite enantiomorph
-                      (improper image) of an open circle without a comma.
+                      A comma <em>inside</em> a circle marks the opposite
+                      enantiomorph (improper image) of an open circle without a
+                      comma.
                     </li>
                   </ul>
                 </section>
