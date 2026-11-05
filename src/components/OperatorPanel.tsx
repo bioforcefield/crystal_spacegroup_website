@@ -18,6 +18,7 @@ import {
   ITA_DIAGRAM_CREDIT,
   itaDiagramUrl,
 } from '../data/itaDiagram'
+import ItaDiagramGuide from './ItaDiagramGuide'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -208,17 +209,20 @@ export default function OperatorPanel({
                 © IUCr · Vol. A
               </span>
             </figcaption>
-            <button
-              ref={itaBtnRef}
-              type="button"
-              className="btn btn-small ita-enlarge"
-              data-testid="ita-enlarge"
-              onClick={() => setItaOpen(true)}
-              aria-label={`Enlarge ITA Vol. A diagram for space group ${meta.number}`}
-              title="Enlarge"
-            >
-              ⤢ Enlarge
-            </button>
+            <div className="ita-diagram-actions">
+              <button
+                ref={itaBtnRef}
+                type="button"
+                className="btn btn-small ita-enlarge"
+                data-testid="ita-enlarge"
+                onClick={() => setItaOpen(true)}
+                aria-label={`Enlarge ITA Vol. A diagram for space group ${meta.number}`}
+                title="Enlarge"
+              >
+                ⤢ Enlarge
+              </button>
+              <ItaDiagramGuide spaceGroupNumber={meta.number} hm={meta.hm} />
+            </div>
             {itaOpen &&
               createPortal(
                 <div
