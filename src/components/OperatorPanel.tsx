@@ -90,9 +90,14 @@ export default function OperatorPanel({
   const [itaOpen, setItaOpen] = useState(false)
   const itaBtnRef = useRef<HTMLButtonElement>(null)
   const itaModalRef = useRef<HTMLDivElement>(null)
+  const itaRestoreFocusTimer = useRef<number | null>(null)
 
   useEffect(() => {
     if (!itaOpen) return
+    if (itaRestoreFocusTimer.current != null) {
+      window.clearTimeout(itaRestoreFocusTimer.current)
+      itaRestoreFocusTimer.current = null
+    }
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault()
@@ -109,7 +114,13 @@ export default function OperatorPanel({
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = prevOverflow
-      itaBtnRef.current?.focus()
+      const btn = itaBtnRef.current
+      // Defer past native mouseup/click after backdrop mousedown-unmount, which
+      // otherwise moves focus to <body> after a synchronous focus() in cleanup.
+      itaRestoreFocusTimer.current = window.setTimeout(() => {
+        itaRestoreFocusTimer.current = null
+        btn?.focus()
+      }, 0)
     }
   }, [itaOpen])
 
@@ -214,7 +225,10 @@ export default function OperatorPanel({
                   className="ita-modal-backdrop"
                   data-testid="ita-modal-backdrop"
                   onMouseDown={(e) => {
-                    if (e.target === e.currentTarget) setItaOpen(false)
+                    if (e.target !== e.currentTarget) return
+                    // Avoid the backdrop taking focus before unmount + restore.
+                    e.preventDefault()
+                    setItaOpen(false)
                   }}
                 >
                   <div

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import OperatorPanel from '../OperatorPanel'
 import { getDemo } from '../../data/registry'
@@ -46,7 +46,7 @@ describe('ITA Vol. A diagram enlarge', () => {
     expect(enlarged.closest('.ita-modal-plate')).not.toBeNull()
   })
 
-  it('closes on Close, Escape, and backdrop click, and restores focus', () => {
+  it('closes on Close and Escape and restores focus to Enlarge', async () => {
     renderPanel()
     const enlarge = screen.getByTestId('ita-enlarge')
     fireEvent.click(enlarge)
@@ -56,14 +56,33 @@ describe('ITA Vol. A diagram enlarge', () => {
     fireEvent.click(screen.getByTestId('ita-close'))
     expect(screen.queryByTestId('ita-modal')).toBeNull()
     expect(document.body.style.overflow).toBe('')
-    expect(document.activeElement).toBe(enlarge)
+    await waitFor(() => expect(document.activeElement).toBe(enlarge))
 
     fireEvent.click(enlarge)
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(screen.queryByTestId('ita-modal')).toBeNull()
+    await waitFor(() => expect(document.activeElement).toBe(enlarge))
+  })
 
+  it('restores Enlarge focus after backdrop pointer sequence steals it', async () => {
+    renderPanel()
+    const enlarge = screen.getByTestId('ita-enlarge')
     fireEvent.click(enlarge)
-    fireEvent.mouseDown(screen.getByTestId('ita-modal-backdrop'))
+    const backdrop = screen.getByTestId('ita-modal-backdrop')
+
+    // Native order: mousedown closes/unmounts, then mouseup/click land on whatever
+    // is underneath and leave document.activeElement on <body>.
+    fireEvent.mouseDown(backdrop)
     expect(screen.queryByTestId('ita-modal')).toBeNull()
+    if (!document.body.hasAttribute('tabindex')) {
+      document.body.tabIndex = -1
+    }
+    document.body.focus()
+    fireEvent.mouseUp(document.body)
+    fireEvent.click(document.body)
+    expect(document.activeElement).toBe(document.body)
+
+    await waitFor(() => expect(document.activeElement).toBe(enlarge))
+    expect(document.body.style.overflow).toBe('')
   })
 })
