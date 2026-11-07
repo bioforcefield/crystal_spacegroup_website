@@ -6063,3 +6063,14 @@ button.linkish {
 .shown-copy-note {
   margin-top: 0.2rem;
 }
+
+/* Primer B / I labels and captions: larger with a dark halo for legibility. */
+.primer-svg .primer-label {
+  paint-order: stroke;
+  stroke: rgba(2, 6, 23, 0.9);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+.primer-svg .primer-caption {
+  opacity: 0.95;
+}

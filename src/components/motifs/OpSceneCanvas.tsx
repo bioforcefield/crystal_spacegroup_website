@@ -80,7 +80,7 @@ export function drawElement(ctx: CanvasRenderingContext2D, sc: OpScene, color: s
       ctx.lineTo(x1, y1)
       ctx.stroke()
       if (el.screw) {
-        ctx.font = '700 8px system-ui, sans-serif'
+        ctx.font = '700 9px system-ui, sans-serif'
         ctx.fillText('2₁', x0 + 4, y0 - 2)
         ctx.fillText('+½ ↑', x1 + 4, y1 + 6)
       }
@@ -131,9 +131,14 @@ function drawStatic(ctx: CanvasRenderingContext2D, sc: OpScene, mesh: LiteMesh, 
     ctx.save()
     ctx.globalAlpha = a
     ctx.fillStyle = color
-    ctx.font = '700 8px system-ui, sans-serif'
+    ctx.font = '700 10px system-ui, sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText(txt, x, Math.min(sc.height - 4, y + 20))
+    // Dark halo keeps B / I legible over the cell; stay above the caption line.
+    const ty = Math.min(sc.height - (sc.caption ? 14 : 4), y + 20)
+    ctx.lineWidth = 2.5
+    ctx.strokeStyle = 'rgba(2,6,23,0.9)'
+    ctx.strokeText(txt, x, ty)
+    ctx.fillText(txt, x, ty)
     ctx.restore()
   }
   if (identity) {
@@ -146,9 +151,8 @@ function drawStatic(ctx: CanvasRenderingContext2D, sc: OpScene, mesh: LiteMesh, 
   if (sc.caption) {
     ctx.save()
     ctx.fillStyle = color
-    ctx.globalAlpha = 0.9
-    ctx.font = '600 7px system-ui, sans-serif'
-    ctx.fillText(sc.caption, 10, sc.height - 3)
+    ctx.font = '600 9px system-ui, sans-serif'
+    ctx.fillText(sc.caption, 6, sc.height - 3)
     ctx.restore()
   }
 }

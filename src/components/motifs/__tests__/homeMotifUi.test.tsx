@@ -37,6 +37,15 @@ describe('home primer motif styles', () => {
     expect(again.container.querySelectorAll('svg.primer-svg').length).toBe(6)
   })
 
+  it('primer SVG labels and captions are at least 9 units (legibility)', () => {
+    window.localStorage.setItem(MOTIF_STYLE_STORAGE_KEY, 'classic')
+    const { container } = render(<SymmetryPrimer />)
+    const sizes = Array.from(container.querySelectorAll('svg.primer-svg text')).map((t) => Number(t.getAttribute('font-size')))
+    expect(sizes.length).toBeGreaterThan(0)
+    expect(Math.min(...sizes)).toBeGreaterThanOrEqual(9)
+    window.localStorage.clear()
+  })
+
   it('kind of each card is the real operation', () => {
     const { container } = render(<SymmetryPrimer />)
     const kinds = Array.from(container.querySelectorAll('canvas.primer-canvas')).map((c) => c.getAttribute('data-op-kind'))

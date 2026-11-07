@@ -278,7 +278,7 @@ function Motif({
     >
       <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} objectScale={objectScale} />
       {label ? (
-        <text x={0} y={20} textAnchor="middle" fill={fill} fontSize={8} fontWeight={700}>
+        <text x={0} y={20} textAnchor="middle" fill={fill} fontSize={10} className="primer-label" fontWeight={700}>
           {label}
         </text>
       ) : null}
@@ -351,7 +351,7 @@ function StaticEndpoint({
       <g transform={transform}>
         <MotifLocal fill={fill} />
       </g>
-      <text x={labelX} y={labelY} textAnchor="middle" fill={fill} fontSize={8} fontWeight={700}>
+      <text x={labelX} y={labelY} textAnchor="middle" fill={fill} fontSize={10} className="primer-label" fontWeight={700}>
         {label}
       </text>
     </g>
@@ -484,7 +484,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <CellFrame />
           <g className="primer-mover primer-identity-pulse" transform="translate(60,34)">
             <MotifLocal fill={color} />
-            <text x={0} y={20} textAnchor="middle" fill={color} fontSize={8} fontWeight={700}>
+            <text x={0} y={20} textAnchor="middle" fill={color} fontSize={10} className="primer-label" fontWeight={700}>
               BASE
             </text>
           </g>
@@ -523,31 +523,31 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             <MotifLocal fill={color} objectScale={1} />
           </g>
           <text
-            className="primer-marker"
+            className="primer-marker primer-label"
             x={jB.x}
             y={jB.y + 20}
             textAnchor="middle"
             fill={color}
-            fontSize={8}
+            fontSize={10}
             fontWeight={700}
             opacity={0.35}
           >
             B
           </text>
           <g
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
             opacity={0.35}
             transform={`translate(${jI.x},${jI.y})`}
           >
             <MotifLocal fill={color} objectScale={-1} />
           </g>
           <text
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
             x={jI.x}
             y={jI.y + 20}
             textAnchor="middle"
             fill={color}
-            fontSize={8}
+            fontSize={10}
             fontWeight={700}
             opacity={0.35}
           >
@@ -576,24 +576,24 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           {/* Static B/I = primer-twofold rotor at 0° / 180° about lens (60,36) */}
           <g className="primer-marker" opacity={0.35} transform={PRIMER_ENDPOINT_TRANSFORMS.twofold.B}>
             <Motif x={38} y={36} fill={color} enantiomorph={false} />
-            <text x={38} y={56} textAnchor="middle" fill={color} fontSize={8} fontWeight={700}>
+            <text x={38} y={56} textAnchor="middle" fill={color} fontSize={10} className="primer-label" fontWeight={700}>
               B
             </text>
           </g>
           <g
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
             opacity={0.35}
             transform={PRIMER_ENDPOINT_TRANSFORMS.twofold.I}
           >
             <Motif x={38} y={36} fill={color} enantiomorph={false} />
           </g>
           <text
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
             x={82}
             y={56}
             textAnchor="middle"
             fill={color}
-            fontSize={8}
+            fontSize={10}
             fontWeight={700}
             opacity={0.35}
           >
@@ -676,9 +676,9 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             opacity={0.35}
             enantiomorph={false}
             yawDeg={180}
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
           />
-          <text x={10} y={74} fill={color} fontSize={7} fontWeight={600} opacity={0.9}>
+          <text x={10} y={74} fill={color} fontSize={9} fontWeight={600} className="primer-caption">
             proper — hand kept
           </text>
           <path
@@ -724,9 +724,9 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             label="I"
             labelX={86}
             labelY={56}
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
           />
-          <text x={10} y={74} fill="#fde68a" fontSize={7} fontWeight={600} opacity={0.9}>
+          <text x={10} y={74} fill="#fde68a" fontSize={9} fontWeight={600} className="primer-caption">
             improper — hand flips
           </text>
           <g className="primer-mover primer-mirror-rotor">
@@ -762,7 +762,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             label="I"
             labelX={88}
             labelY={70}
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
           />
           <path
             d="M38 28 H72"
@@ -785,7 +785,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
               <path d="M0 0 L10 5 L0 10 z" fill={color} />
             </marker>
           </defs>
-          <text x={50} y={26} fill={color} fontSize={8} fontWeight={700}>
+          <text x={50} y={26} fill={color} fontSize={10} className="primer-label" fontWeight={700}>
             glide →
           </text>
           <g className="primer-mover primer-glide-ghost">
