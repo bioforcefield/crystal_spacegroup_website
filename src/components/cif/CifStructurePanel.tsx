@@ -32,7 +32,6 @@ export default function CifStructurePanel({
   moleculesForOp,
   atomCountForOp,
   onOpKeyDown,
-  elementDemo,
   selected,
   onLoadCodId,
   showXray = true,
@@ -175,11 +174,6 @@ export default function CifStructurePanel({
               </p>
             )}
           </div>
-        )}
-        {elementDemo?.geometryLimited && elementDemo.geometryNote && (
-          <p className="hint cif-geometry-note">
-            Symmetry overlays: {elementDemo.geometryNote}
-          </p>
         )}
         {structure.warnings.length > 0 && (
           <ul className="cif-warnings">

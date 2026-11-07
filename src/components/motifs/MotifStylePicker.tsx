@@ -4,7 +4,6 @@ import {
   isMotifStyleId,
   MOTIF_STYLE_OPTIONS,
   MOTIF_STYLE_STORAGE_KEY,
-  writeMotifStyle,
   type MotifStyleId,
 } from './motifStyles'
 
@@ -13,19 +12,21 @@ import {
  * stored choice survives navigation and reloads; invalid values fall back.
  */
 // One module store so every picker / viewer on the page shares the choice
-// immediately; other tabs follow through the storage event.
+// immediately; other tabs follow through the storage event. When storage
+// cannot hold the choice (private mode, quota), the in-memory choice wins so
+// the picker never snaps back.
 const styleListeners = new Set<() => void>()
-let currentStyle: MotifStyleId | null = null
+let memoryStyle: MotifStyleId | null = null
 let styleStorageHooked = false
+
 function getStyle(): MotifStyleId {
+  if (memoryStyle !== null) return memoryStyle
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(MOTIF_STYLE_STORAGE_KEY) : null
-    if (isMotifStyleId(raw)) return raw
-    if (raw !== null || typeof localStorage !== 'undefined') return DEFAULT_MOTIF_STYLE
+    return isMotifStyleId(raw) ? raw : DEFAULT_MOTIF_STYLE
   } catch {
-    /* storage unavailable: fall back to the in-memory choice */
+    return DEFAULT_MOTIF_STYLE
   }
-  return currentStyle ?? DEFAULT_MOTIF_STYLE
 }
 function subscribeStyle(l: () => void): () => void {
   styleListeners.add(l)
@@ -33,6 +34,7 @@ function subscribeStyle(l: () => void): () => void {
     styleStorageHooked = true
     window.addEventListener('storage', (e) => {
       if (e.key !== MOTIF_STYLE_STORAGE_KEY) return
+      memoryStyle = null
       styleListeners.forEach((f) => f())
     })
   }
@@ -40,10 +42,17 @@ function subscribeStyle(l: () => void): () => void {
     styleListeners.delete(l)
   }
 }
+function persisted(s: MotifStyleId): boolean {
+  try {
+    localStorage.setItem(MOTIF_STYLE_STORAGE_KEY, s)
+    return localStorage.getItem(MOTIF_STYLE_STORAGE_KEY) === s
+  } catch {
+    return false
+  }
+}
 function setSharedStyle(s: MotifStyleId) {
   if (!isMotifStyleId(s)) return
-  currentStyle = s
-  writeMotifStyle(s)
+  memoryStyle = persisted(s) ? null : s
   styleListeners.forEach((f) => f())
 }
 

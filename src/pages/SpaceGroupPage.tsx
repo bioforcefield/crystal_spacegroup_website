@@ -27,6 +27,7 @@ import { opClass, selectionLabels } from '../data/opLabels'
 import { legendClasses } from '../data/elementClasses'
 import { fmtVec } from '../data/opClassify'
 import { useAnimationsPaused, useMotionOff } from '../hooks/motionPrefs'
+import AnimationPauseToggle from '../components/AnimationPauseToggle'
 import { elementOverlay } from '../data/elementSelection'
 
 interface Props {
@@ -40,6 +41,12 @@ export default function SpaceGroupPage({ demo }: Props) {
   const [replayStatus, setReplayStatus] = useState('')
   const motionOff = useMotionOff()
   const animPaused = useAnimationsPaused()
+  // Clear the replay status when motion turns off (not re-announced later).
+  const [prevMotionOff, setPrevMotionOff] = useState(motionOff)
+  if (prevMotionOff !== motionOff) {
+    setPrevMotionOff(motionOff)
+    if (motionOff) setReplayStatus('')
+  }
   const [resetToken, setResetToken] = useState(0)
   const [placementMode, setPlacementMode] = useState<PlacementMode>('nearest')
   // Dense packs (Z>48) default to BASE+IMAGE so the cell stays readable (S5).
@@ -152,7 +159,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                 <span className="chip element">▭</span> mirror / glide
                 <span className="sep">·</span>
                 {overlay.limited
-                  ? `${overlay.total} elements meet the cell; showing the selected element's class only`
+                  ? overlay.note
                   : 'selected element (the shown copy\'s) emphasized; others faint'}
               </div>
             </details>
@@ -268,18 +275,20 @@ export default function SpaceGroupPage({ demo }: Props) {
               <p className="op-motion-lead">
                 {selection.motion.plain}
                 {motionOff && (
-                  <span className="op-motion-still">
+                  <span className="op-motion-still" id="op-motion-still-note">
                     {' '}
                     {animPaused ? 'Animations are paused' : 'Reduced motion is on'}: showing the end position.
                   </span>
                 )}
               </p>
+              {animPaused && <AnimationPauseToggle className="btn-ghost" />}
               <button
                 type="button"
                 className="btn op-replay"
                 onClick={() => {
                   setAnimateToken((t) => t + 1)
-                  setReplayStatus(`Replaying op ${selectedIndex}.`)
+                  // Alternate a trailing no-break space so a repeated Replay is announced again.
+                  setReplayStatus((prev) => `Replaying op ${selectedIndex}.${prev.endsWith('\u00a0') ? '' : '\u00a0'}`)
                 }}
                 disabled={motionOff}
                 aria-describedby={motionOff ? 'op-motion-still-note' : undefined}
@@ -287,11 +296,6 @@ export default function SpaceGroupPage({ demo }: Props) {
               >
                 <span aria-hidden="true">▶</span> Replay
               </button>
-              {motionOff && (
-                <span id="op-motion-still-note" className="sr-only">
-                  Replay is unavailable while animations are off.
-                </span>
-              )}
             </div>
             <details className="op-motion-details">
               <summary>Operation details</summary>

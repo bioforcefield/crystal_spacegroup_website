@@ -176,11 +176,6 @@ export default function OperatorPanel({
           ) : null}
         </h1>
         <p className="blurb">{meta.blurb}</p>
-        {demo.geometryLimited && demo.geometryNote ? (
-          <p className="geometry-note panel-geometry-note" role="note">
-            {demo.geometryNote}
-          </p>
-        ) : null}
         <div className="ref-links">
           <a
             className="ucl-diagram-link"

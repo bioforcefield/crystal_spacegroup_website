@@ -28,12 +28,15 @@ function syncRootClass(v: boolean) {
   if (typeof document !== 'undefined') document.documentElement.classList.toggle('anim-paused', v)
 }
 
+/** Pure snapshot read (no DOM side effects); memory is authoritative once set. */
 export function getAnimationsPaused(): boolean {
-  if (paused === null) {
-    paused = typeof window !== 'undefined' && readPaused()
-    syncRootClass(paused)
-  }
+  if (paused === null) paused = typeof window !== 'undefined' && readPaused()
   return paused
+}
+
+/** Apply the stored choice to <html class="anim-paused"> once at startup. */
+export function initMotionPrefs(): void {
+  syncRootClass(getAnimationsPaused())
 }
 
 export function setAnimationsPaused(v: boolean): void {
@@ -42,7 +45,7 @@ export function setAnimationsPaused(v: boolean): void {
   try {
     localStorage.setItem(ANIM_PAUSED_STORAGE_KEY, v ? '1' : '0')
   } catch {
-    /* private mode — keep the in-memory choice */
+    /* private mode / quota — the in-memory choice still applies this session */
   }
   pausedListeners.forEach((l) => l())
 }

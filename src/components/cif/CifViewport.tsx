@@ -716,7 +716,7 @@ export default function CifViewport({
           : !elementDemo
             ? 'Needs a resolvable space-group number (1–230)'
             : elementCount === 0
-              ? 'No drawable loci for this group yet (operators still listed)'
+              ? 'This group has no symmetry elements besides translations'
               : showSymmetryElements
                 ? 'Hide screw / glide / inversion overlays'
                 : 'Show screw / glide / inversion overlays'

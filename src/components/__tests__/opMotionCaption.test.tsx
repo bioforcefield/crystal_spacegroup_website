@@ -70,13 +70,34 @@ describe('selected-operation caption', () => {
     for (const n of s.motion.notes) expect(details.textContent).toContain(n)
   })
 
-  it('Replay announces a concise polite status', () => {
+  it('Replay announces a concise polite status, again on repeat, cleared when motion turns off', () => {
     page(76)
     pick(4)
-    fireEvent.click(within(caption()).getByRole('button', { name: /Replay/ }))
-    expect(screen.getByRole('status').textContent).toBe('Replaying op 4.')
+    const replay = () => within(caption()).getByRole('button', { name: /Replay/ })
+    fireEvent.click(replay())
+    const first = screen.getByRole('status').textContent!
+    expect(first.trim()).toBe('Replaying op 4.')
+    fireEvent.click(replay())
+    const second = screen.getByRole('status').textContent!
+    expect(second.trim()).toBe('Replaying op 4.')
+    expect(second).not.toBe(first) // changed text → re-announced
+    act(() => setAnimationsPaused(true))
+    expect(screen.getByRole('status').textContent).toBe('')
+    act(() => setAnimationsPaused(false))
+    expect(screen.getByRole('status').textContent).toBe('')
+    fireEvent.click(replay())
     pick(2)
     expect(screen.getByRole('status').textContent).toBe('')
+  })
+
+  it('when paused, the page offers Resume animations next to the disabled Replay', () => {
+    page(76)
+    pick(4)
+    act(() => setAnimationsPaused(true))
+    const resume = within(caption()).getByRole('button', { name: /Resume animations/ })
+    fireEvent.click(resume)
+    expect(within(caption()).getByRole('button', { name: /Replay/ }).hasAttribute('disabled')).toBe(false)
+    expect(within(caption()).queryByRole('button', { name: /Resume animations/ })).toBeNull()
   })
 
   it('follows Near / Wrap and the operator (P4mm op 8)', () => {

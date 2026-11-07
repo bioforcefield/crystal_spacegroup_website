@@ -3,7 +3,8 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { startLoop } from '../animLoop'
 import AnimationPauseToggle from '../../AnimationPauseToggle'
-import { ANIM_PAUSED_STORAGE_KEY, setAnimationsPaused } from '../../../hooks/motionPrefs'
+import { ANIM_PAUSED_STORAGE_KEY, getAnimationsPaused, initMotionPrefs, setAnimationsPaused } from '../../../hooks/motionPrefs'
+import { MOTIF_STYLE_STORAGE_KEY } from '../motifStyles'
 import { useMotifStyle } from '../MotifStylePicker'
 
 // Controllable browser APIs
@@ -125,10 +126,11 @@ describe('Pause animations control', () => {
       </>,
     )
     const [a, b] = screen.getAllByRole('button', { name: /Pause animations/ })
-    expect(a.getAttribute('aria-pressed')).toBe('false')
+    // one ARIA pattern: the name says the action; no aria-pressed on top
+    expect(a.hasAttribute('aria-pressed')).toBe(false)
     fireEvent.click(a)
     expect(screen.getAllByRole('button', { name: /Resume animations/ })).toHaveLength(2)
-    expect(b.getAttribute('aria-pressed')).toBe('true')
+    expect(b.hasAttribute('aria-pressed')).toBe(false)
     expect(localStorage.getItem(ANIM_PAUSED_STORAGE_KEY)).toBe('1')
     expect(document.documentElement.classList.contains('anim-paused')).toBe(true)
     fireEvent.click(b)
@@ -156,5 +158,49 @@ describe('motif style is shared live between instances on one page', () => {
     expect(screen.getByTestId('b').textContent).toBe('tetra')
     fireEvent.click(screen.getByTestId('a'))
     expect(screen.getByTestId('b').textContent).toBe('classic')
+  })
+})
+
+describe('storage failures keep the in-memory choice', () => {
+  it('pause works when storage throws, and the snapshot read has no DOM side effect', () => {
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError')
+    })
+    act(() => setAnimationsPaused(true))
+    expect(getAnimationsPaused()).toBe(true)
+    document.documentElement.classList.remove('anim-paused')
+    getAnimationsPaused()
+    expect(document.documentElement.classList.contains('anim-paused')).toBe(false)
+    initMotionPrefs()
+    expect(document.documentElement.classList.contains('anim-paused')).toBe(true)
+    set.mockRestore()
+  })
+
+  it('motif style does not snap back when storage rejects the write', () => {
+    function Probe({ id }: { id: string }) {
+      const [s, setS] = useMotifStyle()
+      return (
+        <button type="button" data-testid={id} onClick={() => setS('classic')}>
+          {s}
+        </button>
+      )
+    }
+    localStorage.setItem(MOTIF_STYLE_STORAGE_KEY, 'tetra')
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError')
+    })
+    render(
+      <>
+        <Probe id="a" />
+        <Probe id="b" />
+      </>,
+    )
+    fireEvent.click(screen.getByTestId('a'))
+    expect(screen.getByTestId('a').textContent).toBe('classic')
+    expect(screen.getByTestId('b').textContent).toBe('classic')
+    set.mockRestore()
+    // storage works again: the next choice persists and memory yields to storage
+    fireEvent.click(screen.getByTestId('a'))
+    expect(localStorage.getItem(MOTIF_STYLE_STORAGE_KEY)).toBe('classic')
   })
 })
