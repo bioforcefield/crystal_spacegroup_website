@@ -3,7 +3,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
-import { cellCenterCart, cellCornersCart, fracToCart } from '../data/math'
+import { cartesianLinear, cellCenterCart, cellCornersCart, fracToCart } from '../data/math'
+import { buildOpPath, easeInOut, ghostMatrixElements } from '../data/opPath'
 import {
   placedPositions,
   type PlacementMode,
@@ -13,6 +14,7 @@ import { orientationFromR } from './ChiralMotif'
 import MotifMesh from './motifs/MotifMesh'
 import { DEFAULT_MOTIF_STYLE, type MotifStyleId } from './motifs/motifStyles'
 import SymmetryElements from './SymmetryElements'
+import { useMotionOff } from '../hooks/motionPrefs'
 import SupercellWire from './SupercellWire'
 import {
   DEFAULT_MULTIPLES,
@@ -319,11 +321,18 @@ function PointMarker({
   )
 }
 
-const _qa = new THREE.Quaternion()
-const _qb = new THREE.Quaternion()
-const _qm = new THREE.Quaternion()
+/** Ghost flight duration in seconds (eased). */
+export const GHOST_DURATION_S = 1.6
 
-/** Remount with key={token} so each selection starts a fresh flight. */
+/**
+ * Remount with key={token} so each selection starts a fresh flight.
+ * The ghost follows {@link buildOpPath}: an honest path for the Seitz
+ * operation that maps the rendered BASE pose onto the rendered IMAGE pose
+ * (axis rotation + screw shift, reflection through the real plane + glide,
+ * or (roto)inversion through the real centre). The whole mesh — body, face
+ * and buds — is transformed by one affine matrix; no billboarding.
+ * Reduced motion: no flight (the static IMAGE already shows the endpoint).
+ */
 function GhostAnimator({
   fromPos,
   toPos,
@@ -344,50 +353,52 @@ function GhostAnimator({
   token: number
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  // Initialized from token on mount (parent remounts via key=token).
-  const [active, setActive] = useState(() => token > 0)
+  const motionOff = useMotionOff()
+  // A flight starts on mount (parent remounts via key=token); paused
+  // animations / reduced motion skip it (IMAGE is the static endpoint).
+  const [active, setActive] = useState(() => token > 0 && !motionOff)
+  if (active && motionOff) setActive(false)
   const progress = useRef(0)
-  const startPos = useRef(fromPos)
-  const endPos = useRef(toPos)
-  const startOri = useRef(orientationFromR(fromR, cell))
-  const endOri = useRef(orientationFromR(toR, cell))
+  // Rebuilt when the shown copy changes (Near ⇄ Wrap, motif moved) so a
+  // flight in progress finishes on the current path, never a stale one.
+  const pathKey = [...fromPos, ...toPos, ...fromR.flat(), ...toR.flat()].map((x) => x.toFixed(9)).join(',')
+  const path = useMemo(
+    () => buildOpPath(fromPos, fromR, toPos, toR, cell),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pathKey, cell],
+  )
+  const fromLinear = useMemo(
+    () => cartesianLinear(fromR, cell),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pathKey, cell],
+  )
+  const initialMatrix = useMemo(
+    () => new THREE.Matrix4().fromArray(ghostMatrixElements(path, 0, fromPos, fromLinear)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [path, fromLinear],
+  )
 
   useFrame((_, dt) => {
-    if (!active || !groupRef.current) return
-    progress.current = Math.min(1, progress.current + dt * 1.25)
+    const g = groupRef.current
+    if (!active || !g) return
+    progress.current = Math.min(1, progress.current + dt / GHOST_DURATION_S)
     const t = progress.current
-    const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2
-
-    const x =
-      startPos.current[0] + (endPos.current[0] - startPos.current[0]) * ease
-    const y =
-      startPos.current[1] + (endPos.current[1] - startPos.current[1]) * ease
-    const z =
-      startPos.current[2] +
-      (endPos.current[2] - startPos.current[2]) * ease +
-      Math.sin(Math.PI * ease) * 0.15
-
-    groupRef.current.position.set(x, y, z)
-
-    _qa.copy(startOri.current.quaternion)
-    _qb.copy(endOri.current.quaternion)
-    _qm.slerpQuaternions(_qa, _qb, ease)
-    groupRef.current.quaternion.copy(_qm)
-
-    const m0 = startOri.current.mirror ? -1 : 1
-    const m1 = endOri.current.mirror ? -1 : 1
-    const mx = m0 + (m1 - m0) * ease
-    const sx = Math.abs(mx) < 0.05 ? (mx >= 0 ? 0.05 : -0.05) : mx
-    const puff = 0.9 + 0.3 * Math.sin(Math.PI * ease)
-    groupRef.current.scale.set(sx * puff, puff, puff)
-
+    g.matrix.fromArray(
+      ghostMatrixElements(path, easeInOut(t), fromPos, fromLinear),
+    )
+    g.matrixWorldNeedsUpdate = true
     if (t >= 1) setActive(false)
   })
 
   if (token === 0) return null
 
   return (
-    <group ref={groupRef} visible={active}>
+    <group
+      ref={groupRef}
+      visible={active}
+      matrixAutoUpdate={false}
+      matrix={initialMatrix}
+    >
       <MotifMesh
         style={motifStyle}
         color={ghostColor}
@@ -661,7 +672,7 @@ function SceneContent({
             onSelect={onSelect}
           />
         ))}
-        <SymmetryElements demo={demo} selectedIndex={selectedIndex} />
+        <SymmetryElements demo={demo} selectedIndex={selectedIndex} placementMode={placementMode} />
         <AxisLabels demo={demo} />
         <BaseImageConnector from={baseCartesian} to={imageCartesian} />
         {visiblePoints.map((p) => {

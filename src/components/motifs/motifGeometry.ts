@@ -151,7 +151,18 @@ function place(g: THREE.BufferGeometry, F: Frame, c: V3, s: V3 = [1, 1, 1]): THR
   return g
 }
 
+/** 'lite' = low segment counts for the 2D-canvas software renderer (home page). */
+export type MotifDetail = 'full' | 'lite'
+
 class Builder {
+  readonly detail: MotifDetail
+  constructor(detail: MotifDetail = 'full') {
+    this.detail = detail
+  }
+  /** Segment count for the current detail level (full keeps the 3D-viewer mesh unchanged). */
+  seg(n: number, min: number): number {
+    return this.detail === 'full' ? n : Math.max(min, Math.round(n * 0.55))
+  }
   pieces: Piece[] = []
   body: BodyPrim[] = []
   bodyMeshPrims: BodyPrim[] = []
@@ -163,29 +174,29 @@ class Builder {
     this.body.push({ kind: 'ellip', c, F, r, k })
   }
   sphere(part: MotifPart, c: V3, r: number, w = 14, h = 10) {
-    this.pieces.push({ part, geometry: place(new THREE.SphereGeometry(r, w, h), IDENT, c) })
+    this.pieces.push({ part, geometry: place(new THREE.SphereGeometry(r, this.seg(w, 6), this.seg(h, 4)), IDENT, c) })
   }
   ellip(part: MotifPart, c: V3, F: Frame, r: V3, w = 12, h = 8) {
-    this.pieces.push({ part, geometry: place(new THREE.SphereGeometry(1, w, h), F, c, r) })
+    this.pieces.push({ part, geometry: place(new THREE.SphereGeometry(1, this.seg(w, 6), this.seg(h, 4)), F, c, r) })
   }
   rbox(part: MotifPart, c: V3, F: Frame, b: V3, r: number) {
-    const g = new RoundedBoxGeometry(2 * (b[0] + r), 2 * (b[1] + r), 2 * (b[2] + r), 2, r)
+    const g = new RoundedBoxGeometry(2 * (b[0] + r), 2 * (b[1] + r), 2 * (b[2] + r), this.detail === 'full' ? 2 : 1, r)
     this.pieces.push({ part, geometry: place(g, F, c) })
   }
   /** SDF torus lies in the local xz-plane (axis = local y). */
   torus(part: MotifPart, c: V3, F: Frame, Rm: number, r: number) {
-    const g = new THREE.TorusGeometry(Rm, r, 8, 20)
+    const g = new THREE.TorusGeometry(Rm, r, this.seg(8, 5), this.seg(20, 10))
     g.rotateX(Math.PI / 2)
     this.pieces.push({ part, geometry: place(g, F, c) })
   }
   /** Rounded cone from local y=0 (r1) to y=h (r2), like sd_rcone. */
   rcone(part: MotifPart, base: V3, F: Frame, r1: number, r2: number, h: number) {
-    const cyl = new THREE.CylinderGeometry(r2, r1, h, 12, 1, true)
+    const cyl = new THREE.CylinderGeometry(r2, r1, h, this.seg(12, 8), 1, true)
     cyl.translate(0, h / 2, 0)
     this.pieces.push({ part, geometry: place(cyl, F, base) })
-    this.pieces.push({ part, geometry: place(new THREE.SphereGeometry(r1, 12, 8), F, base) })
+    this.pieces.push({ part, geometry: place(new THREE.SphereGeometry(r1, this.seg(12, 8), this.seg(8, 5)), F, base) })
     if (r2 > 0.02) {
-      const cap = new THREE.SphereGeometry(r2, 10, 6)
+      const cap = new THREE.SphereGeometry(r2, this.seg(10, 6), this.seg(6, 4))
       cap.translate(0, h, 0)
       this.pieces.push({ part, geometry: place(cap, F, base) })
     }
@@ -217,7 +228,7 @@ class Builder {
 
   /** Smooth body: a sphere mesh whose vertices are snapped onto the SDF body. */
   bodyMesh() {
-    let g: THREE.BufferGeometry = new THREE.SphereGeometry(1, 36, 24)
+    let g: THREE.BufferGeometry = new THREE.SphereGeometry(1, this.seg(36, 20), this.seg(24, 14))
     g.deleteAttribute('uv')
     g.deleteAttribute('normal')
     g = mergeVertices(g)
@@ -235,6 +246,8 @@ class Builder {
 // ---------- the three concepts (ported from render_motifs.py) ----------
 type Concept = { b: Builder; landmarks: MotifLandmark[] }
 
+let buildDetail: MotifDetail = 'full'
+
 /**
  * A · Tribo. Arm directions keep the concept's screen layout (ball up-right,
  * cube left, cone down-right) but the z-depths were pushed apart so the
@@ -247,7 +260,7 @@ export const TRIBO_ARM_DIRS: [V3, V3, V3] = [
 ]
 
 function conceptTribo(): Concept {
-  const b = new Builder()
+  const b = new Builder(buildDetail)
   b.bodyEllip([0, 0, 0], IDENT, [0.66, 0.62, 0.6])
   const [d1, d2, d3] = TRIBO_ARM_DIRS
   b.arm(mul(d1, 0.45), d1, 0.42, 0.15, 0.11, 'coral')
@@ -269,7 +282,7 @@ function conceptTribo(): Concept {
 }
 
 function conceptLopsy(): Concept {
-  const b = new Builder()
+  const b = new Builder(buildDetail)
   b.bodyEllip([0, 0, 0], frame([0.15, 1, 0]), [0.72, 0.58, 0.58])
   const earBase: V3 = [-0.25, 0.38, -0.05]
   const earDir = nrm([-0.55, 0.85, -0.25])
@@ -336,7 +349,7 @@ export function tetraBudDirs(): V3[] {
 }
 
 function conceptTetra(): Concept {
-  const b = new Builder()
+  const b = new Builder(buildDetail)
   const V = tetraBudDirs()
   const target = nrm([0.12, 0.22, 1])
   b.bodySphere([0, 0, 0], 0.44)
@@ -391,8 +404,15 @@ function mergePart(geoms: THREE.BufferGeometry[]): THREE.BufferGeometry {
 
 const PART_ORDER: MotifPart[] = ['body', 'coral', 'mint', 'gold', 'lilac', 'foot', 'eye', 'white', 'cheek']
 
-export function buildMotifModel(style: MeshStyleId): MotifModel {
-  const { b, landmarks } = CONCEPTS[style]()
+export function buildMotifModel(style: MeshStyleId, detail: MotifDetail = 'full'): MotifModel {
+  buildDetail = detail
+  let concept: Concept
+  try {
+    concept = CONCEPTS[style]()
+  } finally {
+    buildDetail = 'full'
+  }
+  const { b, landmarks } = concept
   b.bodyMesh()
   let maxR = 0
   for (const { geometry } of b.pieces) {

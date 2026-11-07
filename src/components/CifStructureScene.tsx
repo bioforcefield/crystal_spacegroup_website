@@ -917,6 +917,7 @@ function SceneBody({
           <SymmetryElements
             demo={elementDemo}
             selectedIndex={selectedOp}
+            selectedSeitz={structure.operators.find((o) => o.index === selectedOp)}
             soft
             onlySelected={visibility === 'selected' && selectedOp !== 1}
           />

@@ -7,11 +7,11 @@ import {
   addFrac,
   applyOperator,
   applyOperatorRaw,
-  classColor,
   fracToCart,
   isImproper,
   wrap01,
 } from './math'
+import { opDisplayClass } from './elementClasses'
 import type {
   CellParams,
   GeneralPoint,
@@ -277,7 +277,8 @@ function makePoint(
     operator: op,
     improper: isImproper(op.R),
     classId: op.classId,
-    classColor: classColor(demo, op.classId),
+    // Display colour: the derived class (one source for chips, motifs, ghost, legend).
+    classColor: opDisplayClass(demo, op).color,
   }
 }
 
@@ -367,7 +368,13 @@ function placedNearest(
     demo.operators[0]
 
   if (selectedOp.classId === 'identity') {
-    return placedWrapped(demo)
+    // Identity or a pure centring translation: wrapped positions, but the
+    // IMAGE endpoint must be the selected operator's site (not BASE) so the
+    // connector / ghost reach the highlighted mate.
+    const wrapped = placedWrapped(demo)
+    const image =
+      wrapped.points.find((p) => p.index === selectedOp.index) ?? wrapped.points[0]
+    return { ...wrapped, imageCartesian: image.cartesian }
   }
 
   let bestScore = Infinity
@@ -417,10 +424,37 @@ function placedNearest(
   }
 }
 
+const placementCache = new WeakMap<SpaceGroupDemo, Map<string, PlacementResult>>()
+
+/**
+ * Placed BASE / IMAGE / mates for the selection (memoised per demo, op and
+ * mode: the panel, caption, 3D scene, 2D diagram and element overlay all ask
+ * for the same placement — 192-op groups made that visibly expensive).
+ * Results are shared; callers must not mutate them.
+ */
 export function placedPositions(
   demo: SpaceGroupDemo,
   selectedIndex: number,
   mode: PlacementMode = 'nearest',
+): PlacementResult {
+  let m = placementCache.get(demo)
+  if (!m) {
+    m = new Map()
+    placementCache.set(demo, m)
+  }
+  const key = `${mode}:${selectedIndex}`
+  let r = m.get(key)
+  if (!r) {
+    r = placedPositionsRaw(demo, selectedIndex, mode)
+    m.set(key, r)
+  }
+  return r
+}
+
+function placedPositionsRaw(
+  demo: SpaceGroupDemo,
+  selectedIndex: number,
+  mode: PlacementMode,
 ): PlacementResult {
   if (mode === 'wrapped') {
     const result = placedWrapped(demo)

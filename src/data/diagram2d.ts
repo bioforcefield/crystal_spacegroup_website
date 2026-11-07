@@ -3,6 +3,7 @@
  */
 
 import { betaRad, gammaRad } from './math'
+import type { DisplayElement } from './elementGeometry'
 import type {
   CellParams,
   GlidePlaneSpec,
@@ -350,4 +351,74 @@ export function projectedAspect(
 
 export function demoProjections(demo: SpaceGroupDemo) {
   return buildProjections(demo.cell)
+}
+
+/* ---------- derived elements (elementGeometry) projected onto the page ---------- */
+
+
+export type ProjectedElement =
+  | { el: DisplayElement; mode: 'end-on'; u: number; v: number; w: number }
+  | { el: DisplayElement; mode: 'line'; u: number; v: number; u2: number; v2: number; inclined: boolean; w: number | null }
+  | { el: DisplayElement; mode: 'trace'; u: number; v: number; u2: number; v2: number }
+  | { el: DisplayElement; mode: 'face'; w: number }
+  | { el: DisplayElement; mode: 'inclined-plane'; poly: { u: number; v: number }[] }
+  | { el: DisplayElement; mode: 'point'; u: number; v: number; w: number }
+
+/**
+ * Project one derived element along the viewing axis (fractional coordinate
+ * w): axes ∥ w are end-on symbols, other axes are segments (inclined when
+ * they also climb in w); planes containing w are traces, planes ⊥ w are
+ * faces (height given), any other plane is an inclined polygon.
+ */
+export function projectElement(el: DisplayElement, proj: ProjectionInfo): ProjectedElement | null {
+  const g = el.geom
+  const P = (p: Vec3) => projectFrac(p, proj)
+  if (g.type === 'point') {
+    const q = P(g.pos)
+    return { el, mode: 'point', u: q.u, v: q.v, w: q.w }
+  }
+  if (g.type === 'axis') {
+    const d = projectFrac(g.dir, proj)
+    if (Math.abs(d.u) < 1e-9 && Math.abs(d.v) < 1e-9) {
+      const q = P(g.p0)
+      return { el, mode: 'end-on', u: q.u, v: q.v, w: q.w }
+    }
+    const a = P(g.p0)
+    const b = P(g.p1)
+    if (Math.hypot(b.u - a.u, b.v - a.v) < 1e-6) return null
+    const inclined = Math.abs(d.w) > 1e-9
+    return { el, mode: 'line', u: a.u, v: a.v, u2: b.u, v2: b.v, inclined, w: inclined ? null : a.w }
+  }
+  const h = projectFrac(g.normal, proj)
+  if (Math.abs(h.u) < 1e-9 && Math.abs(h.v) < 1e-9) return { el, mode: 'face', w: g.offset / h.w }
+  const pts = g.poly.map(P)
+  if (Math.abs(h.w) < 1e-9) {
+    let best = { a: pts[0], b: pts[0], d: -1 }
+    for (const a of pts)
+      for (const b of pts) {
+        const dd = Math.hypot(a.u - b.u, a.v - b.v)
+        if (dd > best.d) best = { a, b, d: dd }
+      }
+    if (best.d < 1e-6) return null
+    return { el, mode: 'trace', u: best.a.u, v: best.a.v, u2: best.b.u, v2: best.b.v }
+  }
+  return { el, mode: 'inclined-plane', poly: pts.map((p) => ({ u: p.u, v: p.v })) }
+}
+
+/** Dedupe projections that coincide on the page (same symbol, same 2D footprint). */
+export function dedupeProjected(list: ProjectedElement[]): ProjectedElement[] {
+  const seen = new Map<string, ProjectedElement>()
+  const r = (x: number) => Math.round(x * 1e4) / 1e4
+  for (const p of list) {
+    let k = `${p.mode}:${p.el.symbol}:${p.el.classId}:`
+    if (p.mode === 'end-on' || p.mode === 'point') k += `${r(p.u)},${r(p.v)}`
+    else if (p.mode === 'line' || p.mode === 'trace') {
+      const a = `${r(p.u)},${r(p.v)}`
+      const b = `${r(p.u2)},${r(p.v2)}`
+      k += [a, b].sort().join('|') + (p.mode === 'line' ? `:${p.w === null ? 'i' : r(p.w)}` : '')
+    } else if (p.mode === 'face') k += r(((p.w % 1) + 1) % 1)
+    else k += p.poly.map((q) => `${r(q.u)},${r(q.v)}`).sort().join('|')
+    if (!seen.has(k)) seen.set(k, p)
+  }
+  return [...seen.values()]
 }

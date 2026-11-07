@@ -1,27 +1,74 @@
 /**
- * Decorative animated unit-cell motif for the home hero. CSS-only; no R3F.
+ * Animated unit-cell logo for the home hero: the Lopsy motif (always Lopsy,
+ * independent of the motif-style selector) undergoing 1̄ through the cell
+ * centre (the 1̄ in P2₁/c).
  *
- * One 8 s timeline (inversion through the cell centre, P1̄ / the 1̄ in P2₁/c):
- * B appears → dashed path draws B → ⊙ → I with a centre pulse → I lands as the
- * opposite-handed copy → hold → fade → repeat. In the isometric projection the
- * cell's body centre projects to (110,105); I = 2·C − B exactly and I's chiral
- * tips are B's tips point-inverted (scale(-1)), so the pair is centrosymmetric.
- * Colours follow the site legend: BASE white, IMAGE yellow, inversion pink.
- * Reduced motion: no animation, base styles show the final state (B, path, ⊙, I).
+ * The cell, dashed B→⊙→I path, ⊙ and labels stay SVG (CSS 8 s timeline). The
+ * motifs are the real 3D Lopsy mesh drawn on a 2D canvas overlay with the
+ * SAME parallel projection as the SVG cube (isometric, view along (1,1,1)),
+ * so B, ⊙ and I are spatially consistent: I = −B in 3D, hence I = 2·C − B on
+ * screen. The ghost follows x ↦ (1 − 2s)·x about the centre — every vertex
+ * shrinks through ⊙ and re-emerges inverted (not a 2D flip): B shows Lopsy's
+ * face, I shows the inverted body from behind, as a real inversion must.
+ * Reduced motion / off-screen: static B and I, no ghost. No WebGL.
  */
-export const HERO_CENTER = { x: 110, y: 105 } as const
-export const HERO_B = { x: 86, y: 91 } as const
-export const HERO_I = { x: 2 * HERO_CENTER.x - HERO_B.x, y: 2 * HERO_CENTER.y - HERO_B.y } as const
+import { useEffect, useRef } from 'react'
+import { easeInOut } from '../../data/opPath'
+import { HERO_B, HERO_CENTER, HERO_I, heroScene } from '../motifs/homeScenes'
+import { drawPose } from '../motifs/OpSceneCanvas'
+import { startLoop } from '../motifs/animLoop'
+import { fitCanvas, getLiteMesh } from '../motifs/softRender'
 
-/** Chiral motif at the origin: ball + triangle tip + square tip (as in the site's demos). */
-function Motif({ fill }: { fill: string }) {
-  return (
-    <>
-      <circle r="5" fill={fill} />
-      <path d="M-6 -4 L-12 -7 L-9 -1 Z" fill={fill} />
-      <rect x="2" y="-11" width="4" height="4" fill={fill} />
-    </>
-  )
+export { HERO_B, HERO_CENTER, HERO_I }
+
+const PERIOD_MS = 8000
+/** SVG `.hero-cell-orbit` scales the drawing ×1.14 about the cell centre. */
+const ORBIT_SCALE = 1.14
+
+/** Hero 8 s timeline (matches the CSS keyframes). Pure, for tests. */
+export function heroFrame(u: number): { bAlpha: number; iAlpha: number; s: number; ghostAlpha: number } {
+  const bAlpha = u < 0.08 ? u / 0.08 : u < 0.86 ? 1 : u < 0.96 ? 1 - (u - 0.86) / 0.1 : 0
+  const iAlpha = u < 0.44 ? 0 : u < 0.5 ? (u - 0.44) / 0.06 : u < 0.86 ? 1 : u < 0.96 ? 1 - (u - 0.86) / 0.1 : 0
+  let s = 0
+  let ghostAlpha = 0
+  if (u >= 0.1 && u < 0.12) {
+    ghostAlpha = (u - 0.1) / 0.02
+  } else if (u >= 0.12 && u < 0.48) {
+    s = easeInOut((u - 0.12) / 0.36)
+    ghostAlpha = 1
+  } else if (u >= 0.48 && u < 0.52) {
+    s = 1
+    ghostAlpha = 1 - (u - 0.48) / 0.04
+  }
+  return { bAlpha, iAlpha, s, ghostAlpha }
+}
+
+function HeroLopsyCanvas() {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const canvas = ref.current
+    if (!canvas) return
+    const sc = heroScene()
+    const mesh = getLiteMesh('lopsy')
+    const start = performance.now()
+    return startLoop({
+      el: canvas,
+      draw: (now, still, size) => {
+        const ctx = fitCanvas(canvas, sc.width, sc.height, size.w)
+        if (!ctx) return
+        ctx.clearRect(0, 0, sc.width, sc.height)
+        ctx.translate(HERO_CENTER.x, HERO_CENTER.y)
+        ctx.scale(ORBIT_SCALE, ORBIT_SCALE)
+        ctx.translate(-HERO_CENTER.x, -HERO_CENTER.y)
+        const f = still ? { bAlpha: 1, iAlpha: 1, s: 0, ghostAlpha: 0 } : heroFrame(((now - start) % PERIOD_MS) / PERIOD_MS)
+        // Back-to-front: I sits behind the centre (−depth), B in front.
+        if (f.iAlpha > 0.01) drawPose(ctx, sc, mesh, 1, '#fef08a', f.iAlpha, 0.5)
+        if (f.ghostAlpha > 0.01) drawPose(ctx, sc, mesh, f.s, '#f472b6', 0.92 * f.ghostAlpha, 0.35)
+        if (f.bAlpha > 0.01) drawPose(ctx, sc, mesh, 0, '#f8fafc', f.bAlpha, 0.25)
+      },
+    })
+  }, [])
+  return <canvas ref={ref} className="hero-lopsy" width={440} height={400} aria-hidden="true" data-hero-motif="lopsy" />
 }
 
 export default function HeroCellMotif() {
@@ -78,12 +125,10 @@ export default function HeroCellMotif() {
             </g>
 
             <g className="hero-atom-b">
-              <g transform={`translate(${HERO_B.x} ${HERO_B.y})`}><Motif fill="#f8fafc" /></g>
-              <text x={HERO_B.x - 14} y={HERO_B.y + 16} fill="#f8fafc" fontSize="9" fontWeight="700">B</text>
+              <text x={HERO_B.x - 26} y={HERO_B.y + 4} fill="#f8fafc" fontSize="9" fontWeight="700">B</text>
             </g>
             <g className="hero-atom-i">
-              <g className="hero-atom-i-pop" transform={`translate(${HERO_I.x} ${HERO_I.y}) scale(-1)`}><Motif fill="#fef08a" /></g>
-              <text x={HERO_I.x + 10} y={HERO_I.y - 8} fill="#fef08a" fontSize="9" fontWeight="700">I</text>
+              <text x={HERO_I.x + 19} y={HERO_I.y + 4} fill="#fef08a" fontSize="9" fontWeight="700">I</text>
             </g>
 
             <g className="hero-cell-label" fill="#38bdf8" fontSize="10" fontWeight="700">
@@ -94,6 +139,7 @@ export default function HeroCellMotif() {
             </g>
           </g>
         </svg>
+        <HeroLopsyCanvas />
       </div>
     </div>
   )

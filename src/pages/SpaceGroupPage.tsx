@@ -23,6 +23,12 @@ import {
 import SupercellPicker from '../components/SupercellPicker'
 import VisitCounter from '../components/VisitCounter'
 import MotifStylePicker, { useMotifStyle } from '../components/motifs/MotifStylePicker'
+import { opClass, selectionLabels } from '../data/opLabels'
+import { legendClasses } from '../data/elementClasses'
+import { fmtVec } from '../data/opClassify'
+import { useAnimationsPaused, useMotionOff } from '../hooks/motionPrefs'
+import AnimationPauseToggle from '../components/AnimationPauseToggle'
+import { elementOverlay } from '../data/elementSelection'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -32,6 +38,15 @@ export default function SpaceGroupPage({ demo }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(1)
   const [motifStyle, setMotifStyle] = useMotifStyle()
   const [animateToken, setAnimateToken] = useState(0)
+  const [replayStatus, setReplayStatus] = useState('')
+  const motionOff = useMotionOff()
+  const animPaused = useAnimationsPaused()
+  // Clear the replay status when motion turns off (not re-announced later).
+  const [prevMotionOff, setPrevMotionOff] = useState(motionOff)
+  if (prevMotionOff !== motionOff) {
+    setPrevMotionOff(motionOff)
+    if (motionOff) setReplayStatus('')
+  }
   const [resetToken, setResetToken] = useState(0)
   const [placementMode, setPlacementMode] = useState<PlacementMode>('nearest')
   // Dense packs (Z>48) default to BASE+IMAGE so the cell stays readable (S5).
@@ -58,6 +73,7 @@ export default function SpaceGroupPage({ demo }: Props) {
 
   const handleSelect = useCallback((index: number) => {
     setSelectedIndex(index)
+    setReplayStatus('')
     setAnimateToken((t) => t + 1)
   }, [])
 
@@ -88,12 +104,17 @@ export default function SpaceGroupPage({ demo }: Props) {
     if (idx != null) handleSelect(idx)
   }
 
-  const selectedOp = demo.operators.find((o) => o.index === selectedIndex)
-  const liveStatus = selectedOp
-    ? `Operator ${selectedOp.index}: ${selectedOp.label}. Placement ${
-        placementMode === 'nearest' ? 'Near' : 'Wrap'
-      }.${showAllSites ? '' : ' Showing BASE and IMAGE only.'}`
-    : ''
+  const selection = useMemo(
+    () => selectionLabels(demo, selectedIndex, placementMode),
+    [demo, selectedIndex, placementMode],
+  )
+  const overlay = useMemo(
+    () => elementOverlay(demo, selectedIndex, placementMode),
+    [demo, selectedIndex, placementMode],
+  )
+  const liveStatus = `${selection.caption} Placement ${
+    placementMode === 'nearest' ? 'Near' : 'Wrap'
+  }.${showAllSites ? '' : ' Showing BASE and IMAGE only.'}`
 
   return (
     <div className={`app layout-demo mobile-pane-${mobilePane}`}>
@@ -108,15 +129,12 @@ export default function SpaceGroupPage({ demo }: Props) {
         <div className="viewport-toolbar">
           <div className="legend-stack">
             <div className="legend class-legend">
-              {demo.classLegendOrder.map((id) => {
-                const c = demo.symmetryClasses[id]
-                return (
-                  <span key={id} className="legend-item">
-                    <span className="swatch" style={{ background: c.color }} />
-                    {c.label}
-                  </span>
-                )
-              })}
+              {legendClasses(demo, [selection.shownClass.id]).map((c) => (
+                <span key={c.id} className="legend-item">
+                  <span className="swatch" style={{ background: c.color }} />
+                  {c.label}
+                </span>
+              ))}
             </div>
             <details className="legend-details">
               <summary className="legend-details-summary">Legend</summary>
@@ -134,27 +152,15 @@ export default function SpaceGroupPage({ demo }: Props) {
                 <span className="chip image">IMAGE</span>
               </div>
               <div className="legend elements-legend">
-                {demo.inversionCenters.length > 0 && (
-                  <>
-                    <span className="chip element">⊙</span> inversion
-                    <span className="sep">·</span>
-                  </>
-                )}
-                {demo.screwAxes.length > 0 && (
-                  <>
-                    <span className="chip element">‖</span> 2 / 2₁ / n-fold
-                    <span className="sep">·</span>
-                  </>
-                )}
-                {demo.glidePlanes.length > 0 && (
-                  <>
-                    <span className="chip element">▭</span> mirror / glide
-                    <span className="sep">·</span>
-                  </>
-                )}
-                {demo.geometryLimited
-                  ? 'limited geometry overlays'
-                  : 'selected element emphasized; others faint'}
+                <span className="chip element">⊙</span> centre
+                <span className="sep">·</span>
+                <span className="chip element">‖</span> axis
+                <span className="sep">·</span>
+                <span className="chip element">▭</span> mirror / glide
+                <span className="sep">·</span>
+                {overlay.limited
+                  ? overlay.note
+                  : 'selected element (the shown copy\'s) emphasized; others faint'}
               </div>
             </details>
           </div>
@@ -263,10 +269,69 @@ export default function SpaceGroupPage({ demo }: Props) {
             cap={SG_MOTIF_CAP}
           />
         )}
-        {demo.geometryLimited && demo.geometryNote && (
-          <p className="geometry-note" role="note">
-            {demo.geometryNote}
-          </p>
+        {selectedIndex !== 1 && (
+          <div className="op-motion" data-op-kind={selection.canonical.kind} data-shown-kind={selection.shown.kind}>
+            <div className="op-motion-row">
+              <p className="op-motion-lead">
+                {selection.motion.plain}
+                {motionOff && (
+                  <span className="op-motion-still" id="op-motion-still-note">
+                    {' '}
+                    {animPaused ? 'Animations are paused' : 'Reduced motion is on'}: showing the end position.
+                  </span>
+                )}
+              </p>
+              {animPaused && <AnimationPauseToggle className="btn-ghost" />}
+              <button
+                type="button"
+                className="btn op-replay"
+                onClick={() => {
+                  setAnimateToken((t) => t + 1)
+                  // Alternate a trailing no-break space so a repeated Replay is announced again.
+                  setReplayStatus((prev) => `Replaying op ${selectedIndex}.${prev.endsWith('\u00a0') ? '' : '\u00a0'}`)
+                }}
+                disabled={motionOff}
+                aria-describedby={motionOff ? 'op-motion-still-note' : undefined}
+                title={motionOff ? 'Animations are off; the end position is shown' : 'Replay the ghost path from BASE to IMAGE'}
+              >
+                <span aria-hidden="true">▶</span> Replay
+              </button>
+            </div>
+            <details className="op-motion-details">
+              <summary>Operation details</summary>
+              <p>
+                <strong>
+                  Op {selection.op.index} <span className="mono nowrap">{selection.op.triplet}</span>
+                </strong>
+                {': '}
+                <span className="op-motion-label">{selection.canonical.label}</span>
+                {' · ITA '}
+                <span className="mono nowrap op-motion-symbol">{selection.canonical.symbol}</span>
+              </p>
+              {selection.shifted && (
+                <p className="op-motion-copy">
+                  Shown copy adds lattice <span className="mono nowrap">{fmtVec(selection.shift)}</span>
+                  {selection.kindDiffers ? (
+                    <>
+                      {': '}
+                      {selection.shown.label} · <span className="mono nowrap">{selection.shown.symbol}</span>
+                    </>
+                  ) : (
+                    <>
+                      {' '}(<span className="mono nowrap">{selection.shown.symbol}</span>)
+                    </>
+                  )}
+                  . Near and Wrap can draw different lattice copies of the same operation.
+                </p>
+              )}
+              <p className="op-motion-path">{selection.motion.lead}</p>
+              {selection.motion.notes.map((n) => (
+                <p key={n} className="op-motion-note">
+                  {n}
+                </p>
+              ))}
+            </details>
+          </div>
         )}
         {placementMode === 'nearest' && (
           <p className="placement-near-hint" role="note">
@@ -314,9 +379,9 @@ export default function SpaceGroupPage({ demo }: Props) {
                   } as CSSProperties
                 }
                 onClick={() => handleSelect(op.index)}
-                title={`${op.triplet} · ${op.label}`}
+                title={`${op.triplet} · ${opClass(demo, op).label}`}
                 aria-pressed={active}
-                aria-label={`Operator ${op.index}: ${op.triplet}, ${op.label}`}
+                aria-label={`Operator ${op.index}: ${op.triplet}, ${opClass(demo, op).label}`}
               >
                 <span className="op-chip-idx">{op.index}</span>
                 <span className="op-chip-triplet">{op.triplet}</span>
@@ -356,6 +421,9 @@ export default function SpaceGroupPage({ demo }: Props) {
         <div className="sr-only" aria-live="polite" aria-atomic="true">
           {liveStatus}
         </div>
+        <div className="sr-only" role="status" aria-live="polite">
+          {replayStatus}
+        </div>
         <footer className="viewport-footer">
           <span className="viewport-footer-text">
             {demo.meta.hm} ({demo.meta.number}) · BASE always marked · click an
@@ -364,9 +432,9 @@ export default function SpaceGroupPage({ demo }: Props) {
             {placementMode === 'nearest'
               ? ' · Near (3D + 2D) may sit just outside the cell (UCL-style)'
               : ' · Wrap motifs into [0, 1)³ / [0, 1)²'}
-            {demo.screwAxes.length > 0
-              ? ' · Ghost flight is schematic, not the crystallographic screw path'
-              : ''}
+            {' · Ghost path: turns about the real axis (screws also advance),'}
+            {' reflects through the real plane (glides also slide), or shrinks'}
+            {' through the inversion centre; in-between frames are not symmetry operations'}
             {!showAllSites ? ' · Showing only BASE + IMAGE' : ''}
             {demo.cell.alphaDeg && demo.cell.alphaDeg !== 90
               ? ` · α = ${demo.cell.alphaDeg}°`

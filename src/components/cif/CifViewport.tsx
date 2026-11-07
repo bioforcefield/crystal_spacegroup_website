@@ -16,6 +16,7 @@ import type {
   CifVisibility,
 } from './cifViewTypes'
 import VisitCounter from '../VisitCounter'
+import { legendClasses } from '../../data/elementClasses'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
 import { describeCifStructure } from '../../data/a11y/structureSummary'
@@ -715,7 +716,7 @@ export default function CifViewport({
           : !elementDemo
             ? 'Needs a resolvable space-group number (1–230)'
             : elementCount === 0
-              ? 'No drawable loci for this group yet (operators still listed)'
+              ? 'This group has no symmetry elements besides translations'
               : showSymmetryElements
                 ? 'Hide screw / glide / inversion overlays'
                 : 'Show screw / glide / inversion overlays'
@@ -961,23 +962,14 @@ export default function CifViewport({
           {elementDemo && symOn && (
             <span className="cif-elements-inline" aria-label="Symmetry element classes">
               <span className="cif-legend-sep" aria-hidden="true">|</span>
-              {elementDemo.classLegendOrder
-                .filter((id) => id !== 'identity')
-                .map((id) => {
-                  const cls = elementDemo.symmetryClasses[id]
-                  if (!cls) return null
-                  return (
-                    <span key={id} className="legend-item">
-                      <span className="swatch" style={{ background: cls.color }} />
-                      {cls.label}
-                    </span>
-                  )
-                })}
-              {elementDemo.geometryLimited && (
-                <span className="legend-item muted" title={elementDemo.geometryNote}>
-                  limited geometry
-                </span>
-              )}
+              {legendClasses(elementDemo)
+                .filter((cls) => cls.id !== 'identity')
+                .map((cls) => (
+                  <span key={cls.id} className="legend-item">
+                    <span className="swatch" style={{ background: cls.color }} />
+                    {cls.label}
+                  </span>
+                ))}
             </span>
           )}
         </div>

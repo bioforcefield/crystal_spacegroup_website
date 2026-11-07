@@ -14,6 +14,12 @@ import {
   inversionJunction,
   inversionTipScreen,
 } from '../data/primer/primerGeometry'
+import MotifStylePicker, { useMotifStyle } from './motifs/MotifStylePicker'
+import OpSceneCanvas from './motifs/OpSceneCanvas'
+import AnimationPauseToggle from './AnimationPauseToggle'
+import { primerScene, type OpScene } from './motifs/homeScenes'
+import type { MeshStyleId } from './motifs/motifGeometry'
+import { startLoop } from './motifs/animLoop'
 
 type DemoId =
   | 'identity'
@@ -29,6 +35,8 @@ interface DemoSpec {
   subtitle: string
   color: string
   body: string
+  /** Style-neutral copy for the 3D motif styles (body mentions the classic L). */
+  styledBody?: string
 }
 
 const DEMOS: DemoSpec[] = [
@@ -45,6 +53,7 @@ const DEMOS: DemoSpec[] = [
     subtitle: '−x, −y, −z (about a point)',
     color: SYMMETRY_CLASSES.inversion.color,
     body: 'Point reflection through a center (⊙): every tip of the isometric L passes through ⊙ to −r. Improper — enantiomorph. Distinct from a 2-fold (proper 180° spin that keeps the same hand).',
+    styledBody: 'Point reflection through a center (⊙): every point of the motif passes through ⊙ to −r, so it shrinks onto the centre and re-emerges inverted. Improper — enantiomorph. Distinct from a 2-fold (proper 180° spin that keeps the same hand).',
   },
   {
     id: 'twofold',
@@ -52,6 +61,7 @@ const DEMOS: DemoSpec[] = [
     subtitle: '180° · axis ⊥ page',
     color: '#67e8f9',
     body: 'Top-down view: rotate 180° about an axis pointing at you (ITA lens). Proper — same enantiomorph; the isometric L ends upside-down. No translation along the axis.',
+    styledBody: 'Top-down view: rotate 180° about an axis pointing at you (ITA lens). Proper — same enantiomorph; the motif still faces you but ends upside-down. No translation along the axis.',
   },
   {
     id: 'screw',
@@ -59,6 +69,7 @@ const DEMOS: DemoSpec[] = [
     subtitle: 'side view: 180° + ½ along axis',
     color: SYMMETRY_CLASSES.screw.color,
     body: 'Side view of a 2₁: 180° about the vertical screw axis plus translation by ½ along that same axis. Proper — same enantiomorph (foot goes from toward→away after the turn). Distinct from a pure 2-fold (no slide) and from a mirror (hand would flip).',
+    styledBody: 'Side view of a 2₁: 180° about the vertical screw axis plus translation by ½ along that same axis. Proper — same enantiomorph (the face turns away after the half turn). Distinct from a pure 2-fold (no slide) and from a mirror (hand would flip).',
   },
   {
     id: 'mirror',
@@ -66,6 +77,7 @@ const DEMOS: DemoSpec[] = [
     subtitle: 'reflection',
     color: '#e2e8f0',
     body: 'Reflect across a plane. Improper — opposite enantiomorph of the isometric L (arm flips side; foot stays toward the viewer). (Pbca has no mirrors; it uses glides instead.)',
+    styledBody: 'Reflect across a plane: the motif flattens onto the plane and emerges as its mirror image. Improper — opposite enantiomorph. (Pbca has no mirrors; it uses glides instead.)',
   },
   {
     id: 'glide',
@@ -266,7 +278,7 @@ function Motif({
     >
       <MotifGlyph fill={fill} enantiomorph={enantiomorph} yawDeg={yawDeg} objectScale={objectScale} />
       {label ? (
-        <text x={0} y={20} textAnchor="middle" fill={fill} fontSize={8} fontWeight={700}>
+        <text x={0} y={20} textAnchor="middle" fill={fill} fontSize={10} className="primer-label" fontWeight={700}>
           {label}
         </text>
       ) : null}
@@ -339,7 +351,7 @@ function StaticEndpoint({
       <g transform={transform}>
         <MotifLocal fill={fill} />
       </g>
-      <text x={labelX} y={labelY} textAnchor="middle" fill={fill} fontSize={8} fontWeight={700}>
+      <text x={labelX} y={labelY} textAnchor="middle" fill={fill} fontSize={10} className="primer-label" fontWeight={700}>
         {label}
       </text>
     </g>
@@ -361,6 +373,14 @@ function CellFrame() {
   )
 }
 
+/** Shared mover timeline: move 0–0.7, hold, fade out, reset and fade in. */
+function cyclePhase(u: number): { p: number; opacity: number } {
+  if (u < 0.7) return { p: u / 0.7, opacity: 1 }
+  if (u < 0.82) return { p: 1, opacity: 1 }
+  if (u < 0.92) return { p: 1, opacity: 1 - (u - 0.82) / 0.1 }
+  return { p: 0, opacity: (u - 0.92) / 0.08 }
+}
+
 /**
  * 2₁ mover: true screw = 180° about the vertical axis + ½ translation along it.
  * Position orbits from left→right of the axis while yaw 0→180 (proper; hand kept).
@@ -373,45 +393,22 @@ function ScrewGhost({ color }: { color: string }) {
   useEffect(() => {
     const el = gRef.current
     if (!el) return
-    const card = el.closest('.primer-card')
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    let raf = 0
-    let start = performance.now()
+    const start = performance.now()
     const PERIOD = 3400
-
-    const tick = (now: number) => {
-      const inview = !card || card.classList.contains('is-inview')
-      const still = reduce?.matches || !inview
-      if (still) {
-        setPose({ ...SCREW_PRIMER.B, opacity: 0, active: false })
-        raf = requestAnimationFrame(tick)
-        return
-      }
-      const u = ((now - start) % PERIOD) / PERIOD
-      // Motion phase 0–0.72: screw; hold; fade; reset
-      let p: number
-      let opacity = 1
-      if (u < 0.7) {
-        p = u / 0.7
-      } else if (u < 0.82) {
-        p = 1
-      } else if (u < 0.92) {
-        p = 1
-        opacity = 1 - (u - 0.82) / 0.1
-      } else {
-        p = 0
-        opacity = (u - 0.92) / 0.08
-      }
-      // Ease in-out
-      const e = screwEase(p)
-      // Orbit in the horizontal plane about axis x=60: angle 0→π (left → right)
-      // Start at screen-left of axis; after 180° about vertical, on the right.
-      const { x, y, yaw } = screwPose(e)
-      setPose({ x, y, yaw, opacity, active: true })
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return startLoop({
+      el,
+      draw: (now, still) => {
+        if (still) {
+          setPose({ ...SCREW_PRIMER.B, opacity: 0, active: false })
+          return
+        }
+        const { p, opacity } = cyclePhase(((now - start) % PERIOD) / PERIOD)
+        // Orbit about the vertical axis: 180° turn + ½ translation (left → right).
+        const e = screwEase(p)
+        const { x, y, yaw } = screwPose(e)
+        setPose({ x, y, yaw, opacity, active: true })
+      },
+    })
   }, [])
 
   return (
@@ -446,41 +443,20 @@ function InvGhost({ color }: { color: string }) {
   useEffect(() => {
     const el = gRef.current
     if (!el) return
-    const card = el.closest('.primer-card')
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    let raf = 0
-    let start = performance.now()
+    const start = performance.now()
     const PERIOD = 3200
-
-    const tick = (now: number) => {
-      const inview = !card || card.classList.contains('is-inview')
-      const still = reduce?.matches || !inview
-      if (still) {
-        setPose({ s: 1, opacity: 0, active: false })
-        raf = requestAnimationFrame(tick)
-        return
-      }
-      const u = ((now - start) % PERIOD) / PERIOD
-      let p: number
-      let opacity = 1
-      if (u < 0.7) {
-        p = u / 0.7
-      } else if (u < 0.82) {
-        p = 1
-      } else if (u < 0.92) {
-        p = 1
-        opacity = 1 - (u - 0.82) / 0.1
-      } else {
-        p = 0
-        opacity = (u - 0.92) / 0.08
-      }
-      const e = screwEase(p)
-      const s = inversionScale(e)
-      setPose({ s, opacity, active: true })
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return startLoop({
+      el,
+      draw: (now, still) => {
+        if (still) {
+          setPose({ s: 1, opacity: 0, active: false })
+          return
+        }
+        const { p, opacity } = cyclePhase(((now - start) % PERIOD) / PERIOD)
+        const e = screwEase(p)
+        setPose({ s: inversionScale(e), opacity, active: true })
+      },
+    })
   }, [])
 
   const jx = center.x + pose.s * offset.x
@@ -508,7 +484,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           <CellFrame />
           <g className="primer-mover primer-identity-pulse" transform="translate(60,34)">
             <MotifLocal fill={color} />
-            <text x={0} y={20} textAnchor="middle" fill={color} fontSize={8} fontWeight={700}>
+            <text x={0} y={20} textAnchor="middle" fill={color} fontSize={10} className="primer-label" fontWeight={700}>
               BASE
             </text>
           </g>
@@ -547,31 +523,31 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             <MotifLocal fill={color} objectScale={1} />
           </g>
           <text
-            className="primer-marker"
+            className="primer-marker primer-label"
             x={jB.x}
             y={jB.y + 20}
             textAnchor="middle"
             fill={color}
-            fontSize={8}
+            fontSize={10}
             fontWeight={700}
             opacity={0.35}
           >
             B
           </text>
           <g
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
             opacity={0.35}
             transform={`translate(${jI.x},${jI.y})`}
           >
             <MotifLocal fill={color} objectScale={-1} />
           </g>
           <text
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
             x={jI.x}
             y={jI.y + 20}
             textAnchor="middle"
             fill={color}
-            fontSize={8}
+            fontSize={10}
             fontWeight={700}
             opacity={0.35}
           >
@@ -600,24 +576,24 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
           {/* Static B/I = primer-twofold rotor at 0° / 180° about lens (60,36) */}
           <g className="primer-marker" opacity={0.35} transform={PRIMER_ENDPOINT_TRANSFORMS.twofold.B}>
             <Motif x={38} y={36} fill={color} enantiomorph={false} />
-            <text x={38} y={56} textAnchor="middle" fill={color} fontSize={8} fontWeight={700}>
+            <text x={38} y={56} textAnchor="middle" fill={color} fontSize={10} className="primer-label" fontWeight={700}>
               B
             </text>
           </g>
           <g
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
             opacity={0.35}
             transform={PRIMER_ENDPOINT_TRANSFORMS.twofold.I}
           >
             <Motif x={38} y={36} fill={color} enantiomorph={false} />
           </g>
           <text
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
             x={82}
             y={56}
             textAnchor="middle"
             fill={color}
-            fontSize={8}
+            fontSize={10}
             fontWeight={700}
             opacity={0.35}
           >
@@ -700,9 +676,9 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             opacity={0.35}
             enantiomorph={false}
             yawDeg={180}
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
           />
-          <text x={10} y={74} fill={color} fontSize={7} fontWeight={600} opacity={0.9}>
+          <text x={10} y={74} fill={color} fontSize={9} fontWeight={600} className="primer-caption">
             proper — hand kept
           </text>
           <path
@@ -748,9 +724,9 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             label="I"
             labelX={86}
             labelY={56}
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
           />
-          <text x={10} y={74} fill="#fde68a" fontSize={7} fontWeight={600} opacity={0.9}>
+          <text x={10} y={74} fill="#fde68a" fontSize={9} fontWeight={600} className="primer-caption">
             improper — hand flips
           </text>
           <g className="primer-mover primer-mirror-rotor">
@@ -786,7 +762,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
             label="I"
             labelX={88}
             labelY={70}
-            className="primer-marker primer-static-end"
+            className="primer-marker primer-static-end primer-label"
           />
           <path
             d="M38 28 H72"
@@ -809,7 +785,7 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
               <path d="M0 0 L10 5 L0 10 z" fill={color} />
             </marker>
           </defs>
-          <text x={50} y={26} fill={color} fontSize={8} fontWeight={700}>
+          <text x={50} y={26} fill={color} fontSize={10} className="primer-label" fontWeight={700}>
             glide →
           </text>
           <g className="primer-mover primer-glide-ghost">
@@ -820,8 +796,19 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
   }
 }
 
+const sceneCache = new Map<DemoId, OpScene>()
+function sceneFor(id: DemoId): OpScene {
+  let s = sceneCache.get(id)
+  if (!s) {
+    s = primerScene(id)
+    sceneCache.set(id, s)
+  }
+  return s
+}
+
 export default function SymmetryPrimer() {
   const rootRef = useRef<HTMLDivElement>(null)
+  const [style, setStyle] = useMotifStyle()
 
   useEffect(() => {
     const root = rootRef.current
@@ -844,7 +831,12 @@ export default function SymmetryPrimer() {
   }, [])
 
   return (
-    <div className="primer-grid" ref={rootRef}>
+    <>
+    <div className="primer-toolbar">
+      <MotifStylePicker value={style} onChange={setStyle} />
+      <AnimationPauseToggle />
+    </div>
+    <div className="primer-grid" ref={rootRef} data-motif-style={style}>
       {DEMOS.map((d) => (
         <article
           key={d.id}
@@ -853,15 +845,20 @@ export default function SymmetryPrimer() {
           style={{ '--primer': d.color } as CSSProperties}
         >
           <div className="primer-art">
-            <DemoArt id={d.id} color={d.color} />
+            {style === 'classic' ? (
+              <DemoArt id={d.id} color={d.color} />
+            ) : (
+              <OpSceneCanvas scene={sceneFor(d.id)} style={style as MeshStyleId} color={d.color} />
+            )}
           </div>
           <div className="primer-copy">
             <h3>{d.title}</h3>
             <p className="primer-sub">{d.subtitle}</p>
-            <p>{d.body}</p>
+            <p>{style === 'classic' ? d.body : (d.styledBody ?? d.body)}</p>
           </div>
         </article>
       ))}
     </div>
+    </>
   )
 }
