@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { getDemo } from '../registry'
 import { classifySeitz, fmtVec, shownLatticeShift, type OpClassification } from '../opClassify'
-import { opClass } from '../elementClasses'
+import { groupHex, opClass } from '../elementClasses'
 import { selectionLabels } from '../opLabels'
 import { placedPositions, type PlacementMode } from '../nearestImages'
 import { buildOpPath } from '../opPath'
@@ -73,25 +73,28 @@ describe('hand-checked ITA regressions (from the review)', () => {
 describe('centred groups: element type modulo the full translation lattice', () => {
   const cases: [number, number, string, string, string][] = [
     // [sg, op, triplet, ITA operation symbol, element label]
-    [209, 41, '-x,z+1/2,y+1/2', '2(0,½,½) 0, y, y', '2-fold rotation ‖ [011]'], // F: (0,½,½) is a lattice vector
-    [209, 80, 'y+1/2,x+1/2,-z', '2(½,½,0) x, x, 0', '2-fold rotation ‖ [110]'],
+    [209, 41, '-x,z+1/2,y+1/2', '2(0,½,½) 0, y, y', '2(0,½,½): 2-fold rotation + advance (0,½,½), on a 2-fold rotation axis ‖ [011]'], // F: (0,½,½) is a lattice vector
+    [209, 80, 'y+1/2,x+1/2,-z', '2(½,½,0) x, x, 0', '2(½,½,0): 2-fold rotation + advance (½,½,0), on a 2-fold rotation axis ‖ [110]'],
     [199, 12, 'y+1/2,-z+1/2,-x', '3⁺(⅓,⅓,−⅓) x, x−⅙, −x+⅓', '3₂ screw ‖ [111̄]'], // I period along ⟨111⟩ is ½
-    [197, 17, 'z+1/2,x+1/2,y+1/2', '3⁺(½,½,½) x, x, x', '3-fold rotation (3⁺) ‖ [111]'], // (½,½,½) = I centring
+    [197, 17, 'z+1/2,x+1/2,y+1/2', '3⁺(½,½,½) x, x, x', '3⁺(½,½,½): 3-fold rotation + advance (½,½,½), on a 3-fold rotation axis ‖ [111]'], // (½,½,½) = I centring
     [127, 8, 'y+1/2,x+1/2,-z', '2(½,½,0) x, x, 0', '2₁ screw ‖ [110]'], // P: diagonal 2₁
     [140, 24, 'y+1/2,x+1/2,-z', '2(½,½,0) x, x, 0', '2₁ screw ‖ [110]'], // I: (½,½,½) not ∥ [110]
     [76, 4, 'y,-x,z+3/4', '4⁻(0,0,¾) 0, 0, z', '4₁ screw ‖ c'],
     [78, 4, 'y,-x,z+1/4', '4⁻(0,0,¼) 0, 0, z', '4₃ screw ‖ c'],
     [52, 2, '-x+1/2,-y,z', '2 ¼, 0, z', '2-fold rotation ‖ c'],
     [52, 4, '-x+1/2,y+1/2,-z+1/2', '2(0,½,0) ¼, y, ¼', '2₁ screw ‖ b'],
-    [64, 6, 'x+1/2,y,-z+1/2', 'a x, y, ¼', 'e-glide (double glide), plane x, y, ¼, glide (½,0,0)'], // Cmce
-    [64, 14, 'x,y+1/2,-z+1/2', 'b x, y, ¼', 'e-glide (double glide), plane x, y, ¼, glide (½,0,0)'],
-    [65, 14, 'x+1/2,y+1/2,-z', 'n(½,½,0) x, y, 0', 'mirror, plane x, y, 0'], // Cmmm: slide is the C vector
+    [64, 6, 'x+1/2,y,-z+1/2', 'a x, y, ¼', 'a-glide reflection, on an e-glide (double glide) plane x, y, ¼'], // Cmce
+    [64, 14, 'x,y+1/2,-z+1/2', 'b x, y, ¼', 'b-glide reflection, on an e-glide (double glide) plane x, y, ¼'],
+    [65, 14, 'x+1/2,y+1/2,-z', 'n(½,½,0) x, y, 0', 'n-glide reflection (½,½,0), on the mirror plane x, y, 0'], // Cmmm: slide is the C vector
     [88, 15, 'x,y+1/2,-z+1/4', 'b x, y, ⅛', 'b-glide, plane x, y, ⅛, glide (0,½,0)'], // I4₁/a
-    [109, 14, 'y+1/2,x,z+3/4', 'd(¼,¼,−¼) x, x−¼, z', 'd-glide, plane x, x−¼, z, glide (¼,¼,−¼)'], // I4₁md
-    [122, 14, 'y+1/2,x,z+3/4', 'd(¼,¼,−¼) x, x−¼, z', 'd-glide, plane x, x−¼, z, glide (¼,¼,−¼)'], // I-42d
-    [108, 14, 'y+1/2,x+1/2,z', 'g(½,½,0) x, x, z', 'c-glide, plane x, x, z, glide (0,0,½)'], // I4cm: ½[110] ≡ ½c mod I
-    [166, 23, '-x+y+2/3,y+1/3,z+1/3', 'g(⅙,⅓,⅓) x, 2x−½, z', 'glide, plane x, 2x−½, z, glide (½,1,0)'], // hex ½[120]: g, not n
-    [161, 10, '-y+2/3,-x+1/3,z+5/6', 'g(⅙,−⅙,−⅙) x, −x+½, z', 'n-glide, plane x, −x+½, z, glide (½,−½,½)'],
+    [109, 14, 'y+1/2,x,z+3/4', 'd(¼,¼,¾) x, x−¼, z', 'd-glide reflection (¼,¼,¾), on a d-glide plane x, x−¼, z (element glide (¼,¼,−¼))'], // I4₁md
+    [122, 14, 'y+1/2,x,z+3/4', 'd(¼,¼,¾) x, x−¼, z', 'd-glide reflection (¼,¼,¾), on a d-glide plane x, x−¼, z (element glide (¼,¼,−¼))'], // I-42d
+    [108, 14, 'y+1/2,x+1/2,z', 'g(½,½,0) x, x, z', 'glide reflection (½,½,0), on a c-glide plane x, x, z (element glide (0,0,½))'], // I4cm: ½[110] ≡ ½c mod I
+    [166, 23, '-x+y+2/3,y+1/3,z+1/3', 'g(⅙,⅓,⅓) x, 2x−½, z', 'glide reflection (⅙,⅓,⅓), on a glide plane x, 2x−½, z (element glide (½,1,0))'], // hex ½[120]: g, not n
+    [161, 10, '-y+2/3,-x+1/3,z+5/6', 'g(⅙,−⅙,⅚) x, −x+½, z', 'glide reflection (⅙,−⅙,⅚), on a glide plane x, −x+½, z (element glide (−⅙,⅙,⅙))'], // R3c: g, not n (hex axes)
+    [161, 16, '-y+1/3,-x+2/3,z+1/6', 'g(−⅙,⅙,⅙) x, −x+½, z', 'glide, plane x, −x+½, z, glide (−⅙,⅙,⅙)'],
+    [167, 22, '-y+2/3,-x+1/3,z+5/6', 'g(⅙,−⅙,⅚) x, −x+½, z', 'glide reflection (⅙,−⅙,⅚), on a glide plane x, −x+½, z (element glide (−⅙,⅙,⅙))'], // R-3c
+    [167, 34, '-y+1/3,-x+2/3,z+1/6', 'g(−⅙,⅙,⅙) x, −x+½, z', 'glide, plane x, −x+½, z, glide (−⅙,⅙,⅙)'],
   ]
   for (const [sg, idx, triplet, symbol, label] of cases) {
     it(`SG ${sg} op ${idx} ${triplet} → ${label}`, () => {
@@ -146,6 +149,9 @@ function evalLocus(locus: string, vals: Record<string, number>): Vec3 {
 
 /** Group translations (Z³ plus centring vectors) as a membership test. */
 let latticeT: Vec3[] = [[0, 0, 0]]
+/** Hexagonal axes (some W not a signed permutation): no n / d glide letters. */
+let oracleHex = false
+const isHexOps = (ops: readonly { R: Mat3 }[]) => ops.some((o) => o.R.some((r) => r.filter((x) => x !== 0).length > 1))
 const inGroupLattice = (v: Vec3) => latticeT.some((c) => sub(v, c).every(isInt))
 function setLattice(ts: Vec3[]) {
   latticeT = ts
@@ -167,6 +173,38 @@ function oracleLetter(h: Vec3, g: Vec3): string {
   const axes = [0, 1, 2].filter((i) => h[i] === 0 && same([0, 1, 2].map((k) => (k === i ? 0.5 : 0)) as Vec3))
   if (axes.length >= 2) return 'e'
   if (axes.length === 1) return 'abc'[axes[0]]
+  if (oracleHex) return 'g'
+  const mesh = meshOf(h)
+  const nz = (v: Vec3) => v.filter((x) => x !== 0).length
+  const halfDiag = add(mesh[0], mesh[1]).map((x) => x / 2) as Vec3
+  const halves: Vec3[] = []
+  const quarters: Vec3[] = []
+  const Q = [-0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75]
+  for (const x of Q) for (const y of Q) for (const z of Q) {
+    const v: Vec3 = [x, y, z]
+    if (nz(v) < 2 || dotI(h, v) !== 0) continue
+    if (v.every((t) => t === 0 || Math.abs(t) === 0.5)) halves.push(v)
+    if (v.every((t) => t === 0 || Math.abs(t) === 0.25 || Math.abs(t) === 0.75)) quarters.push(v)
+  }
+  if (same(halfDiag) && halves.some(same)) return 'n'
+  if (quarters.some(same)) return 'd'
+  return 'g'
+}
+
+/** Letter of the operation's own (unreduced) glide vector — ITA operation symbol. */
+function oracleOpLetter(h: Vec3, g: Vec3): string {
+  const nzI = [0, 1, 2].filter((i) => Math.abs(g[i]) > 1e-9)
+  if (nzI.length === 1 && Math.abs(Math.abs(g[nzI[0]]) - 0.5) < 1e-9) return 'abc'[nzI[0]]
+  if (oracleHex) return 'g'
+  const [a, b] = meshOf(h)
+  for (const s1 of [1, -1]) for (const s2 of [1, -1])
+    if (close(g, [0, 1, 2].map((i) => (s1 * a[i] + s2 * b[i]) / 2) as Vec3)) return 'n'
+  if (nzI.length >= 2 && nzI.every((i) => [0.25, 0.75].some((q) => Math.abs(Math.abs(g[i]) - q) < 1e-9))) return 'd'
+  return 'g'
+}
+
+/** Conventional Z³ mesh of the plane ⊥ h: primitive in-plane vectors, fewest non-zeros / shortest first. */
+function meshOf(h: Vec3): [Vec3, Vec3] {
   // Z³ mesh: in-plane primitive vectors sorted by (non-zeros, length); v1 first, v2 the first making a unimodular cell.
   const vs: Vec3[] = []
   for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) for (let k = -2; k <= 2; k++) {
@@ -182,19 +220,7 @@ function oracleLetter(h: Vec3, g: Vec3): string {
     const cr: Vec3 = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
     if (close(cr, h) || close(cr, h.map((x) => -x) as Vec3)) { mesh = [a, b]; break }
   } if (mesh) break }
-  const halfDiag = add(mesh![0], mesh![1]).map((x) => x / 2) as Vec3
-  const halves: Vec3[] = []
-  const quarters: Vec3[] = []
-  const Q = [-0.75, -0.5, -0.25, 0, 0.25, 0.5, 0.75]
-  for (const x of Q) for (const y of Q) for (const z of Q) {
-    const v: Vec3 = [x, y, z]
-    if (nz(v) < 2 || dotI(h, v) !== 0) continue
-    if (v.every((t) => t === 0 || Math.abs(t) === 0.5)) halves.push(v)
-    if (v.every((t) => t === 0 || Math.abs(t) === 0.25 || Math.abs(t) === 0.75)) quarters.push(v)
-  }
-  if (same(halfDiag) && halves.some(same)) return 'n'
-  if (quarters.some(same)) return 'd'
-  return 'g'
+  return mesh!
 }
 
 function checkInvariants(W: Mat3, w: Vec3, c: OpClassification) {
@@ -208,6 +234,12 @@ function checkInvariants(W: Mat3, w: Vec3, c: OpClassification) {
       expect(c.kind === 'identity').toBe(w.every(isInt))
       break
     case 'rotation':
+      if (c.intrinsicRaw.some((x) => Math.abs(x) > 1e-9)) {
+        // the operation advances by a lattice vector: say so, name the axis as the element
+        expect(c.label).toContain(`advance ${fmtVec(c.intrinsicRaw)}`)
+        expect(c.label).toMatch(/on a \d-fold rotation axis/)
+      }
+    // falls through
     case 'screw': {
       expect(d).toBe(1)
       expect(close(mv(W, c.axis!), c.axis!)).toBe(true)
@@ -236,6 +268,12 @@ function checkInvariants(W: Mat3, w: Vec3, c: OpClassification) {
         const q = evalLocus(c.locus, { x: v, y: v, z: v })
         expect(close(sub(img(q), q), c.intrinsicRaw)).toBe(true)
       }
+      // ITA operation symbol carries this operation's own, unreduced advance
+      {
+        const sup = { '': '', '+': '⁺', '-': '⁻' }[c.sense]
+        const raw = c.intrinsicRaw.some((x) => Math.abs(x) > 1e-9) ? fmtVec(c.intrinsicRaw) : ''
+        expect(c.symbol.split(' ')[0]).toBe(`${c.order}${sup}${raw}`)
+      }
       break
     }
     case 'mirror':
@@ -253,6 +291,17 @@ function checkInvariants(W: Mat3, w: Vec3, c: OpClassification) {
       expect(inGroupLattice(dl)).toBe(true)
       expect(close(mv(W, dl), dl)).toBe(true)
       if (c.kind === 'glide') expect(c.glideLetter).toBe(oracleLetter(c.normal!, c.intrinsicRaw))
+      // ITA operation symbol from this operation's own, unreduced glide vector
+      {
+        const raw = c.intrinsicRaw
+        const L = raw.every((x) => Math.abs(x) < 1e-9) ? 'm' : oracleOpLetter(c.normal!, raw)
+        expect(c.symbol.split(' ')[0]).toBe(L === 'm' || 'abc'.includes(L) ? L : `${L}${fmtVec(raw)}`)
+        // operation vs element: a sliding operation is never called a mirror
+        if (c.kind === 'mirror' && L !== 'm') {
+          expect(c.label).not.toMatch(/^mirror/)
+          expect(c.label).toMatch(/glide reflection.*on the mirror plane/)
+        }
+      }
       for (const [u, v] of [[0, 0], [0.31, 0.62]]) {
         const q = evalLocus(c.locus.includes('=') ? '0, 0, 0' : c.locus, { x: u, y: v, z: u + v })
         if (!c.locus.includes('=')) expect(close(sub(img(q), q), c.intrinsicRaw)).toBe(true)
@@ -278,11 +327,12 @@ describe('all 230 groups: canonical labels and shown copies are internally exact
     const wrong: string[] = []
     for (const d of demos) {
       setLattice(d.operators.filter((o) => o.R.every((r, i) => r.every((x, j) => x === (i === j ? 1 : 0)))).map((o) => o.t))
+      oracleHex = isHexOps(d.operators)
       for (const op of d.operators) {
         const c = opClass(d, op)
         checkInvariants(op.R, op.t, c)
         // the bare Z³ classification must agree on everything but the element type
-        const z = classifySeitz(op.R, op.t)
+        const z = classifySeitz(op.R, op.t, [], groupHex(d))
         expect(z.symbol).toBe(c.symbol)
         // audit vs stored data label (kind words only; informational)
         const old = op.label.toLowerCase()
@@ -300,6 +350,7 @@ describe('all 230 groups: canonical labels and shown copies are internally exact
       let differ = 0
       for (const d of demos) {
         setLattice(d.operators.filter((o) => o.R.every((r, i) => r.every((x, j) => x === (i === j ? 1 : 0)))).map((o) => o.t))
+        oracleHex = isHexOps(d.operators)
         const A = cellBasis(d.cell)
         for (const op of d.operators) {
           if (op.index === 1) continue
@@ -309,7 +360,7 @@ describe('all 230 groups: canonical labels and shown copies are internally exact
           const L = shownLatticeShift(op.R, op.t, b.fractional, im.fractional)!
           expect(L.every(Number.isInteger)).toBe(true)
           const w = add(op.t, L)
-          const c = classifySeitz(op.R, w, latticeT.slice(1))
+          const c = classifySeitz(op.R, w, latticeT.slice(1), groupHex(d))
           checkInvariants(op.R, w, c)
           const sel = selectionLabels(d, op.index, mode)
           expect(sel.shown.symbol).toBe(c.symbol)
@@ -360,5 +411,50 @@ describe('all 230 groups: canonical labels and shown copies are internally exact
     const r = selectionLabels(getDemo(76)!, 2, 'nearest')
     expect(r.motion.lead).toContain('quarter-turn (+90°, 4⁺)')
     expect(r.motion.pathHand).toBe('right')
+  })
+})
+
+describe('operation vs element and raw ITA symbols (all 230 groups)', () => {
+  it('hexagonal-axes groups never use n / d (operation symbol or element)', () => {
+    for (const d of demos) {
+      if (!d.operators.some((o) => o.R.some((r) => r.filter((x) => x !== 0).length > 1))) continue
+      for (const op of d.operators) {
+        const c = opClass(d, op)
+        expect(c.symbol).not.toMatch(/^[nd][( ]/)
+        if (c.kind === 'glide') expect(['a', 'b', 'c', 'g']).toContain(c.glideLetter)
+      }
+    }
+  })
+  it('symbols use the triplet’s own intrinsic part (P2₁/c, F432, Cmmm, R3c by hand)', () => {
+    const sym = (sg: number, i: number) => {
+      const d = getDemo(sg)!
+      return opClass(d, d.operators.find((o) => o.index === i)!)
+    }
+    expect(sym(14, 2).symbol).toBe('2(0,½,0) 0, y, ¼')
+    expect(sym(14, 4).symbol).toBe('c x, ¼, z')
+    expect(sym(209, 41).symbol).toBe('2(0,½,½) 0, y, y')
+    expect(sym(65, 14).symbol).toBe('n(½,½,0) x, y, 0')
+    expect(sym(161, 10).symbol).toBe('g(⅙,−⅙,⅚) x, −x+½, z')
+    // the element family (overlay / colour) stays the element's
+    expect(sym(65, 14).kind).toBe('mirror')
+    expect(sym(209, 41).kind).toBe('rotation')
+  })
+  it('an operation with a non-zero intrinsic part is never labelled a bare mirror / rotation', () => {
+    let n = 0
+    for (const d of demos)
+      for (const op of d.operators) {
+        const c = opClass(d, op)
+        const moves = c.intrinsicRaw.some((x) => Math.abs(x) > 1e-9)
+        if (c.kind === 'mirror' && moves) {
+          expect(c.label).toMatch(/glide reflection .*on the mirror plane/)
+          n++
+        }
+        if (c.kind === 'rotation' && moves) {
+          expect(c.label).toMatch(/rotation \+ advance .*on a \d-fold rotation axis/)
+          n++
+        }
+        if (!moves && (c.kind === 'mirror' || c.kind === 'rotation')) expect(c.label).not.toMatch(/advance|glide reflection/)
+      }
+    expect(n).toBeGreaterThan(0)
   })
 })

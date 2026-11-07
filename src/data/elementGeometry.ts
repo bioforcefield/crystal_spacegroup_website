@@ -11,8 +11,8 @@
  *    clipped to a box that covers the cell and the BASE / IMAGE motifs, so
  *    the highlighted axis / plane / centre is exactly the one the ghost uses.
  */
-import { classifySeitz, fmtFrac, type OpClassification } from './opClassify'
-import { displayClassId, DISPLAY_CLASSES, groupCentring, type DisplayClassId } from './elementClasses'
+import { fmtFrac, type OpClassification } from './opClassify'
+import { displayClassId, DISPLAY_CLASSES, classifyInGroup, type DisplayClassId } from './elementClasses'
 import type { Mat3, SpaceGroupDemo, Vec3 } from './types'
 
 export type ElementGeom =
@@ -265,7 +265,6 @@ export function contextElements(demo: SpaceGroupDemo): DisplayElement[] {
 /** Uncached enumeration over coset members (W, w + n), n ∈ [lo, hi]³ (exported for the range test). */
 export function contextElementsInRange(demo: SpaceGroupDemo, lo: number, hi: number): DisplayElement[] {
   const byKey = new Map<string, DisplayElement>()
-  const centring = groupCentring(demo)
   for (const op of demo.operators) {
     const isTranslation = op.R.every((r, i) => r.every((x, j) => x === (i === j ? 1 : 0)))
     if (isTranslation) continue
@@ -273,7 +272,7 @@ export function contextElementsInRange(demo: SpaceGroupDemo, lo: number, hi: num
       for (let j = lo; j <= hi; j++)
         for (let k = lo; k <= hi; k++) {
           const w: Vec3 = [op.t[0] + i, op.t[1] + j, op.t[2] + k]
-          const tc = classifySeitz(op.R, w, centring)
+          const tc = classifyInGroup(demo, op.R, w)
           const g = elementInBox(tc, UNIT_BOX)
           if (!g) continue
           const key = geomKey(g)

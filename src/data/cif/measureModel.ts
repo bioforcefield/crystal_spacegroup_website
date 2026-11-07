@@ -1,5 +1,5 @@
 /** Turn atom picks into measurements, symmetry codes and a molecule-pair relation. */
-import { centringOf } from '../opClassify'
+import { centringOf, hexBasisOf } from '../opClassify'
 import type { AtomPick } from './atomInfo'
 import type { ExpandedStructure } from './types'
 import type { Vec3 } from '../types'
@@ -149,13 +149,13 @@ export function relateMolecules(
     if (twinA >= 0) {
       const ta = resolvePick(s, positions, { ai: twinA, t: a.pick.t })!
       const g = relatingOp(ta.op, b.op)
-      return { op: g, triplet: tripletOf(g), element: classifyOp(g, s.cell, centringOf(s.operators)), centroidA: cA, centroidB: cB }
+      return { op: g, triplet: tripletOf(g), element: classifyOp(g, s.cell, centringOf(s.operators), hexBasisOf(s.operators)), centroidA: cA, centroidB: cB }
     }
     const g = relatingOp(a.op, b.op)
     return {
       op: g,
       triplet: tripletOf(g),
-      element: classifyOp(g, s.cell, centringOf(s.operators)),
+      element: classifyOp(g, s.cell, centringOf(s.operators), hexBasisOf(s.operators)),
       centroidA: cA,
       centroidB: cB,
       note: 'These molecules come from different asymmetric-unit molecules (Z′ > 1); the op below maps the picked atoms’ generating ops only and is not a symmetry of the pair.',
@@ -163,5 +163,5 @@ export function relateMolecules(
   }
   const twin = resolvePick(s, positions, { ai: twinIdx, t: b.pick.t })!
   const g = relatingOp(a.op, twin.op)
-  return { op: g, triplet: tripletOf(g), element: classifyOp(g, s.cell, centringOf(s.operators)), centroidA: cA, centroidB: cB }
+  return { op: g, triplet: tripletOf(g), element: classifyOp(g, s.cell, centringOf(s.operators), hexBasisOf(s.operators)), centroidA: cA, centroidB: cB }
 }

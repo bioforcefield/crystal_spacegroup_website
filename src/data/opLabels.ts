@@ -3,8 +3,8 @@
  * with the group's centring, plus the shown lattice copy and the drawn motion
  * for the current placement (Near / Wrap). Placement itself is untouched.
  */
-import { classifySeitz, describeMotion, fmtVec, shownLatticeShift, type MotionText, type OpClassification } from './opClassify'
-import { displayClassOf, groupCentring, opClass, type DisplayClass } from './elementClasses'
+import { describeMotion, fmtVec, shownLatticeShift, type MotionText, type OpClassification } from './opClassify'
+import { classifyInGroup, displayClassOf, opClass, type DisplayClass } from './elementClasses'
 import { placedPositions, type PlacementMode } from './nearestImages'
 import type { Operator, SpaceGroupDemo, Vec3 } from './types'
 
@@ -65,7 +65,7 @@ export function selectionLabels(
   }
   const shifted = shift.some((x) => x !== 0)
   const shown = shifted
-    ? classifySeitz(op.R, [op.t[0] + shift[0], op.t[1] + shift[1], op.t[2] + shift[2]], groupCentring(demo))
+    ? classifyInGroup(demo, op.R, [op.t[0] + shift[0], op.t[1] + shift[1], op.t[2] + shift[2]])
     : canonical
   const kindDiffers = shown.kind !== canonical.kind || shown.short !== canonical.short
   let motion: MotionText = op.index === 1 ? { plain: '', lead: '', notes: [] } : describeMotion(shown)

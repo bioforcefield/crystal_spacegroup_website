@@ -421,6 +421,8 @@ function glideOf(
   g: Vec3,
   h: Vec3,
   lat: { b1: Vec3; b2: Vec3; contains: (v: Vec3) => boolean },
+  /** Hexagonal axes: n and d are tetragonal / cubic (/ orthorhombic) conventions — use g. */
+  hex = false,
 ): { letter: GlideLetter; rep: Vec3 } | null {
   if (lat.contains(g)) return null
   // Bring g into the fundamental mesh of (b1, b2) first so large coset
@@ -451,9 +453,9 @@ function glideOf(
   const [v1, v2] = planeLatticeBasis(h)
   const halfDiag = scl(add(v1, v2), 0.5)
   const diagReps = reps.filter((r) => nnzOf(r) >= 2 && r.every((x) => Math.abs(x) < TOL || isHalf(x)))
-  if (lat.contains(sub(g, halfDiag)) && diagReps.length) return { letter: 'n', rep: pickRep(diagReps) }
+  if (!hex && lat.contains(sub(g, halfDiag)) && diagReps.length) return { letter: 'n', rep: pickRep(diagReps) }
   const dReps = reps.filter((r) => nnzOf(r) >= 2 && r.every((x) => Math.abs(x) < TOL || isQuarter(x)))
-  if (dReps.length) return { letter: 'd', rep: pickRep(dReps) }
+  if (!hex && dReps.length) return { letter: 'd', rep: pickRep(dReps) }
   return { letter: 'g', rep: pickRep(reps) }
 }
 
@@ -462,6 +464,32 @@ const BAR = '\u0304'
 const barred = (n: number, sense: '' | '+' | '-' = '') => `${n}${BAR}${SUP[sense]}`
 
 const reduceZ3 = (v: Vec3): Vec3 => cleanV(v.map((x) => x - Math.floor(x + 1e-9)) as Vec3)
+
+/**
+ * True when the operators are written on hexagonal axes (some W is not a
+ * signed permutation matrix, e.g. x−y): glide letters n / d do not apply.
+ */
+export function hexBasisOf(ops: readonly { R: Mat3 }[]): boolean {
+  return ops.some((o) => o.R.some((r) => r.filter((x) => x !== 0).length > 1))
+}
+
+/**
+ * Letter of an operation's own glide vector g on the plane with normal h
+ * (ITA operation symbol, not reduced): a / b / c for ±½ of one axis; n for
+ * exactly half the diagonal ½(±v1 ± v2) of the plane's conventional mesh
+ * (½(a+b) on (001), ½(a+b+c) on (1̄10) …; not on hexagonal axes); d for
+ * ±¼ / ±¾ components (not hexagonal); otherwise g.
+ */
+function opGlideLetter(g: Vec3, h: Vec3, hex: boolean): GlideLetter {
+  const nz = [0, 1, 2].filter((i) => Math.abs(g[i]) > TOL)
+  if (nz.length === 1 && Math.abs(Math.abs(g[nz[0]]) - 0.5) < TOL) return (['a', 'b', 'c'] as const)[nz[0]]
+  if (!hex) {
+    const [v1, v2] = planeLatticeBasis(h)
+    for (const s1 of [1, -1]) for (const s2 of [1, -1]) if (near0(sub(g, scl(add(scl(v1, s1), scl(v2, s2)), 0.5)))) return 'n'
+    if (nz.length >= 2 && nz.every((i) => isQuarter(g[i]))) return 'd'
+  }
+  return 'g'
+}
 
 /** Translation part of the group lattice: centring vectors of the listed operators. */
 export function centringOf(ops: readonly { R: Mat3; t: Vec3 }[]): Vec3[] {
@@ -481,7 +509,7 @@ export function centringOf(ops: readonly { R: Mat3; t: Vec3 }[]): Vec3[] {
  * centring, while `symbol` keeps the ITA operation symbol of this coset
  * member (its own intrinsic vector modulo Z³).
  */
-export function classifySeitz(W: Mat3, w: Vec3, centring: readonly Vec3[] = []): OpClassification {
+export function classifySeitz(W: Mat3, w: Vec3, centring: readonly Vec3[] = [], hex = false): OpClassification {
   const d = det(W)
   const n = rotationOrder(W)
   const proper = d > 0
@@ -526,13 +554,19 @@ export function classifySeitz(W: Mat3, w: Vec3, centring: readonly Vec3[] = []):
     const locus = lineLocus(point, u)
     const screw = Math.abs(lamRed) > TOL
     const supS = SUP[sense]
-    const symVec = near0(intrinsicZ3) ? '' : fmtVec(intrinsicZ3)
+    // ITA operation symbol from this operation's own (unreduced) intrinsic part.
+    const symVec = near0(intrinsicRaw) ? '' : fmtVec(intrinsicRaw)
     if (!screw) {
+      // A non-zero advance that is a lattice (centring) translation: the
+      // operation moves along the axis, but the element is a rotation axis.
+      const adv = !near0(intrinsicRaw)
       return {
         kind: 'rotation', order: n, sense, axis: u, period, intrinsicRaw, intrinsic, intrinsicZ3, point, locus,
         symbol: `${n}${supS}${symVec} ${locus}`,
-        label: `${n}-fold rotation${sense ? ` (${n}${supS})` : ''} ‖ ${dirName(u)}`,
-        short: `${n}${supS}`,
+        label: adv
+          ? `${n}${supS}${symVec}: ${n}-fold rotation + advance ${fmtVec(intrinsicRaw)}, on a ${n}-fold rotation axis ‖ ${dirName(u)}`
+          : `${n}-fold rotation${sense ? ` (${n}${supS})` : ''} ‖ ${dirName(u)}`,
+        short: adv ? `${n}${supS}${symVec}` : `${n}${supS}`,
       }
     }
     // n_m: translation m/n of the axis period along the direction about which the turn is positive.
@@ -565,23 +599,31 @@ export function classifySeitz(W: Mat3, w: Vec3, centring: readonly Vec3[] = []):
     const point: Vec3 = [0, 0, 0]
     point[kAxis] = dist / h[kAxis]
     const locus = planeLocus(h, dist)
-    // ITA operation symbol: this coset member's glide modulo Z³ only.
-    const z3 = glideOf(intrinsicRaw, h, inPlaneLattice(h, []))
-    const symbol = !z3
-      ? `m ${locus}`
-      : `${z3.letter}${'abc'.includes(z3.letter) ? '' : fmtVec(z3.rep)} ${locus}`
+    // ITA operation symbol: this operation's own glide vector, unreduced.
+    const opL = near0(intrinsicRaw) ? null : opGlideLetter(intrinsicRaw, h, hex)
+    const symbol = !opL ? `m ${locus}` : `${opL}${'abc'.includes(opL) ? '' : fmtVec(intrinsicRaw)} ${locus}`
+    const z3 = glideOf(intrinsicRaw, h, inPlaneLattice(h, []), hex)
     const intrinsicZ3 = z3 ? z3.rep : ([0, 0, 0] as Vec3)
+    const opName = !opL ? '' : 'abc'.includes(opL) ? `${opL}-glide reflection` : `${opL === 'g' ? '' : `${opL}-`}glide reflection ${fmtVec(intrinsicRaw)}`
     // Element type: modulo the full translation lattice (centring included).
-    const el = glideOf(intrinsicRaw, h, inPlaneLattice(h, centring))
+    const el = glideOf(intrinsicRaw, h, inPlaneLattice(h, centring), hex)
     if (!el) {
-      return { kind: 'mirror', order: 2, sense: '', normal: h, intrinsicRaw, intrinsic: [0, 0, 0], intrinsicZ3, point: cleanV(point), locus, symbol, label: `mirror, plane ${locus}`, short: 'm' }
+      return {
+        kind: 'mirror', order: 2, sense: '', normal: h, intrinsicRaw, intrinsic: [0, 0, 0], intrinsicZ3, point: cleanV(point), locus, symbol,
+        // A glide whose vector is a lattice (centring) translation lies on a mirror plane.
+        label: opL ? `${opName}, on the mirror plane ${locus}` : `mirror, plane ${locus}`,
+        short: opL ? `${opL}${'abc'.includes(opL) ? '' : fmtVec(intrinsicRaw)}` : 'm',
+      }
     }
     const L = el.letter
     const name = L === 'g' ? 'glide' : L === 'e' ? 'e-glide (double glide)' : `${L}-glide`
+    const sameAsElement = opL === L && near0(sub(intrinsicRaw, el.rep))
     return {
       kind: 'glide', order: 2, sense: '', normal: h, intrinsicRaw, intrinsic: el.rep, intrinsicZ3, glideLetter: L, point: cleanV(point), locus,
       symbol,
-      label: `${name}, plane ${locus}, glide ${fmtVec(el.rep)}`,
+      label: sameAsElement
+        ? `${name}, plane ${locus}, glide ${fmtVec(el.rep)}`
+        : `${opName}, on ${L === 'e' ? 'an' : 'a'} ${name} plane ${locus}${L === 'e' || near0(sub(intrinsicRaw, el.rep)) ? '' : ` (element glide ${fmtVec(el.rep)})`}`,
       short: L,
     }
   }

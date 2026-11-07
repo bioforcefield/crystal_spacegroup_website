@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { getDemo } from '../registry'
 import { classifySeitz } from '../opClassify'
-import { groupCentring } from '../elementClasses'
+import { groupCentring, groupHex } from '../elementClasses'
 import { compositeSymbol, contextElements, contextElementsInRange, elementInBox, elementSymbol, rank, UNIT_BOX, type DisplayElement } from '../elementGeometry'
 import { CONTEXT_CAP, elementOverlay } from '../elementSelection'
 import { selectionLabels } from '../opLabels'
@@ -33,7 +33,7 @@ describe('context elements, all 230 groups', () => {
       )
       expect(op, `element ${e.key} is not a coset member of its operations`).toBeTruthy()
       // independent re-classification with the group centring gives the same element type
-      const c = classifySeitz(e.seitz.R, e.seitz.t, centring)
+      const c = classifySeitz(e.seitz.R, e.seitz.t, centring, groupHex(d))
       expect(c.kind).toBe(e.cls.kind)
       expect(compositeSymbol(c, e.members)).toBe(e.symbol)
       const { R, t } = e.seitz
@@ -58,7 +58,7 @@ describe('context elements, all 230 groups', () => {
       for (const i of e.opIndices) covered.add(i)
     }
     for (const op of d.operators) {
-      const k = classifySeitz(op.R, op.t, centring).kind
+      const k = classifySeitz(op.R, op.t, centring, groupHex(d)).kind
       if (k === 'identity' || k === 'translation') continue
       expect(covered.has(op.index), `op ${op.index} has no drawn element`).toBe(true)
     }
@@ -165,7 +165,7 @@ describe('coincident operation types on one element (all 230 groups)', () => {
       for (let i = -1; i <= 2; i++)
         for (let j = -1; j <= 2; j++)
           for (let k = -1; k <= 2; k++) {
-            const c = classifySeitz(op.R, [op.t[0] + i, op.t[1] + j, op.t[2] + k], centring)
+            const c = classifySeitz(op.R, [op.t[0] + i, op.t[1] + j, op.t[2] + k], centring, groupHex(d))
             if (c.kind === 'identity' || c.kind === 'translation') continue
             const g = axisKeyOf(c)
             if (!g) continue

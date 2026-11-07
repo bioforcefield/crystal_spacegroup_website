@@ -4,8 +4,8 @@
  * element overlays. Classes are derived from the exact Seitz pair with the
  * group's centring (opClassify), never from stored class ids or labels.
  */
-import { centringOf, classifySeitz, type OpClassification } from './opClassify'
-import type { Operator, SpaceGroupDemo, Vec3 } from './types'
+import { centringOf, classifySeitz, hexBasisOf, type OpClassification } from './opClassify'
+import type { Mat3, Operator, SpaceGroupDemo, Vec3 } from './types'
 
 export type DisplayClassId =
   | 'identity'
@@ -88,6 +88,21 @@ export function groupCentring(demo: { operators: readonly Operator[] }): Vec3[] 
   return c
 }
 
+const hexCache = new WeakMap<object, boolean>()
+/** True when the group's operators are on hexagonal axes (glide letters n / d do not apply). */
+export function groupHex(demo: { operators: readonly Operator[] }): boolean {
+  let h = hexCache.get(demo.operators)
+  if (h === undefined) {
+    h = hexBasisOf(demo.operators)
+    hexCache.set(demo.operators, h)
+  }
+  return h
+}
+
+/** Classify any coset member (W, w) of the group: centring + axes convention from its operators. */
+export const classifyInGroup = (demo: { operators: readonly Operator[] }, W: Mat3, w: Vec3): OpClassification =>
+  classifySeitz(W, w, groupCentring(demo), groupHex(demo))
+
 const clsCache = new WeakMap<object, Map<Operator, OpClassification>>()
 /** Canonical classification of a listed operator (its own triplet, group centring included). */
 export function opClass(demo: { operators: readonly Operator[] }, op: Operator): OpClassification {
@@ -98,7 +113,7 @@ export function opClass(demo: { operators: readonly Operator[] }, op: Operator):
   }
   let c = m.get(op)
   if (!c) {
-    c = classifySeitz(op.R, op.t, groupCentring(demo))
+    c = classifyInGroup(demo, op.R, op.t)
     m.set(op, c)
   }
   return c

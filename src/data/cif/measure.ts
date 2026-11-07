@@ -225,10 +225,16 @@ function axisEquation(p: Vec3, d: Vec3): string | null {
  * the measure readout agrees with the operator list and the overlays; the
  * Cartesian geometry is computed here.
  */
-export function classifyOp(g: SeitzOp, cell: CellParams, centring: readonly Vec3[] = []): SymmetryElementInfo {
+export function classifyOp(g: SeitzOp, cell: CellParams, centring: readonly Vec3[] = [], hex = false): SymmetryElementInfo {
   const W = g.R
   const w = g.t
-  const cs = classifySeitz(W, w, centring)
+  const cs = classifySeitz(W, w, centring, hex)
+  // The operation itself can advance / slide by a lattice (centring) vector
+  // while its element is a plain rotation axis / mirror: say so first.
+  const opLine =
+    (cs.kind === 'rotation' || cs.kind === 'mirror') && cs.intrinsicRaw.some((x) => Math.abs(x) > 1e-9)
+      ? [`Operation ${cs.symbol}: ${cs.label}`]
+      : []
   const d = Math.round(det(W))
   const tr = Math.round(W[0][0] + W[1][1] + W[2][2])
   const proper = d === 1
@@ -310,6 +316,7 @@ export function classifyOp(g: SeitzOp, cell: CellParams, centring: readonly Vec3
       axis,
       axisCart,
       lines: [
+        ...opLine,
         `${screw ? 'Screw axis' : `${order}-fold rotation axis`} ${symbol} along ${fmtUvw(axis)}`,
         `through ${fmtV(point)}${eq ? ` — line ${eq}` : ''}`,
         ...(screw ? [`screw translation ${fmtV(intrinsic)} (${SUB[k] ? `${order}${SUB[k]}: ` : ''}${norm(toCart(intrinsic)).toFixed(3)} Å)`] : []),
@@ -342,6 +349,7 @@ export function classifyOp(g: SeitzOp, cell: CellParams, centring: readonly Vec3
       plane: { hkl, c },
       normalCart,
       lines: [
+        ...opLine,
         `${glide ? `${letter}-glide plane` : 'Mirror plane m'} ${planeEquation(hkl, c)}  (normal (${hkl.join(' ')}))`,
         ...(glide ? [`glide vector ${fmtV(intrinsic)} (${norm(toCart(intrinsic)).toFixed(3)} Å)`] : []),
         `Cartesian point ${fmtC(pointCart)}, normal (${normalCart.map((x) => x.toFixed(3)).join(', ')})`,

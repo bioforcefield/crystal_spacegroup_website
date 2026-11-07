@@ -3,8 +3,7 @@
  * shown copy's element (emphasised) plus the group's context elements.
  * Shared by the 3D cell, the 2D projection and the CIF map so they agree.
  */
-import { classifySeitz } from './opClassify'
-import { groupCentring } from './elementClasses'
+import { classifyInGroup } from './elementClasses'
 import { contextElements, selectedElement, type DisplayElement } from './elementGeometry'
 import { placedPositions, type PlacementMode } from './nearestImages'
 import { selectionLabels } from './opLabels'
@@ -68,7 +67,7 @@ export function elementOverlay(
   const all = contextElements(demo)
   let selected: DisplayElement | null = null
   if (seitz) {
-    const c = classifySeitz(seitz.R, seitz.t, groupCentring(demo))
+    const c = classifyInGroup(demo, seitz.R, seitz.t)
     selected = c.kind === 'identity' || c.kind === 'translation' ? null : selectedElement(c, selectedIndex, [], seitz)
   } else if (selectedIndex !== 1) {
     const s = selectionLabels(demo, selectedIndex, mode)
