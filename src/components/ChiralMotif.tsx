@@ -1,5 +1,7 @@
 import * as THREE from 'three'
 import { properBasis, type Mat3 } from '../data/pbca'
+import { cartesianLinear } from '../data/math'
+import type { CellParams } from '../data/types'
 
 const _m4 = new THREE.Matrix4()
 const _q = new THREE.Quaternion()
@@ -27,11 +29,26 @@ export function quatFromProper(R: Mat3): THREE.Quaternion {
   return _q.setFromRotationMatrix(_m4).clone()
 }
 
-export function orientationFromR(R: Mat3): {
+/**
+ * Decompose the linear part of a symmetry operation into a proper rotation
+ * (quaternion) and an optional mirror applied as parent scale.x = −1, so that
+ * Rot(proper) · diag(−1,1,1) reproduces the full linear map exactly
+ * (det +1 for rotations / screws, det −1 for mirrors, glides, inversion and
+ * rotoinversions — inversion is −I, i.e. a 2-fold × mirror, not just a mirror).
+ *
+ * When `cell` is given, R (fractional) is first converted to the Cartesian
+ * scene frame (A·R·A⁻¹) so non-orthonormal bases (hexagonal / trigonal)
+ * yield a true isometry instead of a distorted quaternion.
+ */
+export function orientationFromR(
+  R: Mat3,
+  cell?: CellParams,
+): {
   quaternion: THREE.Quaternion
   mirror: boolean
 } {
-  const { proper, mirror } = properBasis(R)
+  const L = cell ? cartesianLinear(R, cell) : R
+  const { proper, mirror } = properBasis(L)
   return { quaternion: quatFromProper(proper), mirror }
 }
 
