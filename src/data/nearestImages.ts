@@ -367,7 +367,13 @@ function placedNearest(
     demo.operators[0]
 
   if (selectedOp.classId === 'identity') {
-    return placedWrapped(demo)
+    // Identity or a pure centring translation: wrapped positions, but the
+    // IMAGE endpoint must be the selected operator's site (not BASE) so the
+    // connector / ghost reach the highlighted mate.
+    const wrapped = placedWrapped(demo)
+    const image =
+      wrapped.points.find((p) => p.index === selectedOp.index) ?? wrapped.points[0]
+    return { ...wrapped, imageCartesian: image.cartesian }
   }
 
   let bestScore = Infinity

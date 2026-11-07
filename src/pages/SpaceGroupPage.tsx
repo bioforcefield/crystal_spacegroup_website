@@ -243,6 +243,17 @@ export default function SpaceGroupPage({ demo }: Props) {
             <button
               type="button"
               className="btn"
+              onClick={() => setAnimateToken((t) => t + 1)}
+              disabled={selectedIndex === 1}
+              aria-label="Replay the selected operation's ghost path"
+              title="Replay the ghost path from BASE to IMAGE"
+            >
+              <span className="label-full">Replay</span>
+              <span className="label-short" aria-hidden="true">▶</span>
+            </button>
+            <button
+              type="button"
+              className="btn"
               onClick={() => setResetToken((t) => t + 1)}
             >
               <span className="label-full">Reset view</span>
@@ -364,9 +375,9 @@ export default function SpaceGroupPage({ demo }: Props) {
             {placementMode === 'nearest'
               ? ' · Near (3D + 2D) may sit just outside the cell (UCL-style)'
               : ' · Wrap motifs into [0, 1)³ / [0, 1)²'}
-            {demo.screwAxes.length > 0
-              ? ' · Ghost flight is schematic, not the crystallographic screw path'
-              : ''}
+            {' · Ghost path: turns about the real axis (screws also advance),'}
+            {' reflects through the real plane (glides also slide), or shrinks'}
+            {' through the inversion centre; in-between frames are not symmetry operations'}
             {!showAllSites ? ' · Showing only BASE + IMAGE' : ''}
             {demo.cell.alphaDeg && demo.cell.alphaDeg !== 90
               ? ` · α = ${demo.cell.alphaDeg}°`
