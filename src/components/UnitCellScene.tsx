@@ -14,6 +14,7 @@ import { orientationFromR } from './ChiralMotif'
 import MotifMesh from './motifs/MotifMesh'
 import { DEFAULT_MOTIF_STYLE, type MotifStyleId } from './motifs/motifStyles'
 import SymmetryElements from './SymmetryElements'
+import { useMotionOff } from '../hooks/motionPrefs'
 import SupercellWire from './SupercellWire'
 import {
   DEFAULT_MULTIPLES,
@@ -323,11 +324,6 @@ function PointMarker({
 /** Ghost flight duration in seconds (eased). */
 export const GHOST_DURATION_S = 1.6
 
-function prefersReducedMotion(): boolean {
-  if (typeof window === 'undefined' || !window.matchMedia) return false
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
 /**
  * Remount with key={token} so each selection starts a fresh flight.
  * The ghost follows {@link buildOpPath}: an honest path for the Seitz
@@ -357,19 +353,29 @@ function GhostAnimator({
   token: number
 }) {
   const groupRef = useRef<THREE.Group>(null)
-  // Initialized from token on mount (parent remounts via key=token).
-  const [active, setActive] = useState(() => token > 0 && !prefersReducedMotion())
+  const motionOff = useMotionOff()
+  // A flight starts on mount (parent remounts via key=token); paused
+  // animations / reduced motion skip it (IMAGE is the static endpoint).
+  const [active, setActive] = useState(() => token > 0 && !motionOff)
+  if (active && motionOff) setActive(false)
   const progress = useRef(0)
+  // Rebuilt when the shown copy changes (Near ⇄ Wrap, motif moved) so a
+  // flight in progress finishes on the current path, never a stale one.
+  const pathKey = [...fromPos, ...toPos, ...fromR.flat(), ...toR.flat()].map((x) => x.toFixed(9)).join(',')
   const path = useMemo(
     () => buildOpPath(fromPos, fromR, toPos, toR, cell),
-    // Fixed for the lifetime of this flight (remounted per token).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [pathKey, cell],
   )
   const fromLinear = useMemo(
     () => cartesianLinear(fromR, cell),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    [pathKey, cell],
+  )
+  const initialMatrix = useMemo(
+    () => new THREE.Matrix4().fromArray(ghostMatrixElements(path, 0, fromPos, fromLinear)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [path, fromLinear],
   )
 
   useFrame((_, dt) => {
@@ -391,9 +397,7 @@ function GhostAnimator({
       ref={groupRef}
       visible={active}
       matrixAutoUpdate={false}
-      matrix={new THREE.Matrix4().fromArray(
-        ghostMatrixElements(path, 0, fromPos, fromLinear),
-      )}
+      matrix={initialMatrix}
     >
       <MotifMesh
         style={motifStyle}

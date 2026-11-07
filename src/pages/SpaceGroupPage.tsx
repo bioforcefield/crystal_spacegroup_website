@@ -25,6 +25,8 @@ import VisitCounter from '../components/VisitCounter'
 import MotifStylePicker, { useMotifStyle } from '../components/motifs/MotifStylePicker'
 import { opClass, selectionLabels } from '../data/opLabels'
 import { legendClasses } from '../data/elementClasses'
+import { fmtVec } from '../data/opClassify'
+import { useAnimationsPaused, useMotionOff } from '../hooks/motionPrefs'
 import { elementOverlay } from '../data/elementSelection'
 
 interface Props {
@@ -35,6 +37,9 @@ export default function SpaceGroupPage({ demo }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(1)
   const [motifStyle, setMotifStyle] = useMotifStyle()
   const [animateToken, setAnimateToken] = useState(0)
+  const [replayStatus, setReplayStatus] = useState('')
+  const motionOff = useMotionOff()
+  const animPaused = useAnimationsPaused()
   const [resetToken, setResetToken] = useState(0)
   const [placementMode, setPlacementMode] = useState<PlacementMode>('nearest')
   // Dense packs (Z>48) default to BASE+IMAGE so the cell stays readable (S5).
@@ -61,6 +66,7 @@ export default function SpaceGroupPage({ demo }: Props) {
 
   const handleSelect = useCallback((index: number) => {
     setSelectedIndex(index)
+    setReplayStatus('')
     setAnimateToken((t) => t + 1)
   }, [])
 
@@ -236,17 +242,6 @@ export default function SpaceGroupPage({ demo }: Props) {
             <button
               type="button"
               className="btn"
-              onClick={() => setAnimateToken((t) => t + 1)}
-              disabled={selectedIndex === 1}
-              aria-label="Replay the selected operation's ghost path"
-              title="Replay the ghost path from BASE to IMAGE"
-            >
-              <span className="label-full">Replay</span>
-              <span className="label-short" aria-hidden="true">▶</span>
-            </button>
-            <button
-              type="button"
-              className="btn"
               onClick={() => setResetToken((t) => t + 1)}
             >
               <span className="label-full">Reset view</span>
@@ -268,23 +263,71 @@ export default function SpaceGroupPage({ demo }: Props) {
           />
         )}
         {selectedIndex !== 1 && (
-          <p className="op-motion" data-op-kind={selection.canonical.kind} data-shown-kind={selection.shown.kind}>
-            <strong>
-              Op {selection.op.index} <span className="mono">{selection.op.triplet}</span>
-            </strong>
-            {' · '}
-            <span className="op-motion-label">{selection.canonical.label}</span>
-            {' · '}
-            <span className="mono op-motion-symbol">{selection.canonical.symbol}</span>
-            {selection.shifted && (
-              <span className="op-motion-copy">
-                {' · Shown copy +'}
-                {selection.shift.map((x) => String(x).replace('-', '−')).join(',')}
-                {selection.kindDiffers ? `: ${selection.shown.label}` : ` (${selection.shown.symbol})`}
-              </span>
-            )}
-            <span className="op-motion-path"> · {selection.motion.lead}</span>
-          </p>
+          <div className="op-motion" data-op-kind={selection.canonical.kind} data-shown-kind={selection.shown.kind}>
+            <div className="op-motion-row">
+              <p className="op-motion-lead">
+                {selection.motion.plain}
+                {motionOff && (
+                  <span className="op-motion-still">
+                    {' '}
+                    {animPaused ? 'Animations are paused' : 'Reduced motion is on'}: showing the end position.
+                  </span>
+                )}
+              </p>
+              <button
+                type="button"
+                className="btn op-replay"
+                onClick={() => {
+                  setAnimateToken((t) => t + 1)
+                  setReplayStatus(`Replaying op ${selectedIndex}.`)
+                }}
+                disabled={motionOff}
+                aria-describedby={motionOff ? 'op-motion-still-note' : undefined}
+                title={motionOff ? 'Animations are off; the end position is shown' : 'Replay the ghost path from BASE to IMAGE'}
+              >
+                <span aria-hidden="true">▶</span> Replay
+              </button>
+              {motionOff && (
+                <span id="op-motion-still-note" className="sr-only">
+                  Replay is unavailable while animations are off.
+                </span>
+              )}
+            </div>
+            <details className="op-motion-details">
+              <summary>Operation details</summary>
+              <p>
+                <strong>
+                  Op {selection.op.index} <span className="mono nowrap">{selection.op.triplet}</span>
+                </strong>
+                {': '}
+                <span className="op-motion-label">{selection.canonical.label}</span>
+                {' · ITA '}
+                <span className="mono nowrap op-motion-symbol">{selection.canonical.symbol}</span>
+              </p>
+              {selection.shifted && (
+                <p className="op-motion-copy">
+                  Shown copy adds lattice <span className="mono nowrap">{fmtVec(selection.shift)}</span>
+                  {selection.kindDiffers ? (
+                    <>
+                      {': '}
+                      {selection.shown.label} · <span className="mono nowrap">{selection.shown.symbol}</span>
+                    </>
+                  ) : (
+                    <>
+                      {' '}(<span className="mono nowrap">{selection.shown.symbol}</span>)
+                    </>
+                  )}
+                  . Near and Wrap can draw different lattice copies of the same operation.
+                </p>
+              )}
+              <p className="op-motion-path">{selection.motion.lead}</p>
+              {selection.motion.notes.map((n) => (
+                <p key={n} className="op-motion-note">
+                  {n}
+                </p>
+              ))}
+            </details>
+          </div>
         )}
         {placementMode === 'nearest' && (
           <p className="placement-near-hint" role="note">
@@ -373,6 +416,9 @@ export default function SpaceGroupPage({ demo }: Props) {
         </div>
         <div className="sr-only" aria-live="polite" aria-atomic="true">
           {liveStatus}
+        </div>
+        <div className="sr-only" role="status" aria-live="polite">
+          {replayStatus}
         </div>
         <footer className="viewport-footer">
           <span className="viewport-footer-text">

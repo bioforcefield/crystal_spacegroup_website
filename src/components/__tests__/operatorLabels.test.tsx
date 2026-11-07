@@ -52,7 +52,8 @@ describe('operator panel shows derived labels', () => {
 
   it('caption describes the drawn path in words', () => {
     const inv = selectionLabels(getDemo(2)!, 2, 'nearest')
-    expect(inv.caption).toMatch(/shrinks through the centre/)
+    expect(inv.caption).toMatch(/shrinks through the highlighted centre/)
+    expect(inv.motion.lead).toMatch(/shrinks through the centre/)
     const gl = selectionLabels(getDemo(14)!, 4, 'nearest')
     expect(gl.caption).toMatch(/c-glide/)
     expect(gl.motion.lead).toMatch(/flattens onto the plane .* sliding/)

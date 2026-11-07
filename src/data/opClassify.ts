@@ -624,7 +624,9 @@ function turnText(c: OpClassification, sym: string): string {
 }
 
 export interface MotionText {
-  /** Plain one-sentence description of the drawn ghost path. */
+  /** Plain-language sentence (no coordinates) for the visible caption. */
+  plain: string
+  /** One-sentence description of the drawn ghost path with loci / vectors. */
   lead: string
   /** Extra precise notes (lattice advances, helix hand vs the axis's nominal hand). */
   notes: string[]
@@ -638,7 +640,7 @@ export interface MotionText {
  * the ghost turns by the smallest angle in the copy's own sense about its
  * axis and advances by the full (unreduced) axial part.
  */
-export function describeMotion(c: OpClassification): MotionText {
+function describeMotionDetail(c: OpClassification): Omit<MotionText, 'plain'> {
   const adv = fmtVec(c.intrinsicRaw)
   const notes: string[] = []
   switch (c.kind) {
@@ -693,5 +695,34 @@ export function describeMotion(c: OpClassification): MotionText {
         lead: `Motion shown: a ${turnText(c, barred(c.order, c.sense))} about the axis ${c.locus} while shrinking through ${fmtVec(c.centre!)}; the ghost emerges inverted.`,
         notes,
       }
+  }
+}
+
+export function describeMotion(c: OpClassification): MotionText {
+  const d = describeMotionDetail(c)
+  return { ...d, plain: plainMotion(c, d.pathHand) }
+}
+
+/** Caption sentence without coordinates: what moves, how, and the sense. */
+function plainMotion(c: OpClassification, hand?: 'right' | 'left'): string {
+  const moving = !near0(c.intrinsicRaw)
+  switch (c.kind) {
+    case 'identity':
+      return 'No motion (identity).'
+    case 'translation':
+      return 'Motion shown: the ghost slides straight to its copy (a lattice translation).'
+    case 'rotation':
+    case 'screw': {
+      const turn = turnText(c, c.order === 2 ? '' : `${c.order}${SUP[c.sense]}`)
+      if (!moving) return `Motion shown: a ${turn} about the highlighted axis.`
+      return `Motion shown: a ${turn} about the highlighted axis while advancing along it${hand ? ` (${hand}-handed helix)` : ''}.`
+    }
+    case 'mirror':
+    case 'glide':
+      return `Motion shown: the ghost flattens onto the highlighted plane and emerges reflected${moving ? ', sliding along the plane' : ''}.`
+    case 'inversion':
+      return 'Motion shown: the ghost shrinks through the highlighted centre and emerges inverted.'
+    case 'rotoinversion':
+      return `Motion shown: a ${turnText(c, barred(c.order, c.sense))} about the highlighted axis while shrinking through its centre; the ghost emerges inverted.`
   }
 }

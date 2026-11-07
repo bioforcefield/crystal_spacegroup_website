@@ -6018,7 +6018,41 @@ button.linkish {
   font-size: 0.82rem;
   line-height: 1.45;
   color: var(--muted, #94a3b8);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+}
+/* Caption and Replay share a row that wraps: Replay drops to its own line on
+   narrow screens instead of being clipped or scrolled away. */
+.op-motion-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+}
+.op-motion-lead {
+  margin: 0;
+  flex: 1 1 16rem;
+  min-width: 0;
+  color: var(--text, #e2e8f0);
+}
+.op-motion-still {
+  color: var(--muted, #94a3b8);
+}
+.op-replay {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.op-motion-details {
+  margin-top: 0.25rem;
+}
+.op-motion-details summary {
+  cursor: pointer;
+  width: fit-content;
+}
+.op-motion-details p {
+  margin: 0.2rem 0 0;
+}
+.op-motion .nowrap {
+  white-space: nowrap;
 }
 .op-motion strong {
   color: var(--text, #e2e8f0);

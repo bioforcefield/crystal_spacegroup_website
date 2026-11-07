@@ -27,7 +27,7 @@ export interface SelectionLabels {
   opSentence: string
   /** Shown-copy sentence ('' when the copy is the listed operation itself). */
   copySentence: string
-  /** Full screen-reader caption: operation, shown copy (if different), motion. */
+  /** Concise screen-reader caption: operation, shown copy (if different), plain motion. */
   caption: string
 }
 
@@ -52,13 +52,13 @@ export function selectionLabels(
     ? classifySeitz(op.R, [op.t[0] + shift[0], op.t[1] + shift[1], op.t[2] + shift[2]], groupCentring(demo))
     : canonical
   const kindDiffers = shown.kind !== canonical.kind || shown.short !== canonical.short
-  const motion: MotionText = op.index === 1 ? { lead: '', notes: [] } : describeMotion(shown)
+  const motion: MotionText = op.index === 1 ? { plain: '', lead: '', notes: [] } : describeMotion(shown)
   const opSentence = `Op ${op.index} (${op.triplet}): ${canonical.label}.`
   let copySentence = ''
   if (shifted) {
     copySentence = `Shown copy adds lattice ${fmtVec(shift)}`
     copySentence += kindDiffers ? `, which is a ${shown.label}.` : ` (${shown.symbol}).`
   }
-  const caption = [opSentence, copySentence, motion.lead, ...motion.notes].filter(Boolean).join(' ')
+  const caption = [opSentence, copySentence, motion.plain].filter(Boolean).join(' ')
   return { op, canonical, shift, shifted, shown, shownClass: displayClassOf(shown), kindDiffers, motion, opSentence, copySentence, caption }
 }
