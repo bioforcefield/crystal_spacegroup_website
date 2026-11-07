@@ -212,10 +212,15 @@ export function drawMotif(
 }
 
 /** Size a canvas backing store for its CSS box (DPR capped at 2). */
-export function fitCanvas(canvas: HTMLCanvasElement, w: number, h: number): CanvasRenderingContext2D | null {
+export function fitCanvas(
+  canvas: HTMLCanvasElement,
+  w: number,
+  h: number,
+  /** Cached CSS width (ResizeObserver); measured when omitted / zero. */
+  cssWidth?: number,
+): CanvasRenderingContext2D | null {
   const dpr = Math.min(2, typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1)
-  const rect = canvas.getBoundingClientRect()
-  const cssW = rect.width || w
+  const cssW = cssWidth || canvas.getBoundingClientRect().width || w
   const scale = (cssW / w) * dpr
   const W = Math.max(1, Math.round(w * scale))
   const H = Math.max(1, Math.round(h * scale))

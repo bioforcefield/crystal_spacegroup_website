@@ -16,8 +16,10 @@ import {
 } from '../data/primer/primerGeometry'
 import MotifStylePicker, { useMotifStyle } from './motifs/MotifStylePicker'
 import OpSceneCanvas from './motifs/OpSceneCanvas'
+import AnimationPauseToggle from './AnimationPauseToggle'
 import { primerScene, type OpScene } from './motifs/homeScenes'
 import type { MeshStyleId } from './motifs/motifGeometry'
+import { startLoop } from './motifs/animLoop'
 
 type DemoId =
   | 'identity'
@@ -371,6 +373,14 @@ function CellFrame() {
   )
 }
 
+/** Shared mover timeline: move 0–0.7, hold, fade out, reset and fade in. */
+function cyclePhase(u: number): { p: number; opacity: number } {
+  if (u < 0.7) return { p: u / 0.7, opacity: 1 }
+  if (u < 0.82) return { p: 1, opacity: 1 }
+  if (u < 0.92) return { p: 1, opacity: 1 - (u - 0.82) / 0.1 }
+  return { p: 0, opacity: (u - 0.92) / 0.08 }
+}
+
 /**
  * 2₁ mover: true screw = 180° about the vertical axis + ½ translation along it.
  * Position orbits from left→right of the axis while yaw 0→180 (proper; hand kept).
@@ -383,45 +393,22 @@ function ScrewGhost({ color }: { color: string }) {
   useEffect(() => {
     const el = gRef.current
     if (!el) return
-    const card = el.closest('.primer-card')
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    let raf = 0
-    let start = performance.now()
+    const start = performance.now()
     const PERIOD = 3400
-
-    const tick = (now: number) => {
-      const inview = !card || card.classList.contains('is-inview')
-      const still = reduce?.matches || !inview
-      if (still) {
-        setPose({ ...SCREW_PRIMER.B, opacity: 0, active: false })
-        raf = requestAnimationFrame(tick)
-        return
-      }
-      const u = ((now - start) % PERIOD) / PERIOD
-      // Motion phase 0–0.72: screw; hold; fade; reset
-      let p: number
-      let opacity = 1
-      if (u < 0.7) {
-        p = u / 0.7
-      } else if (u < 0.82) {
-        p = 1
-      } else if (u < 0.92) {
-        p = 1
-        opacity = 1 - (u - 0.82) / 0.1
-      } else {
-        p = 0
-        opacity = (u - 0.92) / 0.08
-      }
-      // Ease in-out
-      const e = screwEase(p)
-      // Orbit in the horizontal plane about axis x=60: angle 0→π (left → right)
-      // Start at screen-left of axis; after 180° about vertical, on the right.
-      const { x, y, yaw } = screwPose(e)
-      setPose({ x, y, yaw, opacity, active: true })
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return startLoop({
+      el,
+      draw: (now, still) => {
+        if (still) {
+          setPose({ ...SCREW_PRIMER.B, opacity: 0, active: false })
+          return
+        }
+        const { p, opacity } = cyclePhase(((now - start) % PERIOD) / PERIOD)
+        // Orbit about the vertical axis: 180° turn + ½ translation (left → right).
+        const e = screwEase(p)
+        const { x, y, yaw } = screwPose(e)
+        setPose({ x, y, yaw, opacity, active: true })
+      },
+    })
   }, [])
 
   return (
@@ -456,41 +443,20 @@ function InvGhost({ color }: { color: string }) {
   useEffect(() => {
     const el = gRef.current
     if (!el) return
-    const card = el.closest('.primer-card')
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    let raf = 0
-    let start = performance.now()
+    const start = performance.now()
     const PERIOD = 3200
-
-    const tick = (now: number) => {
-      const inview = !card || card.classList.contains('is-inview')
-      const still = reduce?.matches || !inview
-      if (still) {
-        setPose({ s: 1, opacity: 0, active: false })
-        raf = requestAnimationFrame(tick)
-        return
-      }
-      const u = ((now - start) % PERIOD) / PERIOD
-      let p: number
-      let opacity = 1
-      if (u < 0.7) {
-        p = u / 0.7
-      } else if (u < 0.82) {
-        p = 1
-      } else if (u < 0.92) {
-        p = 1
-        opacity = 1 - (u - 0.82) / 0.1
-      } else {
-        p = 0
-        opacity = (u - 0.92) / 0.08
-      }
-      const e = screwEase(p)
-      const s = inversionScale(e)
-      setPose({ s, opacity, active: true })
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return startLoop({
+      el,
+      draw: (now, still) => {
+        if (still) {
+          setPose({ s: 1, opacity: 0, active: false })
+          return
+        }
+        const { p, opacity } = cyclePhase(((now - start) % PERIOD) / PERIOD)
+        const e = screwEase(p)
+        setPose({ s: inversionScale(e), opacity, active: true })
+      },
+    })
   }, [])
 
   const jx = center.x + pose.s * offset.x
@@ -868,6 +834,7 @@ export default function SymmetryPrimer() {
     <>
     <div className="primer-toolbar">
       <MotifStylePicker value={style} onChange={setStyle} />
+      <AnimationPauseToggle />
     </div>
     <div className="primer-grid" ref={rootRef} data-motif-style={style}>
       {DEMOS.map((d) => (

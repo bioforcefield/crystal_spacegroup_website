@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useId, useState } from 'react'
+import { useId, useSyncExternalStore } from 'react'
 import {
+  DEFAULT_MOTIF_STYLE,
   isMotifStyleId,
   MOTIF_STYLE_OPTIONS,
   MOTIF_STYLE_STORAGE_KEY,
-  readMotifStyle,
   writeMotifStyle,
   type MotifStyleId,
 } from './motifStyles'
@@ -12,22 +12,44 @@ import {
  * Persistent motif-style preference. First visit → Tetra pebble; a valid
  * stored choice survives navigation and reloads; invalid values fall back.
  */
+// One module store so every picker / viewer on the page shares the choice
+// immediately; other tabs follow through the storage event.
+const styleListeners = new Set<() => void>()
+let currentStyle: MotifStyleId | null = null
+let styleStorageHooked = false
+function getStyle(): MotifStyleId {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(MOTIF_STYLE_STORAGE_KEY) : null
+    if (isMotifStyleId(raw)) return raw
+    if (raw !== null || typeof localStorage !== 'undefined') return DEFAULT_MOTIF_STYLE
+  } catch {
+    /* storage unavailable: fall back to the in-memory choice */
+  }
+  return currentStyle ?? DEFAULT_MOTIF_STYLE
+}
+function subscribeStyle(l: () => void): () => void {
+  styleListeners.add(l)
+  if (!styleStorageHooked && typeof window !== 'undefined') {
+    styleStorageHooked = true
+    window.addEventListener('storage', (e) => {
+      if (e.key !== MOTIF_STYLE_STORAGE_KEY) return
+      styleListeners.forEach((f) => f())
+    })
+  }
+  return () => {
+    styleListeners.delete(l)
+  }
+}
+function setSharedStyle(s: MotifStyleId) {
+  if (!isMotifStyleId(s)) return
+  currentStyle = s
+  writeMotifStyle(s)
+  styleListeners.forEach((f) => f())
+}
+
 export function useMotifStyle(): [MotifStyleId, (s: MotifStyleId) => void] {
-  const [style, setStyle] = useState<MotifStyleId>(() => readMotifStyle())
-  const update = useCallback((s: MotifStyleId) => {
-    if (!isMotifStyleId(s)) return
-    setStyle(s)
-    writeMotifStyle(s)
-  }, [])
-  // Keep other open tabs in sync.
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === MOTIF_STYLE_STORAGE_KEY) setStyle(readMotifStyle())
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
-  return [style, update]
+  const style = useSyncExternalStore(subscribeStyle, getStyle, () => DEFAULT_MOTIF_STYLE)
+  return [style, setSharedStyle]
 }
 
 export default function MotifStylePicker({

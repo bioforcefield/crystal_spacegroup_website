@@ -16,6 +16,7 @@ import { useEffect, useRef } from 'react'
 import { easeInOut } from '../../data/opPath'
 import { HERO_B, HERO_CENTER, HERO_I, heroScene } from '../motifs/homeScenes'
 import { drawPose } from '../motifs/OpSceneCanvas'
+import { startLoop } from '../motifs/animLoop'
 import { fitCanvas, getLiteMesh } from '../motifs/softRender'
 
 export { HERO_B, HERO_CENTER, HERO_I }
@@ -49,52 +50,23 @@ function HeroLopsyCanvas() {
     if (!canvas) return
     const sc = heroScene()
     const mesh = getLiteMesh('lopsy')
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    let visible = true
-    const io =
-      typeof IntersectionObserver !== 'undefined'
-        ? new IntersectionObserver((es) => {
-            visible = es.some((e) => e.isIntersecting)
-          })
-        : null
-    io?.observe(canvas)
-    let raf = 0
     const start = performance.now()
-    let drewStill = false
-    const draw = (now: number) => {
-      const still = !!reduce?.matches
-      if (!still && (!visible || document.hidden)) return
-      if (still && drewStill) return
-      const ctx = fitCanvas(canvas, sc.width, sc.height)
-      if (!ctx) return
-      ctx.clearRect(0, 0, sc.width, sc.height)
-      ctx.translate(HERO_CENTER.x, HERO_CENTER.y)
-      ctx.scale(ORBIT_SCALE, ORBIT_SCALE)
-      ctx.translate(-HERO_CENTER.x, -HERO_CENTER.y)
-      const f = still ? { bAlpha: 1, iAlpha: 1, s: 0, ghostAlpha: 0 } : heroFrame(((now - start) % PERIOD_MS) / PERIOD_MS)
-      // Back-to-front: I sits behind the centre (−depth), B in front.
-      if (f.iAlpha > 0.01) drawPose(ctx, sc, mesh, 1, '#fef08a', f.iAlpha, 0.5)
-      if (f.ghostAlpha > 0.01) drawPose(ctx, sc, mesh, f.s, '#f472b6', 0.92 * f.ghostAlpha, 0.35)
-      if (f.bAlpha > 0.01) drawPose(ctx, sc, mesh, 0, '#f8fafc', f.bAlpha, 0.25)
-      drewStill = still
-    }
-    const tick = (now: number) => {
-      draw(now)
-      raf = requestAnimationFrame(tick)
-    }
-    if (typeof requestAnimationFrame === 'function') raf = requestAnimationFrame(tick)
-    const onChange = () => {
-      drewStill = false
-    }
-    reduce?.addEventListener?.('change', onChange)
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onChange) : null
-    ro?.observe(canvas)
-    return () => {
-      if (raf) cancelAnimationFrame(raf)
-      io?.disconnect()
-      ro?.disconnect()
-      reduce?.removeEventListener?.('change', onChange)
-    }
+    return startLoop({
+      el: canvas,
+      draw: (now, still, size) => {
+        const ctx = fitCanvas(canvas, sc.width, sc.height, size.w)
+        if (!ctx) return
+        ctx.clearRect(0, 0, sc.width, sc.height)
+        ctx.translate(HERO_CENTER.x, HERO_CENTER.y)
+        ctx.scale(ORBIT_SCALE, ORBIT_SCALE)
+        ctx.translate(-HERO_CENTER.x, -HERO_CENTER.y)
+        const f = still ? { bAlpha: 1, iAlpha: 1, s: 0, ghostAlpha: 0 } : heroFrame(((now - start) % PERIOD_MS) / PERIOD_MS)
+        // Back-to-front: I sits behind the centre (−depth), B in front.
+        if (f.iAlpha > 0.01) drawPose(ctx, sc, mesh, 1, '#fef08a', f.iAlpha, 0.5)
+        if (f.ghostAlpha > 0.01) drawPose(ctx, sc, mesh, f.s, '#f472b6', 0.92 * f.ghostAlpha, 0.35)
+        if (f.bAlpha > 0.01) drawPose(ctx, sc, mesh, 0, '#f8fafc', f.bAlpha, 0.25)
+      },
+    })
   }, [])
   return <canvas ref={ref} className="hero-lopsy" width={440} height={400} aria-hidden="true" data-hero-motif="lopsy" />
 }

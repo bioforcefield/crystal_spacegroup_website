@@ -1588,6 +1588,17 @@ button {
   96%, 100% { opacity: 0; }
 }
 
+/* "Pause animations" (html.anim-paused) stills the hero like reduced motion. */
+html.anim-paused .hero-face-outer,
+html.anim-paused .hero-face-right,
+html.anim-paused .hero-atom-b,
+html.anim-paused .hero-atom-i,
+html.anim-paused .hero-inv-path,
+html.anim-paused .hero-inv-draw,
+html.anim-paused .hero-inv-pulse {
+  animation: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-face-outer,
   .hero-face-right,
@@ -2382,6 +2393,30 @@ button {
   }
 }
 
+/* "Pause animations": same static endpoints as reduced motion. */
+html.anim-paused .primer-card .primer-mover,
+html.anim-paused .primer-card .primer-glide-path {
+  animation: none !important;
+}
+html.anim-paused .primer-card .primer-inv-ghost,
+html.anim-paused .primer-card .primer-twofold-rotor,
+html.anim-paused .primer-card .primer-screw-ghost,
+html.anim-paused .primer-card .primer-mirror-rotor,
+html.anim-paused .primer-card .primer-glide-ghost {
+  opacity: 0;
+}
+html.anim-paused .primer-card .primer-marker,
+html.anim-paused .primer-card .primer-static-end {
+  opacity: 0.95 !important;
+}
+html.anim-paused .primer-card[data-primer='identity'] .primer-identity-pulse {
+  opacity: 1;
+  filter: none;
+}
+
+.anim-pause-toggle {
+  white-space: nowrap;
+}
 /* Guide */
 .guide-grid {
   display: grid;
@@ -5955,6 +5990,9 @@ button.linkish {
 /* —— Primer: motif-style toolbar + 3D canvas art —— */
 .primer-toolbar {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
   justify-content: flex-end;
   margin: -0.25rem 0 0.6rem;
 }

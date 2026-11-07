@@ -2,13 +2,15 @@
  * Draws one {@link OpScene} on a 2D canvas: the operation's real element,
  * faint static BASE / IMAGE endpoints, and a ghost that follows the honest
  * opPath frames. One shared low-poly mesh per style; no WebGL contexts.
- * Pauses off-screen; prefers-reduced-motion shows the static endpoints only.
+ * Runs only on-screen with motion on; paused animations or reduced motion show
+ * the static endpoints (both directions, live).
  */
 import { useEffect, useRef } from 'react'
 import { easeInOut, RENDER_COLLAPSE_FLOOR } from '../../data/opPath'
 import type { Vec3 } from '../../data/types'
 import { scenePose, sceneScreen, type OpScene } from './homeScenes'
 import { drawMotif, fitCanvas, getLiteMesh, type LiteMesh } from './softRender'
+import { startLoop } from './animLoop'
 import type { MeshStyleId } from './motifGeometry'
 
 export interface SceneTimeline {
@@ -168,62 +170,35 @@ export default function OpSceneCanvas({
     const canvas = ref.current
     if (!canvas) return
     const mesh = getLiteMesh(style)
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)')
-    const card = canvas.closest('.primer-card')
     let layer: HTMLCanvasElement | null = null
     let layerStill: boolean | null = null
-    let raf = 0
-    let stillDrawn = false
     const start = performance.now()
-
-    const render = (now: number) => {
-      const ctx = fitCanvas(canvas, scene.width, scene.height)
-      if (!ctx) return
-      const inview = !card || card.classList.contains('is-inview')
-      const still = !!reduce?.matches || !inview || document.hidden
-      if (still && stillDrawn && layer && layer.width === canvas.width && layer.height === canvas.height) return
-      if (!layer || layer.width !== canvas.width || layer.height !== canvas.height || layerStill !== still) {
-        layer = layer ?? document.createElement('canvas')
-        layer.width = canvas.width
-        layer.height = canvas.height
-        const lctx = layer.getContext('2d')
-        if (!lctx) return
-        lctx.setTransform(canvas.width / scene.width, 0, 0, canvas.height / scene.height, 0, 0)
-        drawStatic(lctx, scene, mesh, color, still)
-        layerStill = still
-      }
-      ctx.save()
-      ctx.setTransform(1, 0, 0, 1, 0, 0)
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(layer, 0, 0)
-      ctx.restore()
-      stillDrawn = still
-      if (still || scene.path.kind === 'identity') return
-      const u = ((now - start) % CARD_TIMELINE.periodMs) / CARD_TIMELINE.periodMs
-      const f = timelineFrame(u)
-      if (f.alpha > 0.01) drawPose(ctx, scene, mesh, f.s, color, f.alpha)
-    }
-    const tick = (now: number) => {
-      render(now)
-      raf = requestAnimationFrame(tick)
-    }
-    if (reduce?.matches) {
-      render(performance.now())
-      const onChange = () => render(performance.now())
-      reduce.addEventListener?.('change', onChange)
-      const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onChange) : null
-      ro?.observe(canvas)
-      return () => {
-        reduce.removeEventListener?.('change', onChange)
-        ro?.disconnect()
-      }
-    }
-    if (typeof requestAnimationFrame !== 'function') {
-      render(performance.now())
-      return
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return startLoop({
+      el: canvas,
+      animated: scene.path.kind !== 'identity',
+      draw: (now, still, size) => {
+        const ctx = fitCanvas(canvas, scene.width, scene.height, size.w)
+        if (!ctx) return
+        if (!layer || layer.width !== canvas.width || layer.height !== canvas.height || layerStill !== still) {
+          layer = layer ?? document.createElement('canvas')
+          layer.width = canvas.width
+          layer.height = canvas.height
+          const lctx = layer.getContext('2d')
+          if (!lctx) return
+          lctx.setTransform(canvas.width / scene.width, 0, 0, canvas.height / scene.height, 0, 0)
+          drawStatic(lctx, scene, mesh, color, still)
+          layerStill = still
+        }
+        ctx.save()
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(layer, 0, 0)
+        ctx.restore()
+        if (still) return
+        const f = timelineFrame(((now - start) % CARD_TIMELINE.periodMs) / CARD_TIMELINE.periodMs)
+        if (f.alpha > 0.01) drawPose(ctx, scene, mesh, f.s, color, f.alpha)
+      },
+    })
   }, [scene, style, color])
 
   return (

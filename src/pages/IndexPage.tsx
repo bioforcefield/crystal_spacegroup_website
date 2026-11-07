@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import SymmetryPrimer from '../components/SymmetryPrimer'
 import CsdStatistics from '../components/CsdStatistics'
 import HeroCellMotif from '../components/hero/HeroCellMotif'
+import AnimationPauseToggle from '../components/AnimationPauseToggle'
 import {
   CRYSTAL_SYSTEMS,
   READY_COUNT,
@@ -147,6 +148,7 @@ export default function IndexPage() {
               >
                 Suggest ideas ↗
               </a>
+              <AnimationPauseToggle className="btn-ghost" />
             </div>
           </div>
           <HeroCellMotif />
