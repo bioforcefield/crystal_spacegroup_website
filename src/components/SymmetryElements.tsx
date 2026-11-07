@@ -6,7 +6,8 @@
  */
 import { useMemo } from 'react'
 import { usePlaneGeometry } from './usePlaneGeometry'
-import { Line, Text, Billboard } from '@react-three/drei'
+import { Line, Billboard } from '@react-three/drei'
+import { SceneText } from './SceneText'
 import * as THREE from 'three'
 import { fracToCart } from '../data/math'
 import { elementOverlay } from '../data/elementSelection'
@@ -57,9 +58,9 @@ function ArrowHead({ position, direction, color, opacity, scale = 1 }: { positio
 function Label({ position, color, text }: { position: Vec3; color: string; text: string }) {
   return (
     <Billboard position={position}>
-      <Text fontSize={0.065} color={color} anchorX="center" anchorY="middle" outlineWidth={0.004} outlineColor="#0f172a">
+      <SceneText fontSize={0.065} color={color} anchorX="center" anchorY="middle" outlineWidth={0.004} outlineColor="#0f172a">
         {text}
-      </Text>
+      </SceneText>
     </Billboard>
   )
 }

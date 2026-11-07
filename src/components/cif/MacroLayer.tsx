@@ -6,7 +6,8 @@
 import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react'
 import * as THREE from 'three'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { Billboard, Line, Text } from '@react-three/drei'
+import { Billboard, Line } from '@react-three/drei'
+import { SceneText } from '../SceneText'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import type { ExpandedStructure } from '../../data/cif/types'
 import type { AtomPick } from '../../data/cif/atomInfo'
@@ -218,9 +219,9 @@ export function LigandFocusOverlay({
     if (anchor)
       items.push(
         <Billboard key={`pl${ri}`} position={add3(add3(anchor.cart, delta), [0, 0.6, 0])}>
-          <Text fontSize={0.42} color={res.symCode ? '#ddd6fe' : '#e2e8f0'} outlineWidth={0.03} outlineColor="#0b1220" anchorX="center" anchorY="bottom">
+          <SceneText fontSize={0.42} color={res.symCode ? '#ddd6fe' : '#e2e8f0'} outlineWidth={0.03} outlineColor="#0b1220" anchorX="center" anchorY="bottom">
             {res.label}
-          </Text>
+          </SceneText>
         </Billboard>,
       )
   })
@@ -233,9 +234,9 @@ export function LigandFocusOverlay({
     )
     items.push(
       <Billboard key={`il${k}`} position={[(A[0] + B[0]) / 2, (A[1] + B[1]) / 2 + 0.15, (A[2] + B[2]) / 2]}>
-        <Text fontSize={0.3} color={color} outlineWidth={0.025} outlineColor="#0b1220">
+        <SceneText fontSize={0.3} color={color} outlineWidth={0.025} outlineColor="#0b1220">
           {it.dist.toFixed(1)}
-        </Text>
+        </SceneText>
       </Billboard>,
     )
   })

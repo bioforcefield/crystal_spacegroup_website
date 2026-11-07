@@ -13,7 +13,8 @@ import {
 } from '../data/supercell'
 import { useMemo, useRef, useEffect, type RefObject } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
+import { OrbitControls, Line, Billboard } from '@react-three/drei'
+import { SceneText } from './SceneText'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { cellCenterCart, cellCornersCart, fracToCart } from '../data/math'
@@ -429,7 +430,7 @@ function AxisLabels({ cell }: { cell: CellParams }) {
 
   const label = (text: string, position: Vec3, color: string) => (
     <Billboard key={text} position={position}>
-      <Text
+      <SceneText
         fontSize={scale}
         color={color}
         anchorX="center"
@@ -438,7 +439,7 @@ function AxisLabels({ cell }: { cell: CellParams }) {
         outlineColor="#0f172a"
       >
         {text}
-      </Text>
+      </SceneText>
     </Billboard>
   )
 

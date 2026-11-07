@@ -1,4 +1,5 @@
-import { Billboard, Line, Text } from '@react-three/drei'
+import { Billboard, Line } from '@react-three/drei'
+import { SceneText } from '../SceneText'
 import * as THREE from 'three'
 import type { Vec3 } from '../../data/types'
 
@@ -57,7 +58,7 @@ export default function MeasureOverlay({ ann }: { ann: SceneAnnotations }) {
       )}
       {ann.labels.map((l, i) => (
         <Billboard key={`t${i}`} position={l.pos}>
-          <Text
+          <SceneText
             fontSize={0.42}
             color={l.color}
             anchorX="center"
@@ -68,7 +69,7 @@ export default function MeasureOverlay({ ann }: { ann: SceneAnnotations }) {
             material-depthTest={false}
           >
             {l.text}
-          </Text>
+          </SceneText>
         </Billboard>
       ))}
       {el?.kind === 'point' && (

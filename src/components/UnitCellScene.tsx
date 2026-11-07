@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls, Line, Text, Billboard } from '@react-three/drei'
+import { OrbitControls, Line, Billboard } from '@react-three/drei'
+import { SceneText } from './SceneText'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as THREE from 'three'
 import { cartesianLinear, cellCenterCart, cellCornersCart, fracToCart } from '../data/math'
@@ -73,7 +74,7 @@ function UnitCellWireframe({ demo }: { demo: SpaceGroupDemo }) {
         />
       </mesh>
       <Billboard position={[-0.14, -0.1, 0.02]}>
-        <Text
+        <SceneText
           fontSize={0.13}
           color="#e2e8f0"
           anchorX="center"
@@ -82,7 +83,7 @@ function UnitCellWireframe({ demo }: { demo: SpaceGroupDemo }) {
           outlineColor="#0f172a"
         >
           o
-        </Text>
+        </SceneText>
       </Billboard>
     </group>
   )
@@ -133,7 +134,7 @@ function AxisLabels({ demo }: { demo: SpaceGroupDemo }) {
   const cQ = fracToCart([0, 0, 0.25], demo.cell)
   const label = (text: string, position: Vec3, color: string) => (
     <Billboard key={text} position={position}>
-      <Text
+      <SceneText
         fontSize={0.12}
         color={color}
         anchorX="center"
@@ -142,7 +143,7 @@ function AxisLabels({ demo }: { demo: SpaceGroupDemo }) {
         outlineColor="#0f172a"
       >
         {text}
-      </Text>
+      </SceneText>
     </Billboard>
   )
   const bump = (p: Vec3, q: Vec3): Vec3 => {
@@ -305,7 +306,7 @@ function PointMarker({
 
       {showLabel && (
         <Billboard position={labelPos}>
-          <Text
+          <SceneText
             fontSize={isBase || isImage ? 0.085 : 0.07}
             color={isImage ? '#fef08a' : isBase ? '#f8fafc' : '#cbd5e1'}
             anchorX="center"
@@ -314,7 +315,7 @@ function PointMarker({
             outlineColor="#0f172a"
           >
             {labelText}
-          </Text>
+          </SceneText>
         </Billboard>
       )}
     </group>
