@@ -55,6 +55,6 @@ describe('operator panel shows derived labels', () => {
     expect(inv.caption).toMatch(/shrinks through the centre/)
     const gl = selectionLabels(getDemo(14)!, 4, 'nearest')
     expect(gl.caption).toMatch(/c-glide/)
-    expect(gl.motion).toMatch(/flattens onto the plane .* sliding/)
+    expect(gl.motion.lead).toMatch(/flattens onto the plane .* sliding/)
   })
 })

@@ -325,7 +325,7 @@ export default function OperatorPanel({
           {baseLabel}: {formatVec(basePoint.fractional)}
         </p>
         <p className="muted">
-          {imageLabel} under op {selected.index} ({opClass(selected).short}):{' '}
+          {imageLabel} under op {selected.index} ({opClass(demo, selected).short}):{' '}
           {formatVec(imagePoint.fractional)}
         </p>
         {selected.index !== 1 && shownCopy.shifted && (
@@ -398,20 +398,20 @@ export default function OperatorPanel({
                   role="option"
                   aria-selected={active}
                   aria-pressed={active}
-                  aria-label={`Operator ${op.index}: ${op.triplet}, ${opClass(op).label}${op.index === 1 ? ', BASE' : active ? ', IMAGE' : ''}`}
+                  aria-label={`Operator ${op.index}: ${op.triplet}, ${opClass(demo, op).label}${op.index === 1 ? ', BASE' : active ? ', IMAGE' : ''}`}
                 >
                   <span className="op-index">{op.index}</span>
-                  <span className="op-swatch" title={opClass(op).label} />
+                  <span className="op-swatch" title={opClass(demo, op).label} />
                   <span className="op-body">
                     <span className="op-triplet">{op.triplet}</span>
                     <span className="op-label">
-                      {opClass(op).label}
+                      {opClass(demo, op).label}
                       {op.index === 1 ? ' · BASE' : ''}
                       {active && op.index !== 1 ? ' · IMAGE' : ''}
                       {' · '}
                       {isImproper(op.R) ? 'opposite hand' : 'same hand'}
                     </span>
-                    <span className="op-seitz">{opClass(op).symbol}</span>
+                    <span className="op-seitz">{opClass(demo, op).symbol}</span>
                   </span>
                 </button>
               </li>
@@ -423,11 +423,11 @@ export default function OperatorPanel({
       <section className="matrix-section">
         <h2>Selected operator matrix</h2>
         <p className="hint">
-          x′ = R x + t &nbsp;·&nbsp; {selected.triplet} &nbsp;·&nbsp; {opClass(selected).symbol}
+          x′ = R x + t &nbsp;·&nbsp; {selected.triplet} &nbsp;·&nbsp; {opClass(demo, selected).symbol}
         </p>
         <MatrixBlock op={selected} />
         {selected.index !== 1 && (
-          <p className="element-locus">Element · {opClass(selected).label}</p>
+          <p className="element-locus">Element · {opClass(demo, selected).label}</p>
         )}
       </section>
     </aside>

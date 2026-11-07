@@ -297,7 +297,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                 {selection.kindDiffers ? `: ${selection.shown.label}` : ` (${selection.shown.symbol})`}
               </span>
             )}
-            <span className="op-motion-path"> · {selection.motion}</span>
+            <span className="op-motion-path"> · {selection.motion.lead}</span>
           </p>
         )}
         {placementMode === 'nearest' && (
@@ -346,9 +346,9 @@ export default function SpaceGroupPage({ demo }: Props) {
                   } as CSSProperties
                 }
                 onClick={() => handleSelect(op.index)}
-                title={`${op.triplet} · ${opClass(op).label}`}
+                title={`${op.triplet} · ${opClass(demo, op).label}`}
                 aria-pressed={active}
-                aria-label={`Operator ${op.index}: ${op.triplet}, ${opClass(op).label}`}
+                aria-label={`Operator ${op.index}: ${op.triplet}, ${opClass(demo, op).label}`}
               >
                 <span className="op-chip-idx">{op.index}</span>
                 <span className="op-chip-triplet">{op.triplet}</span>

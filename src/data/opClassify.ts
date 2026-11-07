@@ -37,12 +37,20 @@ export interface OpClassification {
   normal?: Vec3
   /** Unreduced intrinsic translation (fractional): actual screw/glide part of this (W, w). */
   intrinsicRaw: Vec3
-  /** Intrinsic translation reduced modulo lattice vectors along the element. */
+  /**
+   * Intrinsic translation reduced modulo the full translation lattice
+   * (Z³ + centring) along the element: the screw / glide that defines the
+   * element type (zero for rotations and mirrors).
+   */
   intrinsic: Vec3
+  /** Intrinsic part of this coset member modulo Z³ only (ITA operation symbol). */
+  intrinsicZ3: Vec3
+  /** Shortest group translation along the axis as a fraction of `axis` (axes only). */
+  period?: number
   /** Screw index m of n_m (screw only, verified integer). */
   screwM?: number
-  /** Glide letter (a, b, c, n, d) or 'g' for any other glide vector. */
-  glideLetter?: 'a' | 'b' | 'c' | 'n' | 'd' | 'g'
+  /** Glide letter (a, b, c, e, n, d) or 'g' for any other glide vector (element type). */
+  glideLetter?: 'a' | 'b' | 'c' | 'e' | 'n' | 'd' | 'g'
   /** A point of the element (fractional). */
   point: Vec3
   /** Inversion point of a rotoinversion / inversion. */
@@ -272,26 +280,19 @@ const dirName = (u: Vec3) => {
   return `[${u.map((x) => (x < 0 ? `${-x}̄` : String(x))).join('')}]`
 }
 
-/** In-plane lattice basis (v1, v2) of the plane with primitive normal h. */
-function planeLatticeBasis(W: Mat3, h: Vec3): [Vec3, Vec3] {
-  const cands: Vec3[] = []
+/** In-plane Z³ mesh (v1, v2) of the plane with primitive normal h, axis vectors preferred. */
+function planeLatticeBasis(h: Vec3): [Vec3, Vec3] {
+  const uniq = new Map<string, Vec3>()
   for (let i = -2; i <= 2; i++)
     for (let j = -2; j <= 2; j++)
       for (let k = -2; k <= 2; k++) {
-        if (!i && !j && !k) continue
         const v: Vec3 = [i, j, k]
-        if (near0(sub(mv(W, v), v))) cands.push(v)
+        if ((!i && !j && !k) || Math.abs(dot(h, v)) > TOL) continue
+        const p = primitive(v)
+        uniq.set(p.join(','), p)
       }
   const nnz = (v: Vec3) => v.filter((x) => x !== 0).length
-  // Prefer axis vectors, then short ones; first non-zero component positive.
-  const uniq = new Map<string, Vec3>()
-  for (const v of cands) {
-    const p = primitive(v)
-    if (near0(sub(p, scl(v, 1 / (gcd(gcd(v[0], v[1]), v[2]) || 1))))) uniq.set(p.join(','), p)
-  }
-  cands.length = 0
-  cands.push(...uniq.values())
-  cands.sort((p, q) => nnz(p) - nnz(q) || dot(p, p) - dot(q, q))
+  const cands = [...uniq.values()].sort((p, q) => nnz(p) - nnz(q) || dot(p, p) - dot(q, q))
   for (const a of cands)
     for (const b of cands) {
       const c = cross(a, b)
@@ -300,37 +301,150 @@ function planeLatticeBasis(W: Mat3, h: Vec3): [Vec3, Vec3] {
   throw new Error('no in-plane lattice basis')
 }
 
-/** Reduce t (lying in the plane spanned by v1, v2) to coefficients in [0, 1). */
-function reduceInPlane(t: Vec3, v1: Vec3, v2: Vec3): Vec3 {
-  const G11 = dot(v1, v1), G12 = dot(v1, v2), G22 = dot(v2, v2)
-  const r1 = dot(t, v1), r2 = dot(t, v2)
-  const D = G11 * G22 - G12 * G12
-  let a = (r1 * G22 - r2 * G12) / D
-  let b = (r2 * G11 - r1 * G12) / D
-  a = a - Math.floor(a + 1e-9)
-  b = b - Math.floor(b + 1e-9)
-  return cleanV(add(scl(v1, a), scl(v2, b)))
+/**
+ * Group translation lattice restricted to a plane (h·v = 0): Z³ plus the
+ * centring vectors. Returns a reduced 2D basis and a membership test.
+ */
+function inPlaneLattice(h: Vec3, centring: readonly Vec3[]) {
+  const cands: Vec3[] = []
+  for (const c of [[0, 0, 0] as Vec3, ...centring])
+    for (let i = -2; i <= 2; i++)
+      for (let j = -2; j <= 2; j++)
+        for (let k = -2; k <= 2; k++) {
+          const v = cleanV(add(c, [i, j, k]))
+          if (near0(v) || Math.abs(dot(h, v)) > TOL) continue
+          cands.push(v)
+        }
+  cands.sort((p, q) => dot(p, p) - dot(q, q))
+  const coeffs = (v: Vec3, b1: Vec3, b2: Vec3): [number, number] => {
+    const G11 = dot(b1, b1), G12 = dot(b1, b2), G22 = dot(b2, b2)
+    const r1 = dot(v, b1), r2 = dot(v, b2)
+    const D = G11 * G22 - G12 * G12
+    return [(r1 * G22 - r2 * G12) / D, (r2 * G11 - r1 * G12) / D]
+  }
+  const isInt = (x: number) => Math.abs(x - Math.round(x)) < 1e-6
+  const b1 = cands[0]
+  for (const b2 of cands) {
+    if (near0(cross(b1, b2))) continue
+    if (cands.every((v) => coeffs(v, b1, b2).every(isInt))) {
+      const contains = (v: Vec3) => {
+        if (Math.abs(dot(h, v)) > TOL) return false
+        const [p, q] = coeffs(v, b1, b2)
+        return isInt(p) && isInt(q) && near0(sub(v, add(scl(b1, Math.round(p)), scl(b2, Math.round(q)))))
+      }
+      return { b1, b2, contains }
+    }
+  }
+  throw new Error('no in-plane group lattice basis')
 }
 
 /**
- * Glide letter from the reduced glide vector g and the plane's lattice mesh
- * (v1, v2): a/b/c = ½ of a basis axis; n = ½ of the mesh diagonal (v1 + v2);
- * d = components all ¼ / ¾ (diamond); anything else is a general glide 'g'
- * (e.g. ½[110] on a plane x, x, z).
+ * Shortest group translation along the primitive lattice direction u, as a
+ * fraction P ∈ (0, 1] of u (P = ½ for I along ⟨111⟩, F along ⟨110⟩ …).
  */
-function glideLetter(g: Vec3, v1: Vec3, v2: Vec3): OpClassification['glideLetter'] {
-  const nz = g.map((x) => Math.abs(x)).filter((x) => x > TOL)
-  const is = (x: number, v: number) => Math.abs(x - v) < TOL
-  if (nz.length === 1 && is(nz[0], 0.5)) return (['a', 'b', 'c'] as const)[g.findIndex((x) => Math.abs(x) > TOL)]
-  const diag = scl(add(v1, v2), 0.5)
-  const diag2 = scl(sub(v1, v2), 0.5)
-  const sameMod = (a: Vec3, b: Vec3) => a.every((x, i) => Math.abs(x - b[i] - Math.round(x - b[i])) < TOL)
-  if (sameMod(g, diag) || sameMod(g, diag2)) return 'n'
-  if (nz.length >= 2 && nz.every((x) => is(x, 0.25) || is(x, 0.75))) return 'd'
-  return 'g'
+export function axisPeriod(u: Vec3, centring: readonly Vec3[]): number {
+  let P = 1
+  for (const c of centring)
+    for (let i = -2; i <= 2; i++)
+      for (let j = -2; j <= 2; j++)
+        for (let k = -2; k <= 2; k++) {
+          const v = add(c, [i, j, k])
+          if (!near0(cross(v, u))) continue
+          const lam = dot(v, u) / dot(u, u)
+          if (lam > TOL && lam < P - TOL) P = lam
+        }
+  return P
 }
 
-export function classifySeitz(W: Mat3, w: Vec3): OpClassification {
+const isHalf = (x: number) => Math.abs(Math.abs(x) - 0.5) < TOL
+const isQuarter = (x: number) => Math.abs(Math.abs(x) - 0.25) < TOL || Math.abs(Math.abs(x) - 0.75) < TOL
+const nnzOf = (v: Vec3) => v.filter((x) => Math.abs(x) > TOL).length
+
+/** Nicest representative: fewest non-zero components, smallest, non-negative first. */
+function pickRep(reps: Vec3[]): Vec3 {
+  const key = (v: Vec3) => [
+    nnzOf(v),
+    v.reduce((s, x) => s + Math.abs(x), 0),
+    v.filter((x) => x < -TOL).length,
+    -v[0], -v[1], -v[2],
+  ]
+  return [...reps].sort((p, q) => {
+    const a = key(p), b = key(q)
+    for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > TOL) return a[i] - b[i]
+    return 0
+  })[0]
+}
+
+type GlideLetter = NonNullable<OpClassification['glideLetter']>
+
+/**
+ * Glide letter of the in-plane vector g modulo the translation lattice T of
+ * the plane (ITA Table 2.1.2.1):
+ *  - a / b / c: some representative is ½ of a cell axis; two such → e (double glide);
+ *  - n: g ≡ ½(v1 + v2) for the plane's conventional Z³ mesh (v1, v2) and a
+ *    representative is half a face / body diagonal (components 0, ±½ only),
+ *    so ½[120] + ½c on a hexagonal plane is 'g', not 'n';
+ *  - d: a representative with every non-zero component ±¼ / ±¾;
+ *  - otherwise a general glide 'g' (e.g. ½[110] on the plane x, x, z).
+ * Returns null when g is a lattice vector (a mirror).
+ */
+function glideOf(
+  g: Vec3,
+  h: Vec3,
+  lat: { b1: Vec3; b2: Vec3; contains: (v: Vec3) => boolean },
+): { letter: GlideLetter; rep: Vec3 } | null {
+  if (lat.contains(g)) return null
+  const reps: Vec3[] = []
+  for (let i = -4; i <= 4; i++)
+    for (let j = -4; j <= 4; j++) {
+      const r = cleanV(add(g, add(scl(lat.b1, i), scl(lat.b2, j))))
+      if (r.every((x) => Math.abs(x) <= 1 + TOL)) reps.push(r)
+    }
+  const axes = [0, 1, 2].filter((i) => reps.some((r) => isHalf(r[i]) && nnzOf(r) === 1))
+  if (axes.length >= 2) {
+    const e: Vec3 = [0, 0, 0]
+    e[axes[0]] = 0.5
+    return { letter: 'e', rep: e }
+  }
+  if (axes.length === 1) {
+    const e: Vec3 = [0, 0, 0]
+    e[axes[0]] = 0.5
+    return { letter: (['a', 'b', 'c'] as const)[axes[0]], rep: e }
+  }
+  const [v1, v2] = planeLatticeBasis(h)
+  const halfDiag = scl(add(v1, v2), 0.5)
+  const diagReps = reps.filter((r) => nnzOf(r) >= 2 && r.every((x) => Math.abs(x) < TOL || isHalf(x)))
+  if (lat.contains(sub(g, halfDiag)) && diagReps.length) return { letter: 'n', rep: pickRep(diagReps) }
+  const dReps = reps.filter((r) => nnzOf(r) >= 2 && r.every((x) => Math.abs(x) < TOL || isQuarter(x)))
+  if (dReps.length) return { letter: 'd', rep: pickRep(dReps) }
+  return { letter: 'g', rep: pickRep(reps) }
+}
+
+const BAR = '\u0304'
+/** Rotoinversion / inversion symbol with an overbar, e.g. "4̄⁻", "1̄". */
+const barred = (n: number, sense: '' | '+' | '-' = '') => `${n}${BAR}${SUP[sense]}`
+
+const reduceZ3 = (v: Vec3): Vec3 => cleanV(v.map((x) => x - Math.floor(x + 1e-9)) as Vec3)
+
+/** Translation part of the group lattice: centring vectors of the listed operators. */
+export function centringOf(ops: readonly { R: Mat3; t: Vec3 }[]): Vec3[] {
+  const out: Vec3[] = []
+  for (const o of ops) {
+    if (!o.R.every((r, i) => r.every((x, j) => x === (i === j ? 1 : 0)))) continue
+    const t = reduceZ3(o.t)
+    if (!near0(t) && !out.some((c) => near0(sub(c, t)))) out.push(t)
+  }
+  return out
+}
+
+/**
+ * Classify (W, w). `centring` lists the group's centring translations
+ * (fractional, mod 1); the element type (screw vs rotation, glide letter,
+ * mirror vs glide) is reduced modulo the full translation lattice Z³ +
+ * centring, while `symbol` keeps the ITA operation symbol of this coset
+ * member (its own intrinsic vector modulo Z³).
+ */
+export function classifySeitz(W: Mat3, w: Vec3, centring: readonly Vec3[] = []): OpClassification {
   const d = det(W)
   const n = rotationOrder(W)
   const proper = d > 0
@@ -346,46 +460,53 @@ export function classifySeitz(W: Mat3, w: Vec3): OpClassification {
   const intrinsicRaw = cleanV(scl(sum, 1 / k))
   const locT = sub(w, intrinsicRaw)
   const IW = [0, 1, 2].map((i) => [0, 1, 2].map((j) => (i === j ? 1 : 0) - W[i][j])) as Mat3
+  const inLattice = (v: Vec3) => [[0, 0, 0] as Vec3, ...centring].some((c) => sub(v, c).every((x) => Math.abs(x - Math.round(x)) < 1e-6))
 
   if (proper && n === 1) {
-    const red = cleanV(w.map((x) => x - Math.floor(x + 1e-9)) as Vec3)
+    const red = reduceZ3(w)
     if (near0(red)) {
-      return { kind: 'identity', order: 1, sense: '', intrinsicRaw: w, intrinsic: red, point: [0, 0, 0], locus: '', symbol: '1', label: 'identity', short: '1' }
+      return { kind: 'identity', order: 1, sense: '', intrinsicRaw: w, intrinsic: red, intrinsicZ3: red, point: [0, 0, 0], locus: '', symbol: '1', label: 'identity', short: '1' }
     }
     const tv = fmtVec(w)
-    return { kind: 'translation', order: 1, sense: '', intrinsicRaw: w, intrinsic: red, point: [0, 0, 0], locus: '', symbol: `t${tv}`, label: `translation ${tv}`, short: 't' }
+    const centr = inLattice(w)
+    return { kind: 'translation', order: 1, sense: '', intrinsicRaw: w, intrinsic: red, intrinsicZ3: red, point: [0, 0, 0], locus: '', symbol: `t${fmtVec(red)}`, label: `${centr ? 'centring translation' : 'translation'} ${tv}`, short: 't' }
   }
 
   if (proper) {
     const u = nullVector(IW)
     const sense = senseOf(W, u, n)
     const lam = dot(intrinsicRaw, u) / dot(u, u)
-    const lamRed = clean(lam - Math.floor(lam + 1e-9))
+    const lamZ3 = clean(lam - Math.floor(lam + 1e-9))
+    const intrinsicZ3 = cleanV(scl(u, lamZ3))
+    const period = axisPeriod(u, centring)
+    let lamRed = clean(lam - period * Math.floor(lam / period + 1e-9))
+    if (Math.abs(lamRed - period) < 1e-9) lamRed = 0
     const intrinsic = cleanV(scl(u, lamRed))
     const kAxis = [0, 1, 2].reduce((b, i) => (Math.abs(u[i]) > Math.abs(u[b]) ? i : b), 0)
     const ek: Vec3 = [0, 0, 0]
     ek[kAxis] = 1
     const point = lsq([...(IW as Vec3[]), ek], [...locT, 0])
     const locus = lineLocus(point, u)
-    const screw = !near0(intrinsic)
+    const screw = Math.abs(lamRed) > TOL
     const supS = SUP[sense]
+    const symVec = near0(intrinsicZ3) ? '' : fmtVec(intrinsicZ3)
     if (!screw) {
       return {
-        kind: 'rotation', order: n, sense, axis: u, intrinsicRaw, intrinsic, point, locus,
-        symbol: `${n}${supS} ${locus}`,
+        kind: 'rotation', order: n, sense, axis: u, period, intrinsicRaw, intrinsic, intrinsicZ3, point, locus,
+        symbol: `${n}${supS}${symVec} ${locus}`,
         label: `${n}-fold rotation${sense ? ` (${n}${supS})` : ''} ‖ ${dirName(u)}`,
         short: `${n}${supS}`,
       }
     }
-    // n_m: translation m/n along the direction about which the turn is positive.
-    const mRaw = sense === '-' ? (1 - lamRed) * n : lamRed * n
+    // n_m: translation m/n of the axis period along the direction about which the turn is positive.
+    const mRaw = ((sense === '-' ? period - lamRed : lamRed) / period) * n
     const m = Math.round(mRaw)
     const verified = Math.abs(mRaw - m) < 1e-6 && m > 0 && m < n
     const sym = verified ? `${n}${SUB[m]}` : `${n}`
     return {
-      kind: 'screw', order: n, sense, axis: u, intrinsicRaw, intrinsic, point, locus,
+      kind: 'screw', order: n, sense, axis: u, period, intrinsicRaw, intrinsic, intrinsicZ3, point, locus,
       screwM: verified ? m : undefined,
-      symbol: `${n}${supS}${fmtVec(intrinsic)} ${locus}`,
+      symbol: `${n}${supS}${symVec} ${locus}`,
       label: verified ? `${sym} screw ‖ ${dirName(u)}` : `screw (${n}-fold + ${fmtVec(intrinsic)}) ‖ ${dirName(u)}`,
       short: sym,
     }
@@ -396,29 +517,35 @@ export function classifySeitz(W: Mat3, w: Vec3): OpClassification {
     // −1: inversion through w/2
     const centre = cleanV(scl(w, 0.5))
     const p = fmtVec(centre).slice(1, -1).split(',').join(', ')
-    return { kind: 'inversion', order: 1, sense: '', centre, intrinsicRaw: [0, 0, 0], intrinsic: [0, 0, 0], point: centre, locus: p, symbol: `1̄ ${p}`, label: `inversion centre at ${p}`, short: '1̄' }
+    return { kind: 'inversion', order: 1, sense: '', centre, intrinsicRaw: [0, 0, 0], intrinsic: [0, 0, 0], intrinsicZ3: [0, 0, 0], point: centre, locus: p, symbol: `${barred(1)} ${p}`, label: `inversion centre ${barred(1)} at ${p}`, short: barred(1) }
   }
   if (n === 2) {
-    // Reflection: normal h with Wᵀh = −h; in-plane lattice for glide reduction.
+    // Reflection: normal h with Wᵀh = −h.
     const WT1 = tr(W).map((r, i) => r.map((x, j) => x + (i === j ? 1 : 0))) as Mat3
     const h = nullVector(WT1)
-    const [v1, v2] = planeLatticeBasis(W, h)
-    const g = reduceInPlane(intrinsicRaw, v1, v2)
     const dist = dot(h, locT) / 2 // plane: h·x = h·(w − w_g)/2
     const kAxis = [0, 1, 2].reduce((b, i) => (Math.abs(h[i]) > Math.abs(h[b]) ? i : b), 0)
     const point: Vec3 = [0, 0, 0]
     point[kAxis] = dist / h[kAxis]
     const locus = planeLocus(h, dist)
-    if (near0(g)) {
-      return { kind: 'mirror', order: 2, sense: '', normal: h, intrinsicRaw, intrinsic: g, point: cleanV(point), locus, symbol: `m ${locus}`, label: `mirror, plane ${locus}`, short: 'm' }
+    // ITA operation symbol: this coset member's glide modulo Z³ only.
+    const z3 = glideOf(intrinsicRaw, h, inPlaneLattice(h, []))
+    const symbol = !z3
+      ? `m ${locus}`
+      : `${z3.letter}${'abc'.includes(z3.letter) ? '' : fmtVec(z3.rep)} ${locus}`
+    const intrinsicZ3 = z3 ? z3.rep : ([0, 0, 0] as Vec3)
+    // Element type: modulo the full translation lattice (centring included).
+    const el = glideOf(intrinsicRaw, h, inPlaneLattice(h, centring))
+    if (!el) {
+      return { kind: 'mirror', order: 2, sense: '', normal: h, intrinsicRaw, intrinsic: [0, 0, 0], intrinsicZ3, point: cleanV(point), locus, symbol, label: `mirror, plane ${locus}`, short: 'm' }
     }
-    const letter = glideLetter(g, v1, v2)!
-    const showVec = !(letter === 'a' || letter === 'b' || letter === 'c')
+    const L = el.letter
+    const name = L === 'g' ? 'glide' : L === 'e' ? 'e-glide (double glide)' : `${L}-glide`
     return {
-      kind: 'glide', order: 2, sense: '', normal: h, intrinsicRaw, intrinsic: g, glideLetter: letter, point: cleanV(point), locus,
-      symbol: `${letter}${showVec ? fmtVec(g) : ''} ${locus}`,
-      label: `${letter === 'g' ? 'glide' : `${letter}-glide`}, plane ${locus}, glide ${fmtVec(g)}`,
-      short: letter,
+      kind: 'glide', order: 2, sense: '', normal: h, intrinsicRaw, intrinsic: el.rep, intrinsicZ3, glideLetter: L, point: cleanV(point), locus,
+      symbol,
+      label: `${name}, plane ${locus}, glide ${fmtVec(el.rep)}`,
+      short: L,
     }
   }
   // Rotoinversion −3, −4, −6: unique fixed point, axis = null space of W + I.
@@ -430,46 +557,104 @@ export function classifySeitz(W: Mat3, w: Vec3): OpClassification {
   const locus = lineLocus(centre, u)
   const p = fmtVec(centre).slice(1, -1).split(',').join(', ')
   return {
-    kind: 'rotoinversion', order: n, sense, axis: u, centre, intrinsicRaw: [0, 0, 0], intrinsic: [0, 0, 0], point: centre, locus,
-    symbol: `${n}̄${SUP[sense]} ${locus}; ${p}`,
-    label: `−${n}${SUP[sense]} rotoinversion ‖ ${dirName(u)}, centre ${p}`,
-    short: `${n}̄${SUP[sense]}`,
+    kind: 'rotoinversion', order: n, sense, axis: u, centre, intrinsicRaw: [0, 0, 0], intrinsic: [0, 0, 0], intrinsicZ3: [0, 0, 0], point: centre, locus,
+    symbol: `${barred(n, sense)} ${locus}; ${p}`,
+    label: `${barred(n, sense)} rotoinversion ‖ ${dirName(u)}, centre ${p}`,
+    short: barred(n, sense),
   }
 }
 
-/** Fractional lattice translation L of the shown copy: image = W·base + w + L. */
-export function shownLatticeShift(W: Mat3, w: Vec3, baseFrac: Vec3, imageFrac: Vec3): Vec3 {
+/**
+ * Fractional lattice translation L of the shown copy: image = W·base + w + L.
+ * Returns null when the residual is not a lattice vector (the image is not
+ * this operation's mate of base).
+ */
+export function shownLatticeShift(W: Mat3, w: Vec3, baseFrac: Vec3, imageFrac: Vec3): Vec3 | null {
   const raw = add(mv(W, baseFrac), w)
-  return cleanV(sub(imageFrac, raw).map((x) => Math.round(x)) as Vec3)
+  const r = sub(imageFrac, raw)
+  const L = cleanV(r.map((x) => Math.round(x)) as Vec3)
+  return near0(sub(r, L)) ? L : null
+}
+
+const TURN_WORD: Record<number, string> = { 2: 'half-turn', 3: 'third-turn', 4: 'quarter-turn', 6: 'sixth-turn' }
+
+/** Signed turn about the listed axis direction, e.g. "quarter-turn (−90°, 4⁻)". */
+function turnText(c: OpClassification, sym: string): string {
+  const deg = Math.round(360 / c.order)
+  if (c.order === 2) return `half-turn (180°${sym ? `, ${sym}` : ''})`
+  const sign = c.sense === '-' ? '−' : '+'
+  return `${TURN_WORD[c.order] ?? `${deg}° turn`} (${sign}${deg}°, ${sym})`
+}
+
+export interface MotionText {
+  /** Plain one-sentence description of the drawn ghost path. */
+  lead: string
+  /** Extra precise notes (lattice advances, helix hand vs the axis's nominal hand). */
+  notes: string[]
+  /** Hand of the drawn helical path (screw-like motions with n > 2). */
+  pathHand?: 'right' | 'left'
 }
 
 /**
  * Plain-language description of the drawn ghost path for the shown copy
- * (W, w + L), from its unreduced intrinsic part — matches opPath exactly.
+ * (W, w + L), from its unreduced intrinsic part — matches opPath exactly:
+ * the ghost turns by the smallest angle in the copy's own sense about its
+ * axis and advances by the full (unreduced) axial part.
  */
-export function describeMotion(c: OpClassification): string {
+export function describeMotion(c: OpClassification): MotionText {
   const adv = fmtVec(c.intrinsicRaw)
-  const angle = c.order ? Math.round(360 / c.order) : 0
+  const notes: string[] = []
   switch (c.kind) {
     case 'identity':
-      return 'No motion (identity).'
+      return { lead: 'No motion (identity).', notes }
     case 'translation':
-      return `Ghost translates by ${fmtVec(c.intrinsicRaw)}.`
+      return { lead: `Motion shown: the ghost slides straight by ${fmtVec(c.intrinsicRaw)}.`, notes }
     case 'rotation':
     case 'screw': {
-      const along = near0(c.intrinsicRaw) ? '' : ` while advancing ${adv} along it`
-      const lattice = c.kind === 'rotation' && !near0(c.intrinsicRaw) ? ' (a whole lattice vector, so the element is still a plain rotation)' : ''
-      return `Ghost turns ${angle}° about the axis ${c.locus}${along}${lattice}.`
+      const sym = `${c.order}${SUP[c.sense]}`
+      const moving = !near0(c.intrinsicRaw)
+      let lead = `Motion shown: a ${turnText(c, c.order === 2 ? '' : sym)} about the axis ${c.locus}`
+      let pathHand: MotionText['pathHand']
+      if (moving) {
+        lead += ` while advancing ${adv}`
+        if (c.order > 2) {
+          const lam = dot(c.intrinsicRaw, c.axis!)
+          const turn = c.sense === '-' ? -1 : 1
+          pathHand = turn * lam > 0 ? 'right' : 'left'
+          lead += `: a ${pathHand}-handed helical path`
+        }
+      }
+      lead += '.'
+      if (c.kind === 'rotation' && moving) {
+        notes.push(`The advance ${adv} is a lattice translation, so the element is a plain ${c.order}-fold rotation axis.`)
+      }
+      if (c.kind === 'screw' && c.screwM && c.order > 2 && pathHand) {
+        const m = c.screwM
+        const sym2 = `${c.order}${SUB[m]}`
+        const nominal = 2 * m === c.order ? null : 2 * m < c.order ? 'right' : 'left'
+        if (!nominal) {
+          notes.push(`A ${sym2} axis has no hand (its ${c.order}⁺ and ${c.order}⁻ screws advance by the same amount); this copy follows a ${pathHand}-handed path.`)
+        } else if (nominal !== pathHand) {
+          notes.push(`The element is a ${sym2} axis, which is ${nominal}-handed (${c.order}⁺ with ${fmtFrac(m / c.order)} of the axis period); this copy reaches its mate along the ${pathHand}-handed path of the same axis.`)
+        } else {
+          notes.push(`The element is a ${sym2} axis, which is ${nominal}-handed, like this path.`)
+        }
+      }
+      return { lead, notes, pathHand }
     }
     case 'mirror':
     case 'glide': {
-      const slide = near0(c.intrinsicRaw) ? '' : ` while sliding ${adv} in the plane`
-      const lattice = c.kind === 'mirror' && !near0(c.intrinsicRaw) ? ' (a lattice vector, so the element is still a mirror)' : ''
-      return `Ghost flattens onto the plane ${c.locus} and emerges reflected${slide}${lattice}.`
+      const moving = !near0(c.intrinsicRaw)
+      const lead = `Motion shown: the ghost flattens onto the plane ${c.locus} and emerges reflected${moving ? ` while sliding ${adv} in the plane` : ''}.`
+      if (c.kind === 'mirror' && moving) notes.push(`The slide ${adv} is a lattice translation, so the plane is a mirror.`)
+      return { lead, notes }
     }
     case 'inversion':
-      return `Ghost shrinks through the centre ${c.locus} and emerges inverted.`
+      return { lead: `Motion shown: the ghost shrinks through the centre ${c.locus} and emerges inverted.`, notes }
     case 'rotoinversion':
-      return `Ghost turns ${angle}° about the axis ${c.locus} while shrinking through ${fmtVec(c.centre!)} and emerges inverted.`
+      return {
+        lead: `Motion shown: a ${turnText(c, barred(c.order, c.sense))} about the axis ${c.locus} while shrinking through ${fmtVec(c.centre!)}; the ghost emerges inverted.`,
+        notes,
+      }
   }
 }
