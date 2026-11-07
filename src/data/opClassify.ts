@@ -281,7 +281,16 @@ const dirName = (u: Vec3) => {
 }
 
 /** In-plane Z³ mesh (v1, v2) of the plane with primitive normal h, axis vectors preferred. */
+const meshCache = new Map<string, [Vec3, Vec3]>()
 function planeLatticeBasis(h: Vec3): [Vec3, Vec3] {
+  const ck = h.join(',')
+  const hit = meshCache.get(ck)
+  if (hit) return hit
+  const r = planeLatticeBasisRaw(h)
+  meshCache.set(ck, r)
+  return r
+}
+function planeLatticeBasisRaw(h: Vec3): [Vec3, Vec3] {
   const uniq = new Map<string, Vec3>()
   for (let i = -2; i <= 2; i++)
     for (let j = -2; j <= 2; j++)
@@ -305,7 +314,18 @@ function planeLatticeBasis(h: Vec3): [Vec3, Vec3] {
  * Group translation lattice restricted to a plane (h·v = 0): Z³ plus the
  * centring vectors. Returns a reduced 2D basis and a membership test.
  */
-function inPlaneLattice(h: Vec3, centring: readonly Vec3[]) {
+type PlaneLattice = { b1: Vec3; b2: Vec3; contains: (v: Vec3) => boolean }
+const latCache = new Map<string, PlaneLattice>()
+function inPlaneLattice(h: Vec3, centring: readonly Vec3[]): PlaneLattice {
+  const ck = `${h.join(',')}|${centring.map((c) => c.join(',')).join(';')}`
+  let hit = latCache.get(ck)
+  if (!hit) {
+    hit = inPlaneLatticeRaw(h, centring)
+    latCache.set(ck, hit)
+  }
+  return hit
+}
+function inPlaneLatticeRaw(h: Vec3, centring: readonly Vec3[]): PlaneLattice {
   const cands: Vec3[] = []
   for (const c of [[0, 0, 0] as Vec3, ...centring])
     for (let i = -2; i <= 2; i++)
@@ -342,7 +362,16 @@ function inPlaneLattice(h: Vec3, centring: readonly Vec3[]) {
  * Shortest group translation along the primitive lattice direction u, as a
  * fraction P ∈ (0, 1] of u (P = ½ for I along ⟨111⟩, F along ⟨110⟩ …).
  */
+const periodCache = new Map<string, number>()
 export function axisPeriod(u: Vec3, centring: readonly Vec3[]): number {
+  const ck = `${u.join(',')}|${centring.map((c) => c.join(',')).join(';')}`
+  const hit = periodCache.get(ck)
+  if (hit !== undefined) return hit
+  const r = axisPeriodRaw(u, centring)
+  periodCache.set(ck, r)
+  return r
+}
+function axisPeriodRaw(u: Vec3, centring: readonly Vec3[]): number {
   let P = 1
   for (const c of centring)
     for (let i = -2; i <= 2; i++)
@@ -394,6 +423,14 @@ function glideOf(
   lat: { b1: Vec3; b2: Vec3; contains: (v: Vec3) => boolean },
 ): { letter: GlideLetter; rep: Vec3 } | null {
   if (lat.contains(g)) return null
+  // Bring g into the fundamental mesh of (b1, b2) first so large coset
+  // members (w + n with big n) still have small representatives.
+  const g11 = dot(lat.b1, lat.b1), g12 = dot(lat.b1, lat.b2), g22 = dot(lat.b2, lat.b2)
+  const det = g11 * g22 - g12 * g12
+  const r1 = dot(g, lat.b1), r2 = dot(g, lat.b2)
+  const al = (g22 * r1 - g12 * r2) / det
+  const be = (g11 * r2 - g12 * r1) / det
+  g = cleanV(sub(g, add(scl(lat.b1, Math.floor(al + TOL)), scl(lat.b2, Math.floor(be + TOL)))))
   const reps: Vec3[] = []
   for (let i = -4; i <= 4; i++)
     for (let j = -4; j <= 4; j++) {

@@ -2,6 +2,7 @@
  * Geometry measurements (distance / angle / IUPAC torsion) and
  * molecule-pair → symmetry-element derivation (ITA: intrinsic vs location part).
  */
+import { classifySeitz } from '../opClassify'
 import type { CellParams, Mat3, Vec3 } from '../types'
 import { cartToFrac, fracToCart } from '../math'
 
@@ -218,9 +219,16 @@ function axisEquation(p: Vec3, d: Vec3): string | null {
   return xyz.map((v, i) => (nz[i] ? v : fmtFrac(p[i]!))).join(', ')
 }
 
-export function classifyOp(g: SeitzOp, cell: CellParams): SymmetryElementInfo {
+/**
+ * Element of a relating operation. Kind, screw order and glide letter come
+ * from the shared classifier (opClassify) with the structure's centring, so
+ * the measure readout agrees with the operator list and the overlays; the
+ * Cartesian geometry is computed here.
+ */
+export function classifyOp(g: SeitzOp, cell: CellParams, centring: readonly Vec3[] = []): SymmetryElementInfo {
   const W = g.R
   const w = g.t
+  const cs = classifySeitz(W, w, centring)
   const d = Math.round(det(W))
   const tr = Math.round(W[0][0] + W[1][1] + W[2][2])
   const proper = d === 1
@@ -268,10 +276,10 @@ export function classifyOp(g: SeitzOp, cell: CellParams): SymmetryElementInfo {
       ...base,
       intrinsic: [0, 0, 0],
       kind: 'inversion',
-      symbol: '-1',
+      symbol: '1̄',
       point,
       pointCart,
-      lines: [`Inversion centre ‾1 at ${fmtV(point)}`, `Cartesian ${fmtC(pointCart)}`],
+      lines: [`Inversion centre 1̄ at ${fmtV(point)}`, `Cartesian ${fmtC(pointCart)}`],
     }
   }
   if (proper) {
@@ -288,12 +296,10 @@ export function classifyOp(g: SeitzOp, cell: CellParams): SymmetryElementInfo {
     }
     axis = clean(axis)
     const axisCart = unit(toCart(axis))
-    let ratio = dot(intrinsic, axis) / dot(axis, axis)
-    const k = ((Math.round(ratio * order) % order) + order) % order
-    ratio = k / order
-    const screw = k !== 0
-    // keep intrinsic as given (may include a lattice repeat along the axis)
-    const symbol = screw ? `${order}${SUB[k]}` : `${order}`
+    // Screw vs rotation and n_m from the shared classifier (period includes centring).
+    const screw = cs.kind === 'screw'
+    const k = cs.screwM ?? 0
+    const symbol = screw ? cs.short : `${order}`
     const eq = axisEquation(point, axis)
     return {
       ...base,
@@ -306,7 +312,7 @@ export function classifyOp(g: SeitzOp, cell: CellParams): SymmetryElementInfo {
       lines: [
         `${screw ? 'Screw axis' : `${order}-fold rotation axis`} ${symbol} along ${fmtUvw(axis)}`,
         `through ${fmtV(point)}${eq ? ` — line ${eq}` : ''}`,
-        ...(screw ? [`screw translation ${fmtV(intrinsic)} (${k}/${order} of [${axis.join(' ')}], ${norm(toCart(intrinsic)).toFixed(3)} Å)`] : []),
+        ...(screw ? [`screw translation ${fmtV(intrinsic)} (${SUB[k] ? `${order}${SUB[k]}: ` : ''}${norm(toCart(intrinsic)).toFixed(3)} Å)`] : []),
         `Cartesian point ${fmtC(pointCart)}, direction (${axisCart.map((x) => x.toFixed(3)).join(', ')})`,
       ],
     }
@@ -322,13 +328,10 @@ export function classifyOp(g: SeitzOp, cell: CellParams): SymmetryElementInfo {
     const c = top.c * f * sign
     const Minv = matInv([0, 1, 2].map((i) => [toCart([1, 0, 0])[i]!, toCart([0, 1, 0])[i]!, toCart([0, 0, 1])[i]!]) as Mat3)
     const normalCart = unit(matVec([[Minv[0][0], Minv[1][0], Minv[2][0]], [Minv[0][1], Minv[1][1], Minv[2][1]], [Minv[0][2], Minv[1][2], Minv[2][2]]], hkl))
-    // reduce glide vector modulo lattice (keep it in (−1/2, 1/2])
-    intrinsic = clean(intrinsic.map((x) => x - Math.round(x - 1e-9)) as Vec3)
-    const glide = intrinsic.some((x) => Math.abs(x) > 1e-6)
-    const nz = intrinsic.map((x) => Math.abs(x) > 1e-6)
-    const nn = nz.filter(Boolean).length
-    const quarter = intrinsic.some((x) => Math.abs(Math.abs(x) - 0.25) < 1e-6)
-    const letter = !glide ? 'm' : quarter ? 'd' : nn === 1 ? ['a', 'b', 'c'][nz.indexOf(true)]! : nn === 2 ? 'n' : 'g'
+    // Mirror vs glide and the glide letter from the shared classifier (in-plane lattice incl. centring).
+    const glide = cs.kind === 'glide'
+    intrinsic = glide ? cs.intrinsic : [0, 0, 0]
+    const letter = glide ? cs.glideLetter ?? 'g' : 'm'
     return {
       ...base,
       intrinsic,
@@ -355,13 +358,13 @@ export function classifyOp(g: SeitzOp, cell: CellParams): SymmetryElementInfo {
     ...base,
     intrinsic: [0, 0, 0],
     kind: 'rotoinversion',
-    symbol: `-${order === 4 ? 4 : tr === 0 ? 3 : 6}`,
+    symbol: cs.short.replace(/[⁺⁻]/g, ''),
     point: center,
     pointCart: centerCart,
     axis,
     axisCart,
     lines: [
-      `Rotoinversion ‾${order === 4 ? 4 : tr === 0 ? 3 : 6} along ${fmtUvw(axis)}`,
+      `Rotoinversion ${cs.short.replace(/[⁺⁻]/g, '')} along ${fmtUvw(axis)}`,
       `inversion point ${fmtV(center)} — Cartesian ${fmtC(centerCart)}`,
     ],
   }
