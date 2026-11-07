@@ -72,9 +72,13 @@ body,
   overflow: hidden;
 }
 
+/* Marketing / site-shell pages: the document is the single vertical scroller
+   (no inner #root scroller), so #root grows with its content. */
 #root:has(.index-page),
 #root:has(.site-shell) {
-  overflow: auto;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
 }
 
 button {
@@ -736,9 +740,10 @@ button {
 }
 
 @media (max-width: 900px) {
-  /* Allow page scroll for details; #root:has(.layout-demo) otherwise locks overflow */
+  /* Mobile app pages scroll with the document (single scroller); the desktop
+     #root:has(.layout-demo) { overflow: hidden } fixed-panel lock does not apply. */
   #root:has(.layout-demo) {
-    overflow: auto;
+    overflow: visible;
     height: auto;
     min-height: 100%;
   }
@@ -935,12 +940,6 @@ button {
   /* Full operator list still in details; chip strip is the primary picker */
   .app.layout-demo .panel .ops .hint {
     display: none;
-  }
-
-  html,
-  body,
-  #root {
-    overflow: auto;
   }
 }
 
@@ -1255,7 +1254,8 @@ button {
 
 /* —— Site chrome (index) —— */
 .site-shell {
-  min-height: 100%;
+  /* #root is auto-height here (document scroller), so fill the viewport directly */
+  min-height: 100vh;
   background:
     radial-gradient(ellipse at 15% -10%, #132033 0%, transparent 50%),
     radial-gradient(ellipse at 90% 20%, #1a1030 0%, transparent 45%),
@@ -3139,7 +3139,7 @@ a.csd-bar-row.ready:hover {
 
 @media (max-width: 900px) {
   #root:has(.demo-shell) {
-    overflow: auto;
+    overflow: visible;
     height: auto;
     min-height: 100%;
   }
