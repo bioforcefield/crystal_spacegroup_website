@@ -3056,6 +3056,11 @@ a.csd-bar-row.ready:hover {
   font-weight: 600;
 }
 
+.app-error {
+  gap: 0.5rem;
+  text-align: center;
+}
+
 /* Mobile pane toggle: hidden on wide layouts */
 .mobile-pane-toggle {
   display: none;
