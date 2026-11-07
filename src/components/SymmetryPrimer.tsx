@@ -14,6 +14,10 @@ import {
   inversionJunction,
   inversionTipScreen,
 } from '../data/primer/primerGeometry'
+import MotifStylePicker, { useMotifStyle } from './motifs/MotifStylePicker'
+import OpSceneCanvas from './motifs/OpSceneCanvas'
+import { primerScene, type OpScene } from './motifs/homeScenes'
+import type { MeshStyleId } from './motifs/motifGeometry'
 
 type DemoId =
   | 'identity'
@@ -29,6 +33,8 @@ interface DemoSpec {
   subtitle: string
   color: string
   body: string
+  /** Style-neutral copy for the 3D motif styles (body mentions the classic L). */
+  styledBody?: string
 }
 
 const DEMOS: DemoSpec[] = [
@@ -45,6 +51,7 @@ const DEMOS: DemoSpec[] = [
     subtitle: '−x, −y, −z (about a point)',
     color: SYMMETRY_CLASSES.inversion.color,
     body: 'Point reflection through a center (⊙): every tip of the isometric L passes through ⊙ to −r. Improper — enantiomorph. Distinct from a 2-fold (proper 180° spin that keeps the same hand).',
+    styledBody: 'Point reflection through a center (⊙): every point of the motif passes through ⊙ to −r, so it shrinks onto the centre and re-emerges inverted. Improper — enantiomorph. Distinct from a 2-fold (proper 180° spin that keeps the same hand).',
   },
   {
     id: 'twofold',
@@ -52,6 +59,7 @@ const DEMOS: DemoSpec[] = [
     subtitle: '180° · axis ⊥ page',
     color: '#67e8f9',
     body: 'Top-down view: rotate 180° about an axis pointing at you (ITA lens). Proper — same enantiomorph; the isometric L ends upside-down. No translation along the axis.',
+    styledBody: 'Top-down view: rotate 180° about an axis pointing at you (ITA lens). Proper — same enantiomorph; the motif still faces you but ends upside-down. No translation along the axis.',
   },
   {
     id: 'screw',
@@ -59,6 +67,7 @@ const DEMOS: DemoSpec[] = [
     subtitle: 'side view: 180° + ½ along axis',
     color: SYMMETRY_CLASSES.screw.color,
     body: 'Side view of a 2₁: 180° about the vertical screw axis plus translation by ½ along that same axis. Proper — same enantiomorph (foot goes from toward→away after the turn). Distinct from a pure 2-fold (no slide) and from a mirror (hand would flip).',
+    styledBody: 'Side view of a 2₁: 180° about the vertical screw axis plus translation by ½ along that same axis. Proper — same enantiomorph (the face turns away after the half turn). Distinct from a pure 2-fold (no slide) and from a mirror (hand would flip).',
   },
   {
     id: 'mirror',
@@ -66,6 +75,7 @@ const DEMOS: DemoSpec[] = [
     subtitle: 'reflection',
     color: '#e2e8f0',
     body: 'Reflect across a plane. Improper — opposite enantiomorph of the isometric L (arm flips side; foot stays toward the viewer). (Pbca has no mirrors; it uses glides instead.)',
+    styledBody: 'Reflect across a plane: the motif flattens onto the plane and emerges as its mirror image. Improper — opposite enantiomorph. (Pbca has no mirrors; it uses glides instead.)',
   },
   {
     id: 'glide',
@@ -820,8 +830,19 @@ function DemoArt({ id, color }: { id: DemoId; color: string }) {
   }
 }
 
+const sceneCache = new Map<DemoId, OpScene>()
+function sceneFor(id: DemoId): OpScene {
+  let s = sceneCache.get(id)
+  if (!s) {
+    s = primerScene(id)
+    sceneCache.set(id, s)
+  }
+  return s
+}
+
 export default function SymmetryPrimer() {
   const rootRef = useRef<HTMLDivElement>(null)
+  const [style, setStyle] = useMotifStyle()
 
   useEffect(() => {
     const root = rootRef.current
@@ -844,7 +865,11 @@ export default function SymmetryPrimer() {
   }, [])
 
   return (
-    <div className="primer-grid" ref={rootRef}>
+    <>
+    <div className="primer-toolbar">
+      <MotifStylePicker value={style} onChange={setStyle} />
+    </div>
+    <div className="primer-grid" ref={rootRef} data-motif-style={style}>
       {DEMOS.map((d) => (
         <article
           key={d.id}
@@ -853,15 +878,20 @@ export default function SymmetryPrimer() {
           style={{ '--primer': d.color } as CSSProperties}
         >
           <div className="primer-art">
-            <DemoArt id={d.id} color={d.color} />
+            {style === 'classic' ? (
+              <DemoArt id={d.id} color={d.color} />
+            ) : (
+              <OpSceneCanvas scene={sceneFor(d.id)} style={style as MeshStyleId} color={d.color} />
+            )}
           </div>
           <div className="primer-copy">
             <h3>{d.title}</h3>
             <p className="primer-sub">{d.subtitle}</p>
-            <p>{d.body}</p>
+            <p>{style === 'classic' ? d.body : (d.styledBody ?? d.body)}</p>
           </div>
         </article>
       ))}
     </div>
+    </>
   )
 }

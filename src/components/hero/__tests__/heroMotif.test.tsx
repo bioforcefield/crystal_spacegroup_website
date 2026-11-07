@@ -12,14 +12,16 @@ describe('hero logo motif', () => {
     expect((HERO_B.x + HERO_I.x) / 2).toBe(110)
     expect((HERO_B.y + HERO_I.y) / 2).toBe(105)
   })
-  it('straight B→⊙→I path, ⊙ marked in inversion pink, I is the point-inverted motif, aria-hidden', () => {
+  it('straight B→⊙→I path, ⊙ marked in inversion pink, 3D Lopsy canvas overlay, aria-hidden', () => {
     const { container } = render(<HeroCellMotif />)
     expect(container.querySelector('.hero-motif')!.getAttribute('aria-hidden')).toBe('true')
     const path = container.querySelector('line.hero-inv-path')!
-    expect([path.getAttribute('x1'), path.getAttribute('y1'), path.getAttribute('x2'), path.getAttribute('y2')]).toEqual(['86', '91', '134', '119'])
+    expect([path.getAttribute('x1'), path.getAttribute('y1'), path.getAttribute('x2'), path.getAttribute('y2')]).toEqual(['72', '83', '148', '127'])
     expect(path.getAttribute('stroke')).toBe('#f472b6')
     expect(container.querySelector('.hero-inv-center circle')!.getAttribute('cx')).toBe('110')
-    expect(container.querySelector('.hero-atom-i-pop')!.getAttribute('transform')).toContain('scale(-1)')
+    // Motifs are the real 3D Lopsy on a canvas overlay (3D inversion, not a 2D flip).
+    expect(container.querySelector('.hero-atom-i-pop')).toBeNull()
+    expect(container.querySelector('canvas.hero-lopsy')).not.toBeNull()
     expect(container.querySelector('.hero-cell-label')!.textContent).toBe('P21/c · P1')
     expect(container.querySelector('.hero-cell-label line')).not.toBeNull()
     expect(container.querySelector('.hero-bond-dash, .hero-screw-path')).toBeNull()
