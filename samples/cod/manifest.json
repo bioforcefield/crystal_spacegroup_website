@@ -1,0 +1,439 @@
+{
+  "note": "Same-origin COD CIF cache for GitHub Pages (no CORS). Refresh via scripts/fetch-cod-samples.sh + scripts/build-cod-manifest.py",
+  "samples": [
+    {
+      "id": "1000001",
+      "label": "C107 H142 N14 O26",
+      "hm": "P 21 21 21",
+      "ita": 19,
+      "formula": "C107 H142 N14 O26"
+    },
+    {
+      "id": "1000032",
+      "label": "Corundum",
+      "hm": "R -3 c :H",
+      "ita": 167,
+      "formula": "Al2 O3"
+    },
+    {
+      "id": "1000042",
+      "label": "Muscovite 2M1",
+      "hm": "C 1 2/c 1",
+      "ita": 15,
+      "formula": "Al3 H2 K O12 Si3"
+    },
+    {
+      "id": "1000061",
+      "label": "Bayerite",
+      "hm": "P 1 21/a 1",
+      "ita": 14,
+      "formula": "Al H3 O3"
+    },
+    {
+      "id": "1010916",
+      "label": "Chlorapatite",
+      "hm": "P 63/m",
+      "ita": 176,
+      "formula": "Ca5 Cl O12 P3"
+    },
+    {
+      "id": "1010920",
+      "label": "Covellite",
+      "hm": "P 63/m m c",
+      "ita": 194,
+      "formula": "Cu S"
+    },
+    {
+      "id": "1010925",
+      "label": "Adamite",
+      "hm": "P n n m",
+      "ita": 58,
+      "formula": "As H O5 Zn2"
+    },
+    {
+      "id": "1010940",
+      "label": "Chalcopyrite",
+      "hm": "I -4 2 d",
+      "ita": 122,
+      "formula": "Cu Fe S2"
+    },
+    {
+      "id": "1010953",
+      "label": "Carnegieite high",
+      "hm": "P 21 3",
+      "ita": 198,
+      "formula": "Al Na O4 Si"
+    },
+    {
+      "id": "1010954",
+      "label": "Cristobalite high",
+      "hm": "F 41 3 2",
+      "ita": 210,
+      "formula": "O2 Si"
+    },
+    {
+      "id": "1010962",
+      "label": "Calcite",
+      "hm": "R -3 c RS",
+      "ita": null,
+      "formula": "C Ca O3"
+    },
+    {
+      "id": "1010995",
+      "label": "Moissanite 3C",
+      "hm": "F -4 3 m",
+      "ita": 216,
+      "formula": "C Si"
+    },
+    {
+      "id": "1011195",
+      "label": "Wurtzite 2H",
+      "hm": "P 63 m c",
+      "ita": 186,
+      "formula": "S Zn"
+    },
+    {
+      "id": "1100025",
+      "label": "Carbocernaite",
+      "hm": "P m c 21",
+      "ita": 26,
+      "formula": "C2 Ca O6 Sr"
+    },
+    {
+      "id": "1100043",
+      "label": "Sphalerite",
+      "hm": "F -4 3 m",
+      "ita": 216,
+      "formula": "S Zn"
+    },
+    {
+      "id": "1100303",
+      "label": "C26 H52 Li2 N6",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "C26 H52 Li2 N6"
+    },
+    {
+      "id": "1507756",
+      "label": "Barium titanate",
+      "hm": "P 4 m m",
+      "ita": 99,
+      "formula": "Ba O3 Ti"
+    },
+    {
+      "id": "1507757",
+      "label": "Barium titanate",
+      "hm": "P m -3 m",
+      "ita": 221,
+      "formula": "Ba O3 Ti"
+    },
+    {
+      "id": "1507774",
+      "label": "C22 H43 Ag O2",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "C22 H43 Ag O2"
+    },
+    {
+      "id": "1507776",
+      "label": "Nb4 O17 Sr5 Ti",
+      "hm": "P n n m",
+      "ita": 58,
+      "formula": "Nb4 O17 Sr5 Ti"
+    },
+    {
+      "id": "1508519",
+      "label": "C25 H26 Fe N2 O2",
+      "hm": "P c a 21",
+      "ita": 29,
+      "formula": "C25 H26 Fe N2 O2"
+    },
+    {
+      "id": "1512506",
+      "label": "Ga",
+      "hm": "C m c a",
+      "ita": 64,
+      "formula": "Ga"
+    },
+    {
+      "id": "1517671",
+      "label": "C22 H19 F O2",
+      "hm": "P 1 21/c 1",
+      "ita": 14,
+      "formula": "C22 H19 F O2"
+    },
+    {
+      "id": "1521116",
+      "label": "Ir O6 Sr2 Tb",
+      "hm": "P 1 21/n 1",
+      "ita": 14,
+      "formula": "Ir O6 Sr2 Tb"
+    },
+    {
+      "id": "1528996",
+      "label": "La1.2 O7 Y0.8 Zr2",
+      "hm": "F d -3 m :2",
+      "ita": 227,
+      "formula": "La1.2 O7 Y0.8 Zr2"
+    },
+    {
+      "id": "1532503",
+      "label": "C38 H80 Fe2 O6 P2 Si8",
+      "hm": "P 1 21/c 1",
+      "ita": 14,
+      "formula": "C38 H80 Fe2 O6 P2 Si8"
+    },
+    {
+      "id": "1532834",
+      "label": "Cr0.167 Li1.277 Mn0.556 O2",
+      "hm": "R -3 m :H",
+      "ita": 166,
+      "formula": "Cr0.167 Li1.277 Mn0.556 O2"
+    },
+    {
+      "id": "1537333",
+      "label": "Ce3 Ni6 Si2",
+      "hm": "I m -3 m",
+      "ita": 229,
+      "formula": "Ce3 Ni6 Si2"
+    },
+    {
+      "id": "1544740",
+      "label": "NiS2",
+      "hm": "P a -3",
+      "ita": 205,
+      "formula": "Ni S2"
+    },
+    {
+      "id": "2000064",
+      "label": "C9 H30 N3 O9 P3",
+      "hm": "C 1 2 1",
+      "ita": 5,
+      "formula": "C9 H30 N3 O9 P3"
+    },
+    {
+      "id": "2001013",
+      "label": "B6 Ba O12 Sr",
+      "hm": "R -3 c :H",
+      "ita": null,
+      "formula": "B6 Ba O12 Sr"
+    },
+    {
+      "id": "2002258",
+      "label": "Cu O2 Sr",
+      "hm": "C m c m",
+      "ita": 63,
+      "formula": "Cu O2 Sr"
+    },
+    {
+      "id": "2002887",
+      "label": "Br10 Re2 Te6",
+      "hm": "P 1 21 1",
+      "ita": 4,
+      "formula": "Br10 Re2 Te6"
+    },
+    {
+      "id": "2100187",
+      "label": "aragonite",
+      "hm": "P m c n",
+      "ita": 62,
+      "formula": "C Ca O3"
+    },
+    {
+      "id": "2100301",
+      "label": "dinicotinic acid",
+      "hm": "P 1 21/c 1",
+      "ita": 14,
+      "formula": "C7 H5 N O4"
+    },
+    {
+      "id": "2100616",
+      "label": "C16 H13 Cl O3",
+      "hm": "P 1 21/n 1",
+      "ita": 14,
+      "formula": "C16 H13 Cl O3"
+    },
+    {
+      "id": "2101320",
+      "label": "K2 O4 S",
+      "hm": "P m c n",
+      "ita": 62,
+      "formula": "K2 O4 S"
+    },
+    {
+      "id": "2101852",
+      "label": "O2 Ru",
+      "hm": "P 42/m n m",
+      "ita": null,
+      "formula": "O2 Ru"
+    },
+    {
+      "id": "2101983",
+      "label": "C52 H66 N4 O6",
+      "hm": "P 1 21/c 1",
+      "ita": 14,
+      "formula": "C52 H66 N4 O6"
+    },
+    {
+      "id": "2101989",
+      "label": "C15 H14 O3 S",
+      "hm": "P 1 21/n 1",
+      "ita": 14,
+      "formula": "C15 H14 O3 S"
+    },
+    {
+      "id": "2104741",
+      "label": "Arsenopyrite",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "As Fe S"
+    },
+    {
+      "id": "2212817",
+      "label": "C13 H19 N O",
+      "hm": "P b c a",
+      "ita": 61,
+      "formula": "C13 H19 N O"
+    },
+    {
+      "id": "4114818",
+      "label": "C20 H20 N2 O6",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "C20 H20 N2 O6"
+    },
+    {
+      "id": "4124843",
+      "label": "H14 N6 O8 Pt2",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "H14 N6 O8 Pt2"
+    },
+    {
+      "id": "7206076",
+      "label": "1-[(2-biphenylamino)methylen]naphtalen-2(1H)-one",
+      "hm": "P 1 21/c 1",
+      "ita": 14,
+      "formula": "C23 H17 N O"
+    },
+    {
+      "id": "9000000",
+      "label": "Grunerite",
+      "hm": "C 1 2/m 1",
+      "ita": 12,
+      "formula": "F0.5 Fe6.1 H1.5 Mg0.9 O23.5 Si8"
+    },
+    {
+      "id": "9000001",
+      "label": "Galena",
+      "hm": "F m -3 m",
+      "ita": 225,
+      "formula": "Pb S"
+    },
+    {
+      "id": "9000046",
+      "label": "Graphite",
+      "hm": "F m m m",
+      "ita": 69,
+      "formula": "C"
+    },
+    {
+      "id": "9007681",
+      "label": "Wegscheiderite",
+      "hm": "P -1",
+      "ita": 2,
+      "formula": "C4 H3 Na5 O12"
+    },
+    {
+      "id": "9007689",
+      "label": "Calcite",
+      "hm": "R -3 c :H",
+      "ita": 167,
+      "formula": "C Ca O3"
+    },
+    {
+      "id": "9008462",
+      "label": "Argon",
+      "hm": "F m -3 m",
+      "ita": 225,
+      "formula": "Ar"
+    },
+    {
+      "id": "9008465",
+      "label": "Cerium",
+      "hm": "F m -3 m",
+      "ita": 225,
+      "formula": "Ce"
+    },
+    {
+      "id": "9008483",
+      "label": "Scandium",
+      "hm": "F m -3 m",
+      "ita": 225,
+      "formula": "Sc"
+    },
+    {
+      "id": "9008564",
+      "label": "Diamond",
+      "hm": "F d -3 m :1",
+      "ita": 227,
+      "formula": "C"
+    },
+    {
+      "id": "9008565",
+      "label": "Silicon",
+      "hm": "F d -3 m :1",
+      "ita": 227,
+      "formula": "Si"
+    },
+    {
+      "id": "9008566",
+      "label": "Silicon",
+      "hm": "F d -3 m :1",
+      "ita": 227,
+      "formula": "Si"
+    },
+    {
+      "id": "9008568",
+      "label": "Tin-alpha",
+      "hm": "F d -3 m :1",
+      "ita": 227,
+      "formula": "Sn"
+    },
+    {
+      "id": "9009083",
+      "label": "Rutile",
+      "hm": "P 42/m n m",
+      "ita": 136,
+      "formula": "O2 Ti"
+    },
+    {
+      "id": "9009086",
+      "label": "Anatase",
+      "hm": "I 41/a m d :1",
+      "ita": 141,
+      "formula": "O2 Ti"
+    },
+    {
+      "id": "9011577",
+      "label": "Graphite",
+      "hm": "P 63/m m c",
+      "ita": 194,
+      "formula": "C"
+    },
+    {
+      "id": "9012596",
+      "label": "Baylissite",
+      "hm": "P 1 21/n 1",
+      "ita": 14,
+      "formula": "C2 H8 K2 Mg O10"
+    },
+    {
+      "id": "9012601",
+      "label": "Quartz",
+      "hm": "P 31 2 1",
+      "ita": 152,
+      "formula": "O2 Si"
+    }
+  ]
+}
