@@ -5973,3 +5973,21 @@ button.linkish {
   height: 100%;
   pointer-events: none;
 }
+
+/* Selected operation + shown copy + drawn motion (wraps on phones). */
+.op-motion {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted, #94a3b8);
+  overflow-wrap: anywhere;
+}
+.op-motion strong {
+  color: var(--text, #e2e8f0);
+}
+.op-motion .mono {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+.shown-copy-note {
+  margin-top: 0.2rem;
+}

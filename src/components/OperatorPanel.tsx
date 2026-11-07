@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { isImproper, operatorClass } from '../data/math'
+import { opClass, selectionLabels } from '../data/opLabels'
 import type { Operator, SpaceGroupDemo } from '../data/types'
 import {
   placedPositions,
@@ -59,7 +60,10 @@ export default function OperatorPanel({
 }: Props) {
   const selected =
     demo.operators.find((o) => o.index === selectedIndex) ?? demo.operators[0]
-  const selectedClass = operatorClass(demo, selected)
+  const shownCopy = useMemo(
+    () => selectionLabels(demo, selectedIndex, placementMode),
+    [demo, selectedIndex, placementMode],
+  )
   const focus = demo.operatorFocusIndices
   const [showAllOps, setShowAllOps] = useState(false)
   const listedOps = useMemo(() => {
@@ -321,9 +325,15 @@ export default function OperatorPanel({
           {baseLabel}: {formatVec(basePoint.fractional)}
         </p>
         <p className="muted">
-          {imageLabel} under op {selected.index} ({selectedClass.label}):{' '}
+          {imageLabel} under op {selected.index} ({opClass(selected).short}):{' '}
           {formatVec(imagePoint.fractional)}
         </p>
+        {selected.index !== 1 && shownCopy.shifted && (
+          <p className="hint shown-copy-note">
+            Shown copy adds lattice {shownCopy.shift.map((x) => String(x).replace('-', '−')).join(', ')}
+            {shownCopy.kindDiffers ? ` — ${shownCopy.shown.label}` : ` — ${shownCopy.shown.symbol}`}
+          </p>
+        )}
         <p className="hint seed-note">
           3D and 2D both follow Near / Wrap.
         </p>
@@ -388,22 +398,20 @@ export default function OperatorPanel({
                   role="option"
                   aria-selected={active}
                   aria-pressed={active}
-                  aria-label={`Operator ${op.index}: ${op.triplet}, ${op.label}${op.index === 1 ? ', BASE' : active ? ', IMAGE' : ''}`}
+                  aria-label={`Operator ${op.index}: ${op.triplet}, ${opClass(op).label}${op.index === 1 ? ', BASE' : active ? ', IMAGE' : ''}`}
                 >
                   <span className="op-index">{op.index}</span>
-                  <span className="op-swatch" title={cls.label} />
+                  <span className="op-swatch" title={opClass(op).label} />
                   <span className="op-body">
                     <span className="op-triplet">{op.triplet}</span>
                     <span className="op-label">
-                      {op.label}
+                      {opClass(op).label}
                       {op.index === 1 ? ' · BASE' : ''}
                       {active && op.index !== 1 ? ' · IMAGE' : ''}
                       {' · '}
                       {isImproper(op.R) ? 'opposite hand' : 'same hand'}
                     </span>
-                    <span className="op-seitz">
-                      {cls.label} · {op.seitz}
-                    </span>
+                    <span className="op-seitz">{opClass(op).symbol}</span>
                   </span>
                 </button>
               </li>
@@ -415,13 +423,11 @@ export default function OperatorPanel({
       <section className="matrix-section">
         <h2>Selected operator matrix</h2>
         <p className="hint">
-          x′ = R x + t &nbsp;·&nbsp; {selected.seitz}
+          x′ = R x + t &nbsp;·&nbsp; {selected.triplet} &nbsp;·&nbsp; {opClass(selected).symbol}
         </p>
         <MatrixBlock op={selected} />
-        {demo.elementLocusForOp(selected.index) && (
-          <p className="element-locus">
-            Element · {demo.elementLocusForOp(selected.index)}
-          </p>
+        {selected.index !== 1 && (
+          <p className="element-locus">Element · {opClass(selected).label}</p>
         )}
       </section>
     </aside>

@@ -23,6 +23,7 @@ import {
 import SupercellPicker from '../components/SupercellPicker'
 import VisitCounter from '../components/VisitCounter'
 import MotifStylePicker, { useMotifStyle } from '../components/motifs/MotifStylePicker'
+import { opClass, selectionLabels } from '../data/opLabels'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -88,12 +89,13 @@ export default function SpaceGroupPage({ demo }: Props) {
     if (idx != null) handleSelect(idx)
   }
 
-  const selectedOp = demo.operators.find((o) => o.index === selectedIndex)
-  const liveStatus = selectedOp
-    ? `Operator ${selectedOp.index}: ${selectedOp.label}. Placement ${
-        placementMode === 'nearest' ? 'Near' : 'Wrap'
-      }.${showAllSites ? '' : ' Showing BASE and IMAGE only.'}`
-    : ''
+  const selection = useMemo(
+    () => selectionLabels(demo, selectedIndex, placementMode),
+    [demo, selectedIndex, placementMode],
+  )
+  const liveStatus = `${selection.caption} Placement ${
+    placementMode === 'nearest' ? 'Near' : 'Wrap'
+  }.${showAllSites ? '' : ' Showing BASE and IMAGE only.'}`
 
   return (
     <div className={`app layout-demo mobile-pane-${mobilePane}`}>
@@ -279,6 +281,25 @@ export default function SpaceGroupPage({ demo }: Props) {
             {demo.geometryNote}
           </p>
         )}
+        {selectedIndex !== 1 && (
+          <p className="op-motion" data-op-kind={selection.canonical.kind} data-shown-kind={selection.shown.kind}>
+            <strong>
+              Op {selection.op.index} <span className="mono">{selection.op.triplet}</span>
+            </strong>
+            {' · '}
+            <span className="op-motion-label">{selection.canonical.label}</span>
+            {' · '}
+            <span className="mono op-motion-symbol">{selection.canonical.symbol}</span>
+            {selection.shifted && (
+              <span className="op-motion-copy">
+                {' · Shown copy +'}
+                {selection.shift.map((x) => String(x).replace('-', '−')).join(',')}
+                {selection.kindDiffers ? `: ${selection.shown.label}` : ` (${selection.shown.symbol})`}
+              </span>
+            )}
+            <span className="op-motion-path"> · {selection.motion}</span>
+          </p>
+        )}
         {placementMode === 'nearest' && (
           <p className="placement-near-hint" role="note">
             Near may place BASE/IMAGE just outside the cell box (UCL-style).
@@ -325,9 +346,9 @@ export default function SpaceGroupPage({ demo }: Props) {
                   } as CSSProperties
                 }
                 onClick={() => handleSelect(op.index)}
-                title={`${op.triplet} · ${op.label}`}
+                title={`${op.triplet} · ${opClass(op).label}`}
                 aria-pressed={active}
-                aria-label={`Operator ${op.index}: ${op.triplet}, ${op.label}`}
+                aria-label={`Operator ${op.index}: ${op.triplet}, ${opClass(op).label}`}
               >
                 <span className="op-chip-idx">{op.index}</span>
                 <span className="op-chip-triplet">{op.triplet}</span>
