@@ -124,8 +124,10 @@ function ElementGlyph({
     return (
       <g className={tag} opacity={opacity} {...data}>
         <path d={endOnShape(n, x, y, r)} fill={filled ? color : 'rgba(7,11,20,0.85)'} fillOpacity={filled ? 0.55 : 1} stroke={color} strokeWidth={strokeW} />
-        {c.kind === 'rotoinversion' && <circle cx={x} cy={y} r={2.2} fill={color} />}
-        {(c.kind === 'screw' || c.kind === 'rotoinversion' || emphasized) && (
+        {(c.kind === 'rotoinversion' || el.members.some((m) => m.kind === 'rotoinversion')) && (
+          <circle cx={x} cy={y} r={2.2} fill={c.kind === 'rotoinversion' ? color : 'rgba(7,11,20,0.95)'} stroke={color} strokeWidth={1} />
+        )}
+        {(c.kind === 'screw' || c.kind === 'rotoinversion' || el.symbol.includes('/') || emphasized) && (
           <text x={x + r + 2} y={y - r + 2} fill={color} fontSize={fs} fontWeight={700}>
             {el.symbol}
           </text>

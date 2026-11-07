@@ -8,8 +8,8 @@ import { describe, expect, it } from 'vitest'
 import { getDemo } from '../registry'
 import { classifySeitz } from '../opClassify'
 import { groupCentring } from '../elementClasses'
-import { contextElements, contextElementsInRange, elementSymbol, type DisplayElement } from '../elementGeometry'
-import { elementOverlay } from '../elementSelection'
+import { compositeSymbol, contextElements, contextElementsInRange, elementInBox, elementSymbol, rank, UNIT_BOX, type DisplayElement } from '../elementGeometry'
+import { CONTEXT_CAP, elementOverlay } from '../elementSelection'
 import { selectionLabels } from '../opLabels'
 import { placedPositions } from '../nearestImages'
 import type { Mat3, Vec3 } from '../types'
@@ -35,7 +35,7 @@ describe('context elements, all 230 groups', () => {
       // independent re-classification with the group centring gives the same element type
       const c = classifySeitz(e.seitz.R, e.seitz.t, centring)
       expect(c.kind).toBe(e.cls.kind)
-      expect(elementSymbol(c)).toBe(e.symbol)
+      expect(compositeSymbol(c, e.members)).toBe(e.symbol)
       const { R, t } = e.seitz
       const g = e.geom
       if (g.type === 'axis') {
@@ -96,7 +96,8 @@ describe('selected element is the shown copy, Near and Wrap, all 230 groups', ()
         const img = pl.find((p) => p.index === op.index)!.fractional
         expect(near(ap(sel.seitz.R, sel.seitz.t, base), img, 1e-5)).toBe(true)
         expect(ov.context.some((e) => e.key === sel.key)).toBe(false)
-        if (ov.limited) expect(ov.context.every((e) => e.classId === sel.classId)).toBe(true)
+        expect(ov.context.length + 1).toBeLessThanOrEqual(CONTEXT_CAP)
+        if (ov.limited) expect(ov.note).toContain(`Showing ${ov.context.length + 1} of ${ov.total}`)
       }
     }
   })
@@ -146,5 +147,116 @@ describe('reviewer geometry cases', () => {
     const d = getDemo(209)!
     const e = contextElements(d).find((x) => x.opIndices.includes(41))!
     expect(e.symbol).toBe('2')
+  })
+})
+
+const axisKeyOf = (c: ReturnType<typeof classifySeitz>) => {
+  const g = elementInBox(c, UNIT_BOX)
+  return g
+}
+
+describe('coincident operation types on one element (all 230 groups)', () => {
+  it.each(demos.map((d, i) => [i + 1, d] as const))('SG %i: every type found on a locus is kept; ranking honest', (_n, d) => {
+    const els = contextElements(d)
+    const centring = groupCentring(d)
+    const byOps = new Map<number, DisplayElement[]>()
+    for (const e of els) for (const i of e.opIndices) byOps.set(i, [...(byOps.get(i) ?? []), e])
+    for (const op of d.operators) {
+      for (let i = -1; i <= 2; i++)
+        for (let j = -1; j <= 2; j++)
+          for (let k = -1; k <= 2; k++) {
+            const c = classifySeitz(op.R, [op.t[0] + i, op.t[1] + j, op.t[2] + k], centring)
+            if (c.kind === 'identity' || c.kind === 'translation') continue
+            const g = axisKeyOf(c)
+            if (!g) continue
+            // find the element drawn at this locus
+            const host = (byOps.get(op.index) ?? []).find((e) => {
+              if (e.geom.type !== g.type) return false
+              if (g.type === 'point') return near((e.geom as { pos: Vec3 }).pos, g.pos)
+              if (g.type === 'axis') {
+                const eg = e.geom as { p0: Vec3; p1: Vec3 }
+                return (near(eg.p0, g.p0) && near(eg.p1, g.p1)) || (near(eg.p0, g.p1) && near(eg.p1, g.p0))
+              }
+              const eg = e.geom as { normal: Vec3; offset: number }
+              return near(eg.normal, g.normal) && Math.abs(eg.offset - g.offset) < 1e-5
+            })
+            expect(host, `SG op ${op.index} + (${i},${j},${k}) has no drawn element`).toBeTruthy()
+            expect(host!.members.map((m) => m.symbol)).toContain(elementSymbol(c))
+            expect(rank(host!.cls)).toBeGreaterThanOrEqual(rank(c))
+          }
+    }
+    for (const e of els) {
+      if (e.geom.type !== 'axis') continue
+      const kinds = e.members
+      const top = e.cls
+      // a same-order proper / screw is never hidden behind n̄ (n = 4, 6)
+      if (top.kind === 'rotoinversion' && (top.order === 4 || top.order === 6))
+        expect(kinds.some((m) => (m.kind === 'rotation' || m.kind === 'screw') && m.symbol.startsWith(String(top.order)))).toBe(false)
+      // 3̄ names an axis that also carries 3
+      if (kinds.some((m) => m.symbol === '3\u0304') && !kinds.some((m) => /^6/.test(m.symbol))) expect(e.symbol).toBe('3\u0304')
+    }
+  })
+})
+
+describe('ITA axis symbols where proper and improper axes coincide', () => {
+  const at = (sg: number, p: Vec3, u: Vec3) =>
+    contextElements(getDemo(sg)!).find(
+      (e) => e.geom.type === 'axis' && near(cross(sub(e.geom.point, p), u), [0, 0, 0]) && near(cross(e.geom.dir, u), [0, 0, 0]),
+    )!
+  const z: Vec3 = [0, 0, 1]
+  it.each([
+    [83, [0, 0, 0], '4/m', ['4', '4\u0304']], // P4/m
+    [83, [0.5, 0.5, 0], '4/m', ['4', '4\u0304']],
+    [84, [0, 0, 0], '4₂/m', ['4₂', '4\u0304']], // P4₂/m
+    [175, [0, 0, 0], '6/m', ['6', '6\u0304', '3\u0304']], // P6/m
+    [176, [0, 0, 0], '6₃/m', ['6₃', '6\u0304']], // P6₃/m
+    [221, [0, 0, 0], '4/m', ['4', '4\u0304']], // Pm-3m
+    [81, [0, 0, 0], '4\u0304', ['4\u0304', '2']], // P-4: 4̄ over the 2 it contains
+    [174, [0, 0, 0], '6\u0304', ['6\u0304', '3']], // P-6: 6̄ over 3
+    [147, [0, 0, 0], '3\u0304', ['3\u0304', '3']], // P-3: 3̄ over 3
+  ] as [number, Vec3, string, string[]][])('SG %i axis through %j ‖ c is %s', (sg, p, sym, members) => {
+    const e = at(sg, p, z)
+    expect(e.symbol).toBe(sym)
+    for (const m of members) expect(e.members.map((x) => x.symbol)).toContain(m)
+  })
+
+  it.each([83, 84, 87, 123, 131, 175, 176, 191, 194, 221, 225, 229])('SG %i: every selected op shows its exact element, coincident with a drawn context element', (sg) => {
+    const d = getDemo(sg)!
+    const all = contextElements(d)
+    for (const mode of ['nearest', 'wrapped'] as const)
+      for (const op of d.operators) {
+        if (op.index === 1) continue
+        const s = selectionLabels(d, op.index, mode)
+        if (s.shown.kind === 'translation') continue
+        const sel = elementOverlay(d, op.index, mode).selected!
+        expect(sel.symbol).toBe(elementSymbol(s.shown))
+        const host = all.find((e) => e.key === sel.key)
+        if (host) expect(host.members.map((m) => m.symbol)).toContain(sel.symbol)
+      }
+  })
+})
+
+describe('bounded context in dense groups', () => {
+  it.each(demos.map((d, i) => [i + 1, d] as const))('SG %i: identity selected → meaningful context within the budget', (_n, d) => {
+    const ov = elementOverlay(d, 1)
+    expect(ov.selected).toBeNull()
+    expect(ov.context.length).toBeLessThanOrEqual(CONTEXT_CAP)
+    expect(new Set(ov.context.map((e) => e.key)).size).toBe(ov.context.length)
+    if (ov.total > 0) expect(ov.context.length).toBe(Math.min(ov.total, CONTEXT_CAP))
+    if (ov.limited) {
+      expect(ov.note).toBe(`Showing ${ov.context.length} of ${ov.total} symmetry elements in the cell: the elements of each kind nearest the cell centre.`)
+      // every family (type + symbol + orientation) is represented when there are fewer families than the budget
+      const fam = (e: DisplayElement) => `${e.geom.type}:${e.symbol}:${e.geom.type === 'axis' ? e.geom.dir : e.geom.type === 'plane' ? e.geom.normal : ''}`
+      const all = new Set(contextElements(d).map(fam))
+      if (all.size <= CONTEXT_CAP) expect(new Set(ov.context.map(fam)).size).toBe(all.size)
+    } else expect(ov.note).toBe('')
+  })
+  it('Fd-3m (227) with an op selected stays within the budget', () => {
+    const d = getDemo(227)!
+    for (const i of [2, 13, 25, 49, 100, 150, 192]) {
+      const ov = elementOverlay(d, i)
+      expect(ov.context.length + (ov.selected ? 1 : 0)).toBeLessThanOrEqual(CONTEXT_CAP)
+      expect(ov.limited).toBe(true)
+    }
   })
 })

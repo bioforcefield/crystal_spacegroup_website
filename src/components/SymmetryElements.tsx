@@ -5,6 +5,7 @@
  * ghost path uses. Stored screwAxes / glidePlanes are not drawn.
  */
 import { useMemo } from 'react'
+import { usePlaneGeometry } from './usePlaneGeometry'
 import { Line, Text, Billboard } from '@react-three/drei'
 import * as THREE from 'three'
 import { fracToCart } from '../data/math'
@@ -92,12 +93,12 @@ function AxisVisual({ el, cell, emphasized, opacityScale }: { el: DisplayElement
           <Line points={arcPts} color={color} lineWidth={2} transparent opacity={opacity * 0.9} />
           <ArrowHead position={arcPts[4]} direction={sub(arcPts[4], arcPts[3])} color={color} opacity={opacity} scale={0.7} />
           {screw && <ArrowHead position={addV(a, scl(uCart, along * 0.9))} direction={uCart} color={color} opacity={opacity} />}
-          {el.centre && (
-            <mesh position={fracToCart(el.centre, cell)}>
+          {(el.centre ? [el.centre] : el.members.filter((m) => m.centre).map((m) => m.centre!)).map((ctr, i) => (
+            <mesh key={i} position={fracToCart(ctr, cell)}>
               <octahedronGeometry args={[0.04, 0]} />
               <meshStandardMaterial color={color} transparent opacity={opacity} emissive={color} emissiveIntensity={0.5} depthWrite={false} />
             </mesh>
-          )}
+          ))}
           <Label position={addV(mid, scl(r, 1.6))} color={color} text={`${el.symbol} ${c.locus}`} />
         </>
       )}
@@ -108,14 +109,7 @@ function AxisVisual({ el, cell, emphasized, opacityScale }: { el: DisplayElement
 function PlaneVisual({ el, cell, emphasized, opacityScale }: { el: DisplayElement; cell: CellParams; emphasized: boolean; opacityScale: number }) {
   const poly = el.geom.type === 'plane' ? el.geom.poly : null
   const corners = useMemo(() => (poly ? poly.map((p) => fracToCart(p, cell)) : []), [poly, cell])
-  const geom = useMemo(() => {
-    const g = new THREE.BufferGeometry()
-    const verts: number[] = []
-    for (let i = 1; i + 1 < corners.length; i++) verts.push(...corners[0], ...corners[i], ...corners[i + 1])
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verts), 3))
-    g.computeVertexNormals()
-    return g
-  }, [corners])
+  const geom = usePlaneGeometry(corners)
   if (!poly) return null
   const color = el.color
   const planeOpacity = (emphasized ? EMPH_PLANE : FAINT_PLANE) * opacityScale

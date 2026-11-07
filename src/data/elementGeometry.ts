@@ -36,6 +36,8 @@ export interface DisplayElement {
   glide?: Vec3
   /** The operation (W, w) this element was derived from. */
   seitz: { R: Mat3; t: Vec3 }
+  /** Every operation type found on this element (axis: e.g. 4, 4̄, 2 on a 4/m axis). */
+  members: ElementMember[]
 }
 
 export interface Box {
@@ -177,10 +179,54 @@ function geomKey(g: ElementGeom): string {
   return `pl:${g.normal.join(',')}:${r6(g.offset)}`
 }
 
-/** Priority among operations sharing one geometric element: higher order, then improper, then screw. */
-function rank(c: OpClassification): number {
-  const kind = { rotoinversion: 3, screw: 1, rotation: 2, inversion: 0, mirror: 0, glide: 0, identity: 0, translation: 0 }[c.kind]
-  return c.order * 10 + kind
+/**
+ * Which operation names an axis shared by several operations (the others are
+ * kept in `members` and, where ITA has one, a composite symbol):
+ *  - higher order first, so 4̄ outranks the 2 it contains and 6̄ the 3;
+ *  - at the same order a proper rotation / screw outranks the rotoinversion
+ *    (4 with 4̄ is the 4/m axis, not a bare 4̄) …
+ *  - … except 3̄, which contains the 3 on its axis and is the element (ITA).
+ * Planes and points have one kind per locus (a lattice partner of a mirror
+ * that is a glide lies on a different plane or is the same element type).
+ */
+export function rank(c: OpClassification): number {
+  const proper = c.kind === 'rotation' || c.kind === 'screw'
+  const bar = c.kind === 'rotoinversion'
+  let sub = 0
+  if (c.order === 3) sub = bar ? 2 : 1
+  else sub = proper ? 2 : bar ? 1 : 0
+  return c.order * 10 + sub
+}
+
+/** One operation type present on a shared element. */
+export interface ElementMember {
+  kind: OpClassification['kind']
+  symbol: string
+  centre?: Vec3
+}
+
+/**
+ * ITA composite symbol for an axis carrying a proper n-fold (rotation or the
+ * non-enantiomorphic screw n_{n/2}) and the same-order rotoinversion n̄: the
+ * product of the two is a mirror ⊥ the axis, so the axis is n/m (4/m, 4₂/m,
+ * 6/m, 6₃/m). Other coincidences keep the ranked symbol.
+ */
+export function compositeSymbol(top: OpClassification, members: ElementMember[]): string {
+  const proper = top.kind === 'rotation' || (top.kind === 'screw' && top.screwM !== undefined && 2 * top.screwM === top.order)
+  if (!proper || (top.order !== 4 && top.order !== 6)) return elementSymbol(top)
+  const hasBar = members.some((m) => m.kind === 'rotoinversion' && m.symbol.startsWith(`${top.order}\u0304`))
+  return hasBar ? `${elementSymbol(top)}/m` : elementSymbol(top)
+}
+
+function memberOf(c: OpClassification): ElementMember {
+  return { kind: c.kind, symbol: elementSymbol(c), centre: c.kind === 'rotoinversion' ? c.centre : undefined }
+}
+
+function addMember(e: DisplayElement, c: OpClassification) {
+  const m = memberOf(c)
+  const same = (a: ElementMember) =>
+    a.symbol === m.symbol && (!a.centre || !m.centre || a.centre.every((x, i) => Math.abs(x - m.centre![i]) < 1e-6))
+  if (!e.members.some(same)) e.members.push(m)
 }
 
 function makeElement(c: OpClassification, geom: ElementGeom, opIndex: number, seitz: { R: Mat3; t: Vec3 }): DisplayElement {
@@ -196,6 +242,7 @@ function makeElement(c: OpClassification, geom: ElementGeom, opIndex: number, se
     centre: c.kind === 'rotoinversion' ? c.centre : undefined,
     glide: c.kind === 'glide' ? c.intrinsic : undefined,
     seitz,
+    members: [memberOf(c)],
   }
 }
 
@@ -234,15 +281,22 @@ export function contextElementsInRange(demo: SpaceGroupDemo, lo: number, hi: num
           if (!prev) byKey.set(key, makeElement(tc, g, op.index, { R: op.R, t: w }))
           else {
             if (!prev.opIndices.includes(op.index)) prev.opIndices.push(op.index)
+            addMember(prev, tc)
             if (rank(tc) > rank(prev.cls)) {
               const next = makeElement(tc, g, op.index, { R: op.R, t: w })
               next.opIndices = prev.opIndices
+              next.members = prev.members
               byKey.set(key, next)
             }
           }
         }
   }
-  return [...byKey.values()]
+  const out = [...byKey.values()]
+  for (const e of out) {
+    e.members.sort((a, b) => (a.symbol === e.symbol ? -1 : b.symbol === e.symbol ? 1 : 0))
+    e.symbol = compositeSymbol(e.cls, e.members)
+  }
+  return out
 }
 
 /** Element of the shown copy, clipped to a box around the cell and the given motif positions. */
@@ -280,5 +334,9 @@ function footOn(c: OpClassification, m: Vec3): Vec3 {
 /** Short locus text with heights, for titles. */
 export function elementTitle(e: DisplayElement): string {
   const extra = e.centre ? `; centre ${e.centre.map(fmtFrac).join(', ')}` : ''
-  return `${e.cls.label}${e.cls.kind === 'inversion' ? '' : ` (${e.cls.locus}${extra})`}`
+  const base = `${e.cls.label}${e.cls.kind === 'inversion' ? '' : ` (${e.cls.locus}${extra})`}`
+  const others = (e.members ?? []).filter((m) => m.symbol !== elementSymbol(e.cls))
+  if (!others.length) return base
+  const list = others.map((m) => (m.centre ? `${m.symbol} (centre ${m.centre.map(fmtFrac).join(', ')})` : m.symbol)).join(', ')
+  return `${e.symbol} axis: ${base}; also ${list} on this axis`
 }
