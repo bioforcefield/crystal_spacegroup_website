@@ -96,3 +96,18 @@ describe('ITA diagram guide content', () => {
     expect(src).not.toMatch(/ITA §1\.4/)
   })
 })
+
+import { getDemo as getDemoForGuide } from '../registry'
+import { opClass as opClassForGuide } from '../elementClasses'
+import { P21C_ITA_WALKTHROUGH as GUIDE } from '../itaGuide'
+describe('ITA guide P2₁/c table agrees with the derived classification', () => {
+  it('labels match kind / screw / glide letter of /sg/14 operators', () => {
+    const d = getDemoForGuide(14)!
+    const want: Record<number, RegExp> = { 1: /identity/i, 2: /2₁ screw/, 3: /inversion/i, 4: /c-glide/ }
+    for (const row of GUIDE.operators) {
+      const op = d.operators.find((o) => o.index === row.index)!
+      expect(opClassForGuide(d, op).label).toMatch(want[row.index])
+      expect(row.label).toMatch(want[row.index])
+    }
+  })
+})

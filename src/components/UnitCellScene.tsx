@@ -668,7 +668,7 @@ function SceneContent({
             onSelect={onSelect}
           />
         ))}
-        <SymmetryElements demo={demo} selectedIndex={selectedIndex} />
+        <SymmetryElements demo={demo} selectedIndex={selectedIndex} placementMode={placementMode} />
         <AxisLabels demo={demo} />
         <BaseImageConnector from={baseCartesian} to={imageCartesian} />
         {visiblePoints.map((p) => {

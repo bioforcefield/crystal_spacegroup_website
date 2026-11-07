@@ -6,6 +6,7 @@
  * When expansion used CIF-listed operators (non-standard setting / origin),
  * derive loci from those same operators so overlays match the packing.
  */
+import { contextElements } from '../elementGeometry'
 import {
   deriveElements,
   isGeometryLimited,
@@ -19,12 +20,9 @@ import type { CellParams, Operator, SpaceGroupDemo, Vec3 } from '../types'
 import type { ExpandedStructure } from './types'
 
 /** Count drawn geometric overlays (not operator chips). */
+/** Number of derived symmetry elements meeting the cell (what the overlay can draw). */
 export function countDemoElements(demo: SpaceGroupDemo): number {
-  return (
-    demo.screwAxes.length +
-    demo.inversionCenters.length +
-    demo.glidePlanes.length
-  )
+  return contextElements(demo).length
 }
 
 /**

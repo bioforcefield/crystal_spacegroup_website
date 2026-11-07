@@ -1,21 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  allProjectedGlides,
-  allProjectedScrews,
   buildProjections,
+  dedupeProjected,
   formatHeightLabel,
+  formatQuarter,
   planeEmbed,
+  projectElement,
   projectFrac,
-  projectInversions,
+  type ProjectedElement,
   type ProjectionDir,
-  type ProjectedGlide,
-  type ProjectedScrew,
+  type ProjectionInfo,
 } from '../data/diagram2d'
+import { elementOverlay } from '../data/elementSelection'
+import { elementTitle } from '../data/elementGeometry'
 import {
   placedPositions,
   type PlacementMode,
 } from '../data/nearestImages'
-import type { SpaceGroupDemo, SymmetryClassId } from '../data/types'
+import type { SpaceGroupDemo } from '../data/types'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -28,27 +30,6 @@ interface Props {
 }
 
 const PAD = { left: 40, right: 32, top: 18, bottom: 34 }
-
-function classColor(demo: SpaceGroupDemo, id: SymmetryClassId): string {
-  return demo.symmetryClasses[id].color
-}
-
-/** Curved half-arrow on an end-on 2₁ symbol (ITA-ish). */
-function endOnHalfArrow(cx: number, cy: number, r: number): string {
-  const a0 = -0.4
-  const a1 = 1.9
-  const x0 = cx + r * Math.cos(a0)
-  const y0 = cy + r * Math.sin(a0)
-  const x1 = cx + r * Math.cos(a1)
-  const y1 = cy + r * Math.sin(a1)
-  const tx = -Math.sin(a1)
-  const ty = Math.cos(a1)
-  const hx = x1 + tx * 5
-  const hy = y1 + ty * 5
-  const bx = x1 - tx * 2.5 - Math.cos(a1) * 4
-  const by = y1 - ty * 2.5 - Math.sin(a1) * 4
-  return `M ${x0} ${y0} A ${r} ${r} 0 0 1 ${x1} ${y1} M ${hx} ${hy} L ${x1} ${y1} L ${bx} ${by}`
-}
 
 function halfArrowHeads(
   x1: number,
@@ -86,369 +67,192 @@ function halfArrowHeads(
   })
 }
 
-function ScrewsLayer({
-  demo,
-  screws,
-  selectedIndex,
-  toSvg,
-  labelScale,
-}: {
-  demo: SpaceGroupDemo
-  screws: ProjectedScrew[]
-  selectedIndex: number
-  toSvg: (u: number, v: number) => { x: number; y: number }
-  labelScale: number
-}) {
-  return (
-    <g className="d2-screws">
-      {screws.map((s, i) => {
-        const kind = s.spec.kind ?? '21'
-        const color =
-          kind === '2'
-            ? classColor(demo, 'twofold')
-            : kind === '3'
-              ? classColor(demo, 'threefold')
-              : kind === '4' || kind === '41' || kind === '42' || kind === '43' || kind === 'bar4'
-                ? classColor(demo, 'fourfold')
-                : classColor(demo, 'screw')
-        const active = s.spec.opIndex === selectedIndex
-        const opacity = selectedIndex === 1 ? 0.55 : active ? 1 : 0.22
-        const strokeW = active ? 2.2 : 1.35
-        const symbol =
-          kind === '2'
-            ? '2'
-            : kind === '3'
-              ? '3'
-              : kind === '4'
-                ? '4'
-                : kind === '41'
-                  ? '4₁'
-                  : kind === '42'
-                    ? '4₂'
-                    : kind === '43'
-                      ? '4₃'
-                      : kind === '6'
-                        ? '6'
-                        : kind === '63'
-                          ? '6₃'
-                          : kind === 'bar4'
-                            ? '−4'
-                            : '2₁'
-        if (s.mode === 'end-on') {
-          const { x, y } = toSvg(s.u, s.v)
-          const r = active ? 9 : 7.5
-          return (
-            <g key={`sc-eo-${i}`} opacity={opacity}>
-              <circle
-                cx={x}
-                cy={y}
-                r={r}
-                fill={kind === '2' ? color : 'none'}
-                fillOpacity={kind === '2' ? 0.35 : 0}
-                stroke={color}
-                strokeWidth={strokeW}
-              />
-              {(kind === '21' || kind === '41' || kind === '42' || kind === '43' || kind === '63') && (
-                <path
-                  d={endOnHalfArrow(x, y, r)}
-                  fill="none"
-                  stroke={color}
-                  strokeWidth={strokeW}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              )}
-              <title>{`${symbol} ${s.spec.locus}`}</title>
-            </g>
-          )
-        }
-        const a = toSvg(s.u, s.v)
-        const b = toSvg(s.u2, s.v2)
-        const labelSide = Math.abs(s.u - s.u2) > Math.abs(s.v - s.v2) ? 1 : 0
-        return (
-          <g key={`sc-ip-${i}`} opacity={opacity}>
-            <line
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke={color}
-              strokeWidth={strokeW}
-              strokeLinecap="round"
-            />
-            {halfArrowHeads(a.x, a.y, b.x, b.y, color, strokeW)}
-            {(s.w === 0.25 || s.w === 0.5 || s.w === 0.75) && (
-              <text
-                x={(a.x + b.x) / 2 + (labelSide ? 0 : 10)}
-                y={(a.y + b.y) / 2 + (labelSide ? -8 : 4)}
-                textAnchor="middle"
-                fill={color}
-                fontSize={12 * labelScale}
-                fontWeight={600}
-              >
-                {s.w === 0.25 ? '¼' : s.w === 0.75 ? '¾' : '½'}
-              </text>
-            )}
-            <title>{`${symbol} ${s.spec.locus}`}</title>
-          </g>
-        )
-      })}
-    </g>
-  )
-}
+type ToSvg = (u: number, v: number) => { x: number; y: number }
 
-function drawFaceGlideMarks(
-  g: ProjectedGlide,
-  toSvg: (u: number, v: number) => { x: number; y: number },
-  color: string,
-  strokeW: number,
-  labelScale: number,
-) {
-  // Compact ITA-style: glide arrow near the edge + height fraction
-  const band = g.spec.primary ? 0.12 : 0.88
-  const labelAt = g.spec.primary ? 0.06 : 0.94
-  if (Math.abs(g.glideU) >= Math.abs(g.glideV) && Math.abs(g.glideU) > 1e-9) {
-    const a = toSvg(0.28, band)
-    const b = toSvg(0.72, band)
-    const lab = toSvg(0.5, labelAt)
-    return (
-      <g>
-        <line
-          x1={a.x}
-          y1={a.y}
-          x2={b.x}
-          y2={b.y}
-          stroke={color}
-          strokeWidth={strokeW}
-          strokeDasharray="5 3"
-          markerEnd="url(#d2-arrow)"
-        />
-        <text
-          x={lab.x}
-          y={lab.y}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill={color}
-          fontSize={12 * labelScale}
-          fontWeight={700}
-        >
-          {g.spec.label} {g.planeLabel}
-        </text>
-      </g>
-    )
+/** Regular n-gon path (ITA end-on symbols: 3 triangle, 4 square, 6 hexagon); 2 is a lens. */
+function endOnShape(n: number, x: number, y: number, r: number): string {
+  if (n === 2) return `M ${x - r} ${y} Q ${x} ${y - r * 1.1} ${x + r} ${y} Q ${x} ${y + r * 1.1} ${x - r} ${y} Z`
+  const pts: string[] = []
+  for (let i = 0; i < n; i++) {
+    const a = -Math.PI / 2 + (2 * Math.PI * i) / n
+    pts.push(`${x + r * Math.cos(a)} ${y + r * Math.sin(a)}`)
   }
-  if (Math.abs(g.glideV) > 1e-9) {
-    const a = toSvg(band, 0.28)
-    const b = toSvg(band, 0.72)
-    const lab = toSvg(labelAt, 0.5)
-    return (
-      <g>
-        <line
-          x1={a.x}
-          y1={a.y}
-          x2={b.x}
-          y2={b.y}
-          stroke={color}
-          strokeWidth={strokeW}
-          strokeDasharray="5 3"
-          markerEnd="url(#d2-arrow)"
-        />
-        <text
-          x={lab.x}
-          y={lab.y}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fill={color}
-          fontSize={12 * labelScale}
-          fontWeight={700}
-        >
-          {g.spec.label} {g.planeLabel}
-        </text>
-      </g>
-    )
-  }
-  // Out-of-plane face glide (rare in these projections)
-  const lab = toSvg(0.5, labelAt)
-  return (
-    <text
-      x={lab.x}
-      y={lab.y}
-      textAnchor="middle"
-      fill={color}
-      fontSize={12 * labelScale}
-      fontWeight={700}
-    >
-      {g.spec.label} {g.planeLabel}
-    </text>
-  )
+  return `M ${pts.join(' L ')} Z`
 }
 
-function drawTraceGlideArrow(
-  g: ProjectedGlide,
-  toSvg: (u: number, v: number) => { x: number; y: number },
-  color: string,
-  strokeW: number,
-) {
-  const midU = (g.u + g.u2) / 2
-  const midV = (g.v + g.v2) / 2
-  const mid = toSvg(midU, midV)
-
-  if (g.glideOutOfPlane) {
-    return (
-      <g>
-        <circle
-          cx={mid.x}
-          cy={mid.y}
-          r={3.5}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeW}
-        />
-        <line
-          x1={mid.x - 6}
-          y1={mid.y}
-          x2={mid.x + 6}
-          y2={mid.y}
-          stroke={color}
-          strokeWidth={strokeW}
-        />
-        <line
-          x1={mid.x}
-          y1={mid.y - 6}
-          x2={mid.x}
-          y2={mid.y + 6}
-          stroke={color}
-          strokeWidth={strokeW}
-        />
-      </g>
-    )
-  }
-
-  const len = 0.16
-  const mag = Math.hypot(g.glideU, g.glideV) || 1
-  const a = toSvg(midU - (g.glideU / mag) * len, midV - (g.glideV / mag) * len)
-  const b = toSvg(midU + (g.glideU / mag) * len, midV + (g.glideV / mag) * len)
-  return (
-    <line
-      x1={a.x}
-      y1={a.y}
-      x2={b.x}
-      y2={b.y}
-      stroke={color}
-      strokeWidth={strokeW}
-      markerEnd="url(#d2-arrow)"
-    />
-  )
+/** Dash pattern of a plane trace: mirror solid, glide ∥ page dashed, ⊥ page dotted, n dash-dot, e double. */
+function traceDash(p: ProjectedElement & { mode: 'trace' }, proj: ProjectionInfo): string | undefined {
+  const c = p.el.cls
+  if (c.kind === 'mirror') return undefined
+  const g = projectFrac(c.intrinsic, proj)
+  const inPage = Math.abs(g.u) > 1e-9 || Math.abs(g.v) > 1e-9
+  const outPage = Math.abs(g.w) > 1e-9
+  if (c.glideLetter === 'e') return '7 2 2 2'
+  if (c.glideLetter === 'n' || c.glideLetter === 'd' || (inPage && outPage)) return '8 3 1.5 3'
+  return inPage ? '6 4' : '1.5 3'
 }
 
-function GlidesLayer({
-  demo,
-  glides,
-  selectedIndex,
-  toSvg,
-  labelScale,
-}: {
-  demo: SpaceGroupDemo
-  glides: ProjectedGlide[]
-  selectedIndex: number
-  toSvg: (u: number, v: number) => { x: number; y: number }
-  labelScale: number
-}) {
-  return (
-    <g className="d2-glides">
-      {glides.map((g, i) => {
-        const active = g.spec.opIndex === selectedIndex
-        const color = classColor(demo, g.spec.classId)
-        const opacity = selectedIndex === 1 ? 0.5 : active ? 1 : 0.2
-        const strokeW = active ? 2 : 1.25
-
-        if (g.mode === 'face') {
-          return (
-            <g key={`gl-face-${i}`} opacity={opacity}>
-              {drawFaceGlideMarks(g, toSvg, color, strokeW, labelScale)}
-              <title>{g.spec.locus}</title>
-            </g>
-          )
-        }
-
-        const a = toSvg(g.u, g.v)
-        const b = toSvg(g.u2, g.v2)
-        return (
-          <g key={`gl-tr-${i}`} opacity={opacity}>
-            <line
-              x1={a.x}
-              y1={a.y}
-              x2={b.x}
-              y2={b.y}
-              stroke={color}
-              strokeWidth={strokeW}
-              strokeDasharray="6 4"
-              strokeLinecap="round"
-            />
-            {drawTraceGlideArrow(g, toSvg, color, strokeW)}
-            <title>{g.spec.locus}</title>
-          </g>
-        )
-      })}
-    </g>
-  )
-}
-
-function InversionsLayer({
-  demo,
-  selectedIndex,
-  toSvg,
+function ElementGlyph({
+  p,
   proj,
+  toSvg,
+  emphasized,
+  dimmed,
+  labelScale,
 }: {
-  demo: SpaceGroupDemo
-  selectedIndex: number
-  toSvg: (u: number, v: number) => { x: number; y: number }
-  proj: ReturnType<typeof buildProjections>['c']
+  p: ProjectedElement
+  proj: ProjectionInfo
+  toSvg: ToSvg
+  emphasized: boolean
+  dimmed: boolean
+  labelScale: number
 }) {
-  const inversions = useMemo(
-    () => projectInversions(demo.inversionCenters, proj),
-    [demo, proj],
-  )
-  const color = classColor(demo, 'inversion')
-  const active =
-    demo.operators.find((o) => o.index === selectedIndex)?.classId ===
-    'inversion'
+  const el = p.el
+  const c = el.cls
+  const color = el.color
+  const opacity = emphasized ? 1 : dimmed ? 0.22 : 0.55
+  const strokeW = emphasized ? 2.2 : 1.3
+  const title = elementTitle(el)
+  const fs = (emphasized ? 12 : 10.5) * labelScale
+  const tag = emphasized ? 'd2-element d2-selected' : 'd2-element'
+  const data = { 'data-kind': c.kind, 'data-symbol': el.symbol, 'data-class': el.classId }
+  if (p.mode === 'end-on') {
+    const { x, y } = toSvg(p.u, p.v)
+    const r = emphasized ? 9 : 7
+    const n = c.order
+    const filled = c.kind === 'rotation'
+    return (
+      <g className={tag} opacity={opacity} {...data}>
+        <path d={endOnShape(n, x, y, r)} fill={filled ? color : 'rgba(7,11,20,0.85)'} fillOpacity={filled ? 0.55 : 1} stroke={color} strokeWidth={strokeW} />
+        {c.kind === 'rotoinversion' && <circle cx={x} cy={y} r={2.2} fill={color} />}
+        {(c.kind === 'screw' || c.kind === 'rotoinversion' || emphasized) && (
+          <text x={x + r + 2} y={y - r + 2} fill={color} fontSize={fs} fontWeight={700}>
+            {el.symbol}
+          </text>
+        )}
+        <title>{title}</title>
+      </g>
+    )
+  }
+  if (p.mode === 'line') {
+    const a = toSvg(p.u, p.v)
+    const b = toSvg(p.u2, p.v2)
+    const mx = (a.x + b.x) / 2
+    const my = (a.y + b.y) / 2
+    return (
+      <g className={tag} opacity={opacity} {...data}>
+        <line
+          x1={a.x}
+          y1={a.y}
+          x2={b.x}
+          y2={b.y}
+          stroke={color}
+          strokeWidth={strokeW}
+          strokeLinecap="round"
+          strokeDasharray={p.inclined ? '2 3' : undefined}
+          markerStart={!p.inclined && c.kind === 'rotation' && c.order === 2 ? 'url(#d2-arrow)' : undefined}
+          markerEnd={!p.inclined && c.kind === 'rotation' && c.order === 2 ? 'url(#d2-arrow)' : undefined}
+        />
+        {c.kind === 'screw' && c.order === 2 && halfArrowHeads(a.x, a.y, b.x, b.y, color, strokeW)}
+        {(emphasized || c.order > 2 || c.kind !== 'rotation') && (
+          <text x={mx + 6} y={my - 6} fill={color} fontSize={fs} fontWeight={700}>
+            {el.symbol}
+            {p.w !== null && Math.abs(p.w) > 1e-6 ? ` ${formatQuarter(((p.w % 1) + 1) % 1)}` : ''}
+          </text>
+        )}
+        <title>{title}</title>
+      </g>
+    )
+  }
+  if (p.mode === 'trace') {
+    const a = toSvg(p.u, p.v)
+    const b = toSvg(p.u2, p.v2)
+    const mx = (a.x + b.x) / 2
+    const my = (a.y + b.y) / 2
+    const g = projectFrac(emphasized ? c.intrinsicRaw : c.intrinsic, proj)
+    const glideInPage = c.kind === 'glide' || (emphasized && (Math.abs(g.u) > 1e-9 || Math.abs(g.v) > 1e-9))
+    const mag = Math.hypot(g.u, g.v)
+    const arrow =
+      glideInPage && mag > 1e-9
+        ? { a: toSvg((p.u + p.u2) / 2 - (g.u / mag) * 0.12, (p.v + p.v2) / 2 - (g.v / mag) * 0.12), b: toSvg((p.u + p.u2) / 2 + (g.u / mag) * 0.12, (p.v + p.v2) / 2 + (g.v / mag) * 0.12) }
+        : null
+    return (
+      <g className={tag} opacity={opacity} {...data}>
+        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={color} strokeWidth={strokeW} strokeDasharray={traceDash(p, proj)} strokeLinecap="round" />
+        {arrow && <line x1={arrow.a.x} y1={arrow.a.y} x2={arrow.b.x} y2={arrow.b.y} stroke={color} strokeWidth={strokeW} markerEnd="url(#d2-arrow)" />}
+        {emphasized && (
+          <text x={mx + 6} y={my + 14} fill={color} fontSize={fs} fontWeight={700}>
+            {el.symbol}
+          </text>
+        )}
+        <title>{title}</title>
+      </g>
+    )
+  }
+  if (p.mode === 'face') {
+    // Plane parallel to the page: corner mark, glide arrow (if any), height.
+    const corner = toSvg(0.06, 0.94)
+    const c1 = toSvg(0.06, 0.8)
+    const c2 = toSvg(0.2, 0.94)
+    const g = projectFrac(emphasized ? c.intrinsicRaw : c.intrinsic, proj)
+    const mag = Math.hypot(g.u, g.v)
+    const from = toSvg(0.24, 0.88)
+    const to = mag > 1e-9 ? toSvg(0.24 + (g.u / mag) * 0.14, 0.88 + (g.v / mag) * 0.14) : null
+    return (
+      <g className={tag} opacity={opacity} {...data}>
+        <path d={`M ${c1.x} ${c1.y} L ${corner.x} ${corner.y} L ${c2.x} ${c2.y}`} fill="none" stroke={color} strokeWidth={strokeW} />
+        {to && (c.kind === 'glide' || emphasized) && <line x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={color} strokeWidth={strokeW} markerEnd="url(#d2-arrow)" />}
+        <text x={corner.x + 4} y={corner.y + 14} fill={color} fontSize={fs} fontWeight={700}>
+          {el.symbol} {formatQuarter(((p.w % 1) + 1) % 1)}
+        </text>
+        <title>{title}</title>
+      </g>
+    )
+  }
+  if (p.mode === 'inclined-plane') {
+    const pts = p.poly.map((q) => toSvg(q.u, q.v))
+    return (
+      <g className={tag} opacity={opacity} {...data}>
+        <polygon points={pts.map((q) => `${q.x},${q.y}`).join(' ')} fill={color} fillOpacity={0.08} stroke={color} strokeWidth={1} strokeDasharray="2 3" />
+        <text x={pts[0].x + 4} y={pts[0].y - 4} fill={color} fontSize={fs} fontWeight={700}>
+          {el.symbol} (inclined)
+        </text>
+        <title>{title}</title>
+      </g>
+    )
+  }
+  const { x, y } = toSvg(p.u, p.v)
+  const r = emphasized ? 5.5 : 4.5
   return (
-    <g className="d2-inversions">
-      {inversions.map((inv, i) => {
-        const { x, y } = toSvg(inv.u, inv.v)
-        const opacity = selectedIndex === 1 ? 0.55 : active ? 1 : 0.25
-        const r = active && inv.spec.primary ? 5.5 : 4.5
-        return (
-          <g key={`inv-${i}`} opacity={opacity}>
-            <circle
-              cx={x}
-              cy={y}
-              r={r}
-              fill="var(--bg, #070b14)"
-              stroke={color}
-              strokeWidth={active ? 1.8 : 1.3}
-            />
-            <line
-              x1={x - r}
-              y1={y}
-              x2={x + r}
-              y2={y}
-              stroke={color}
-              strokeWidth={1.1}
-            />
-            <line
-              x1={x}
-              y1={y - r}
-              x2={x}
-              y2={y + r}
-              stroke={color}
-              strokeWidth={1.1}
-            />
-            <title>{`inversion ${inv.spec.locus}`}</title>
-          </g>
-        )
-      })}
+    <g className={tag} opacity={opacity} {...data}>
+      <circle cx={x} cy={y} r={r} fill="var(--bg, #070b14)" stroke={color} strokeWidth={emphasized ? 1.8 : 1.3} />
+      <circle cx={x} cy={y} r={1.4} fill={color} />
+      <title>{title}</title>
+    </g>
+  )
+}
+
+function ElementsLayer({
+  context,
+  selected,
+  proj,
+  toSvg,
+  selectedIndex,
+  labelScale,
+}: {
+  context: ProjectedElement[]
+  selected: ProjectedElement | null
+  proj: ProjectionInfo
+  toSvg: ToSvg
+  selectedIndex: number
+  labelScale: number
+}) {
+  return (
+    <g className="d2-elements">
+      {context.map((p, i) => (
+        <ElementGlyph key={`ctx-${i}`} p={p} proj={proj} toSvg={toSvg} emphasized={false} dimmed={selectedIndex !== 1} labelScale={labelScale} />
+      ))}
+      {selected && <ElementGlyph p={selected} proj={proj} toSvg={toSvg} emphasized dimmed={false} labelScale={labelScale} />}
     </g>
   )
 }
@@ -493,14 +297,19 @@ export default function SpaceGroupDiagram2D({
     () => placedPositions(demo, selectedIndex, placementMode).points,
     [demo, selectedIndex, placementMode],
   )
-  const screws = useMemo(
-    () => allProjectedScrews(demo.screwAxes, proj),
-    [demo.screwAxes, proj],
+  const overlay = useMemo(
+    () => elementOverlay(demo, selectedIndex, placementMode),
+    [demo, selectedIndex, placementMode],
   )
-  const glides = useMemo(
-    () => allProjectedGlides(demo.glidePlanes, proj),
-    [demo.glidePlanes, proj],
-  )
+  const projected = useMemo(() => {
+    const ctx = dedupeProjected(
+      overlay.context
+        .map((e) => projectElement(e, proj))
+        .filter((p): p is ProjectedElement => p !== null && p.mode !== 'inclined-plane'),
+    )
+    const sel = overlay.selected ? projectElement(overlay.selected, proj) : null
+    return { ctx, sel }
+  }, [overlay, proj])
 
   const mU = multiples ? multiples[proj.uIndex] : 1
   const mV = multiples ? multiples[proj.vIndex] : 1
@@ -703,9 +512,7 @@ export default function SpaceGroupDiagram2D({
                 pointerEvents="none"
                 aria-hidden="true"
               >
-                <GlidesLayer demo={demo} glides={glides} selectedIndex={selectedIndex} toSvg={toSvg} labelScale={labelScale} />
-                <ScrewsLayer demo={demo} screws={screws} selectedIndex={selectedIndex} toSvg={toSvg} labelScale={labelScale} />
-                <InversionsLayer demo={demo} selectedIndex={selectedIndex} toSvg={toSvg} proj={proj} />
+                <ElementsLayer context={projected.ctx} selected={null} proj={proj} toSvg={toSvg} selectedIndex={selectedIndex} labelScale={labelScale} />
                 {points
                   .filter((pt) => showAllSites || pt.index === 1 || pt.index === selectedIndex)
                   .map((pt) => {
@@ -727,25 +534,13 @@ export default function SpaceGroupDiagram2D({
               </g>
             ))}
 
-        <GlidesLayer
-          demo={demo}
-          glides={glides}
-          selectedIndex={selectedIndex}
-          toSvg={toSvg}
-          labelScale={labelScale}
-        />
-        <ScrewsLayer
-          demo={demo}
-          screws={screws}
-          selectedIndex={selectedIndex}
-          toSvg={toSvg}
-          labelScale={labelScale}
-        />
-        <InversionsLayer
-          demo={demo}
-          selectedIndex={selectedIndex}
-          toSvg={toSvg}
+        <ElementsLayer
+          context={projected.ctx}
+          selected={projected.sel}
           proj={proj}
+          toSvg={toSvg}
+          selectedIndex={selectedIndex}
+          labelScale={labelScale}
         />
 
         <g className="d2-sites">

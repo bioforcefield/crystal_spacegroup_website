@@ -6,10 +6,10 @@ import type {
   Mat3,
   Operator,
   SpaceGroupDemo,
-  SymmetryClass,
   SymmetryClassId,
   Vec3,
 } from './types'
+import { DISPLAY_CLASSES, opDisplayClass, type DisplayClass, type DisplayClassId } from './elementClasses'
 
 export function det3(R: Mat3): number {
   return (
@@ -234,18 +234,20 @@ export function cellCornersCart(cell: CellParams): Vec3[] {
   ]
 }
 
+/** Colour of a display class (the single palette in elementClasses; stored per-demo palettes are ignored). */
 export function classColor(
-  demo: SpaceGroupDemo,
-  classId: SymmetryClassId,
+  _demo: SpaceGroupDemo,
+  classId: SymmetryClassId | DisplayClassId,
 ): string {
-  return demo.symmetryClasses[classId]?.color ?? '#94a3b8'
+  return DISPLAY_CLASSES[classId as DisplayClassId]?.color ?? '#94a3b8'
 }
 
+/** Derived display class of an operator (exact Seitz pair + group centring). */
 export function operatorClass(
   demo: SpaceGroupDemo,
   op: Operator,
-): SymmetryClass {
-  return demo.symmetryClasses[op.classId]
+): DisplayClass {
+  return opDisplayClass(demo, op)
 }
 
 export function generalPositions(demo: SpaceGroupDemo): GeneralPoint[] {
@@ -258,7 +260,7 @@ export function generalPositions(demo: SpaceGroupDemo): GeneralPoint[] {
       operator: op,
       improper: isImproper(op.R),
       classId: op.classId,
-      classColor: classColor(demo, op.classId),
+      classColor: opDisplayClass(demo, op).color,
     }
   })
 }

@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { isImproper, operatorClass } from '../data/math'
 import { opClass, selectionLabels } from '../data/opLabels'
+import { legendClasses } from '../data/elementClasses'
 import type { Operator, SpaceGroupDemo } from '../data/types'
 import {
   placedPositions,
@@ -342,15 +343,12 @@ export default function OperatorPanel({
       <section className="class-legend-panel">
         <h2>Symmetry classes</h2>
         <ul className="class-legend-list">
-          {demo.classLegendOrder.map((id) => {
-            const c = demo.symmetryClasses[id]
-            return (
-              <li key={id}>
-                <span className="swatch" style={{ background: c.color }} />
-                {c.label}
-              </li>
-            )
-          })}
+          {legendClasses(demo, [shownCopy.shownClass.id]).map((c) => (
+            <li key={c.id}>
+              <span className="swatch" style={{ background: c.color }} />
+              {c.label}
+            </li>
+          ))}
         </ul>
       </section>
 

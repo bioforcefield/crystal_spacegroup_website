@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { operatorColor } from '../../data/cif/operatorColors'
 import type { ExpandedStructure } from '../../data/cif/types'
 import { isImproper } from '../../data/math'
+import { opClass, opDisplayClass } from '../../data/elementClasses'
 import { describeCifStructure } from '../../data/a11y/structureSummary'
 import type { Operator, SpaceGroupDemo } from '../../data/types'
 
@@ -225,11 +226,11 @@ export default function CifStructurePanel({
                   aria-pressed={active}
                 >
                   <span className="op-index">{op.index}</span>
-                  <span className="op-swatch" title={op.label} />
+                  <span className="op-swatch" title={opClass(structure, op).label} />
                   <span className="op-body">
                     <span className="op-triplet">{op.triplet}</span>
                     <span className="op-label">
-                      {op.label}
+                      {opClass(structure, op).label}
                       {op.index === 1 ? ' · BASE' : ' · IMAGE'}
                       {' · '}
                       {isImproper(op.R) ? 'opposite hand' : 'same hand'}
@@ -266,7 +267,9 @@ export default function CifStructurePanel({
             <div>
               <dt>Class</dt>
               <dd>
-                {selected.label} · {selected.classId}
+                {opClass(structure, selected).label} ·{' '}
+                <span className="mono">{opClass(structure, selected).symbol}</span> ·{' '}
+                {opDisplayClass(structure, selected).label}
               </dd>
             </div>
             <div>

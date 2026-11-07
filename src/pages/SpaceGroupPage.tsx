@@ -24,6 +24,8 @@ import SupercellPicker from '../components/SupercellPicker'
 import VisitCounter from '../components/VisitCounter'
 import MotifStylePicker, { useMotifStyle } from '../components/motifs/MotifStylePicker'
 import { opClass, selectionLabels } from '../data/opLabels'
+import { legendClasses } from '../data/elementClasses'
+import { elementOverlay } from '../data/elementSelection'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -93,6 +95,10 @@ export default function SpaceGroupPage({ demo }: Props) {
     () => selectionLabels(demo, selectedIndex, placementMode),
     [demo, selectedIndex, placementMode],
   )
+  const overlay = useMemo(
+    () => elementOverlay(demo, selectedIndex, placementMode),
+    [demo, selectedIndex, placementMode],
+  )
   const liveStatus = `${selection.caption} Placement ${
     placementMode === 'nearest' ? 'Near' : 'Wrap'
   }.${showAllSites ? '' : ' Showing BASE and IMAGE only.'}`
@@ -110,15 +116,12 @@ export default function SpaceGroupPage({ demo }: Props) {
         <div className="viewport-toolbar">
           <div className="legend-stack">
             <div className="legend class-legend">
-              {demo.classLegendOrder.map((id) => {
-                const c = demo.symmetryClasses[id]
-                return (
-                  <span key={id} className="legend-item">
-                    <span className="swatch" style={{ background: c.color }} />
-                    {c.label}
-                  </span>
-                )
-              })}
+              {legendClasses(demo, [selection.shownClass.id]).map((c) => (
+                <span key={c.id} className="legend-item">
+                  <span className="swatch" style={{ background: c.color }} />
+                  {c.label}
+                </span>
+              ))}
             </div>
             <details className="legend-details">
               <summary className="legend-details-summary">Legend</summary>
@@ -136,27 +139,15 @@ export default function SpaceGroupPage({ demo }: Props) {
                 <span className="chip image">IMAGE</span>
               </div>
               <div className="legend elements-legend">
-                {demo.inversionCenters.length > 0 && (
-                  <>
-                    <span className="chip element">⊙</span> inversion
-                    <span className="sep">·</span>
-                  </>
-                )}
-                {demo.screwAxes.length > 0 && (
-                  <>
-                    <span className="chip element">‖</span> 2 / 2₁ / n-fold
-                    <span className="sep">·</span>
-                  </>
-                )}
-                {demo.glidePlanes.length > 0 && (
-                  <>
-                    <span className="chip element">▭</span> mirror / glide
-                    <span className="sep">·</span>
-                  </>
-                )}
-                {demo.geometryLimited
-                  ? 'limited geometry overlays'
-                  : 'selected element emphasized; others faint'}
+                <span className="chip element">⊙</span> centre
+                <span className="sep">·</span>
+                <span className="chip element">‖</span> axis
+                <span className="sep">·</span>
+                <span className="chip element">▭</span> mirror / glide
+                <span className="sep">·</span>
+                {overlay.limited
+                  ? `${overlay.total} elements meet the cell; showing the selected element's class only`
+                  : 'selected element (the shown copy\'s) emphasized; others faint'}
               </div>
             </details>
           </div>
@@ -275,11 +266,6 @@ export default function SpaceGroupPage({ demo }: Props) {
             perCell={demo.operators.length}
             cap={SG_MOTIF_CAP}
           />
-        )}
-        {demo.geometryLimited && demo.geometryNote && (
-          <p className="geometry-note" role="note">
-            {demo.geometryNote}
-          </p>
         )}
         {selectedIndex !== 1 && (
           <p className="op-motion" data-op-kind={selection.canonical.kind} data-shown-kind={selection.shown.kind}>
