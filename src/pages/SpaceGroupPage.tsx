@@ -22,6 +22,7 @@ import {
 } from '../data/supercell'
 import SupercellPicker from '../components/SupercellPicker'
 import VisitCounter from '../components/VisitCounter'
+import MotifStylePicker, { useMotifStyle } from '../components/motifs/MotifStylePicker'
 
 interface Props {
   demo: SpaceGroupDemo
@@ -29,6 +30,7 @@ interface Props {
 
 export default function SpaceGroupPage({ demo }: Props) {
   const [selectedIndex, setSelectedIndex] = useState(1)
+  const [motifStyle, setMotifStyle] = useMotifStyle()
   const [animateToken, setAnimateToken] = useState(0)
   const [resetToken, setResetToken] = useState(0)
   const [placementMode, setPlacementMode] = useState<PlacementMode>('nearest')
@@ -237,6 +239,7 @@ export default function SpaceGroupPage({ demo }: Props) {
                 <span className="label-short">B+I</span>
               </button>
             </div>
+            <MotifStylePicker value={motifStyle} onChange={setMotifStyle} />
             <button
               type="button"
               className="btn"
@@ -336,6 +339,7 @@ export default function SpaceGroupPage({ demo }: Props) {
               placementMode={placementMode}
               showAllSites={showAllSites}
               multiples={multiples}
+              motifStyle={motifStyle}
               onSelectPoint={handleSelect}
               resetToken={resetToken}
             />

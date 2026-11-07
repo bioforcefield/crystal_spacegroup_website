@@ -9,7 +9,9 @@ import {
   type PlacementMode,
 } from '../data/nearestImages'
 import type { GeneralPoint, Mat3, SpaceGroupDemo, Vec3 } from '../data/types'
-import { ChiralMotifMesh, orientationFromR } from './ChiralMotif'
+import { orientationFromR } from './ChiralMotif'
+import MotifMesh from './motifs/MotifMesh'
+import { DEFAULT_MOTIF_STYLE, type MotifStyleId } from './motifs/motifStyles'
 import SymmetryElements from './SymmetryElements'
 import SupercellWire from './SupercellWire'
 import {
@@ -27,6 +29,8 @@ interface SceneProps {
   showAllSites: boolean
   /** Supercell na×nb×nc (default 1×1×1 = single unit cell). */
   multiples?: CellMultiples
+  /** Visual representation only — never affects placement or transforms. */
+  motifStyle?: MotifStyleId
 }
 
 function UnitCellWireframe({ demo }: { demo: SpaceGroupDemo }) {
@@ -87,8 +91,21 @@ function SupercellWireframe({ demo, multiples }: { demo: SpaceGroupDemo; multipl
 }
 
 /** Translated copy of a motif (no labels / rings); clicking selects its operator. */
-function ReplicaMarker({ point, onSelect }: { point: GeneralPoint; onSelect: (index: number) => void }) {
-  const { quaternion, mirror } = useMemo(() => orientationFromR(point.operator.R), [point.operator.R])
+function ReplicaMarker({
+  point,
+  cell,
+  motifStyle,
+  onSelect,
+}: {
+  point: GeneralPoint
+  cell: SpaceGroupDemo['cell']
+  motifStyle: MotifStyleId
+  onSelect: (index: number) => void
+}) {
+  const { quaternion, mirror } = useMemo(
+    () => orientationFromR(point.operator.R, cell),
+    [point.operator.R, cell],
+  )
   return (
     <group
       position={point.cartesian}
@@ -99,7 +116,7 @@ function ReplicaMarker({ point, onSelect }: { point: GeneralPoint; onSelect: (in
         onSelect(point.index)
       }}
     >
-      <ChiralMotifMesh color={point.classColor} selected={false} emissiveIntensity={0.18} />
+      <MotifMesh style={motifStyle} color={point.classColor} selected={false} emissiveIntensity={0.18} />
     </group>
   )
 }
@@ -179,9 +196,13 @@ function PointMarker({
   isBase,
   isImage,
   showLabel,
+  cell,
+  motifStyle,
   onSelect,
 }: {
   point: GeneralPoint
+  cell: SpaceGroupDemo['cell']
+  motifStyle: MotifStyleId
   isBase: boolean
   isImage: boolean
   /** False for dim orbit sites when a non-identity op is selected. */
@@ -191,8 +212,8 @@ function PointMarker({
   const color = point.classColor
   const emphasized = isBase || isImage
   const { quaternion, mirror } = useMemo(
-    () => orientationFromR(point.operator.R),
-    [point.operator.R],
+    () => orientationFromR(point.operator.R, cell),
+    [point.operator.R, cell],
   )
   const groupRef = useRef<THREE.Group>(null)
 
@@ -258,7 +279,8 @@ function PointMarker({
           document.body.style.cursor = 'default'
         }}
       >
-        <ChiralMotifMesh
+        <MotifMesh
+          style={motifStyle}
           color={color}
           selected={emphasized}
           emissiveIntensity={isImage ? 0.85 : isBase ? 0.55 : 0.28}
@@ -309,7 +331,11 @@ function GhostAnimator({
   toR,
   ghostColor,
   token,
+  cell,
+  motifStyle,
 }: {
+  cell: SpaceGroupDemo['cell']
+  motifStyle: MotifStyleId
   fromPos: Vec3
   toPos: Vec3
   fromR: Mat3
@@ -323,8 +349,8 @@ function GhostAnimator({
   const progress = useRef(0)
   const startPos = useRef(fromPos)
   const endPos = useRef(toPos)
-  const startOri = useRef(orientationFromR(fromR))
-  const endOri = useRef(orientationFromR(toR))
+  const startOri = useRef(orientationFromR(fromR, cell))
+  const endOri = useRef(orientationFromR(toR, cell))
 
   useFrame((_, dt) => {
     if (!active || !groupRef.current) return
@@ -362,7 +388,8 @@ function GhostAnimator({
 
   return (
     <group ref={groupRef} visible={active}>
-      <ChiralMotifMesh
+      <MotifMesh
+        style={motifStyle}
         color={ghostColor}
         emissiveIntensity={0.9}
         opacity={0.8}
@@ -559,6 +586,7 @@ function SceneContent({
   placementMode,
   showAllSites,
   multiples = DEFAULT_MULTIPLES,
+  motifStyle = DEFAULT_MOTIF_STYLE,
   onSelect,
   controlsRef,
   userZoomRef,
@@ -628,6 +656,8 @@ function SceneContent({
           <ReplicaMarker
             key={`${r.t.join(',')}:${r.point.index}`}
             point={r.point}
+            cell={demo.cell}
+            motifStyle={motifStyle}
             onSelect={onSelect}
           />
         ))}
@@ -647,6 +677,8 @@ function SceneContent({
               isBase={isBase}
               isImage={isImage}
               showLabel={showLabel}
+              cell={demo.cell}
+              motifStyle={motifStyle}
               onSelect={onSelect}
             />
           )
@@ -659,6 +691,8 @@ function SceneContent({
           toR={selected.operator.R}
           ghostColor={selected.classColor}
           token={animateToken}
+          cell={demo.cell}
+          motifStyle={motifStyle}
         />
       </group>
 
@@ -682,6 +716,7 @@ export default function UnitCellScene({
   placementMode,
   showAllSites,
   multiples,
+  motifStyle,
   onSelectPoint,
   resetToken,
 }: SceneProps & {
@@ -713,6 +748,7 @@ export default function UnitCellScene({
         placementMode={placementMode}
         showAllSites={showAllSites}
         multiples={multiples}
+        motifStyle={motifStyle}
         onSelect={onSelectPoint}
         controlsRef={controlsRef}
         userZoomRef={userZoomRef}

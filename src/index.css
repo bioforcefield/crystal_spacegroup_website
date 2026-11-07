@@ -5927,3 +5927,27 @@ button.linkish {
 .pxrd-thr { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; flex-wrap: wrap; }
 .pxrd-thr input[type="range"] { width: 7rem; }
 .pxrd-modal-thr { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 0 0 0.4rem; }
+
+/* —— Motif style selector (SG 3D viewer) —— */
+.motif-style-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.motif-style-picker select {
+  background: rgba(15, 23, 42, 0.85);
+  color: #e0f2fe;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+  padding: 0.3rem 0.6rem;
+  font: inherit;
+  min-height: 2rem;
+  cursor: pointer;
+}
+.motif-style-picker select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

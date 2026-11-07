@@ -131,6 +131,57 @@ export function fracToCart(p: Vec3, cell: CellParams): Vec3 {
   ]
 }
 
+/**
+ * Cartesian cell basis A (row-major 3×3) whose COLUMNS are a, b, c in the
+ * scene frame used by fracToCart: cart = A · frac.
+ */
+export function cellBasis(cell: CellParams): Mat3 {
+  const a = fracToCart([1, 0, 0], cell)
+  const b = fracToCart([0, 1, 0], cell)
+  const c = fracToCart([0, 0, 1], cell)
+  return [
+    [a[0], b[0], c[0]],
+    [a[1], b[1], c[1]],
+    [a[2], b[2], c[2]],
+  ]
+}
+
+function mul3(X: Mat3, Y: Mat3): Mat3 {
+  const out: Mat3 = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+  ]
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      out[i][j] = X[i][0] * Y[0][j] + X[i][1] * Y[1][j] + X[i][2] * Y[2][j]
+    }
+  }
+  return out
+}
+
+function inv3(M: Mat3): Mat3 {
+  const d = det3(M)
+  const [[a, b, c], [e, f, g], [h, i, j]] = M
+  return [
+    [(f * j - g * i) / d, (c * i - b * j) / d, (b * g - c * f) / d],
+    [(g * h - e * j) / d, (a * j - c * h) / d, (c * e - a * g) / d],
+    [(e * i - f * h) / d, (b * h - a * i) / d, (a * f - b * e) / d],
+  ]
+}
+
+/**
+ * Linear part of a symmetry operation in the Cartesian scene frame:
+ * R_cart = A · R_frac · A⁻¹. For a cell compatible with the operation this
+ * is orthogonal (an isometry) with det(R_cart) = det(R_frac). Differs from
+ * R_frac only when the fractional basis is not orthonormal-compatible
+ * (e.g. hexagonal / trigonal 3- and 6-fold operations).
+ */
+export function cartesianLinear(R: Mat3, cell: CellParams): Mat3 {
+  const A = cellBasis(cell)
+  return mul3(mul3(A, R), inv3(A))
+}
+
 /** Cartesian → fractional (inverse of fracToCart). */
 export function cartToFrac(p: Vec3, cell: CellParams): Vec3 {
   const alphaDeg = cell.alphaDeg ?? 90
